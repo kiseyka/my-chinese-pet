@@ -1,0 +1,45 @@
+{
+    "common": {
+        "hello": "Hello",
+        "next": "Next"
+    },
+    "profile": {
+        "greeting": "Hello, {{name}}!",
+        "level": "HSK Level {{level}}",
+        "xp": "XP",
+        "achievements": "Achievements",
+        "viewAll": "View all >",
+        "stats": "Statistics",
+        "wordsLearned": "Words learned",
+        "charactersLearned": "Characters learned",
+        "daysStreak": "Day streak",
+        "studyTime": "Study time",
+        "gamesPlayed": "Games played",
+        "averageResult": "Average score",
+        "achievementsList": {
+            "firstSteps": "First steps",
+            "firstStepsDesc": "Learn 10 words",
+            "sevenDays": "7 days in a row",
+            "sevenDaysDesc": "Study every day",
+            "cardMaster": "Card master",
+            "cardMasterDesc": "Win 50 games"
+        },
+        "tabs": {
+            "profile": "Profile",
+            "pet": "Pet",
+            "game": "Game"
+        }
+    },
+    "games": {
+        "card": "Hanzi Challenge",
+        "quiz": {
+            "hello": "Hello",
+            "goodbye": "Goodbye",
+            "thanks": "Thank you",
+            "please": "Please",
+            "no": "No",
+            "yes": "Yes",
+            "sorry": "Sorry"
+        }
+    }
+}

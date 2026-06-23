@@ -1,0 +1,45 @@
+{
+    "common": {
+        "hello": "Привет",
+        "next": "Далее"
+    },
+    "profile": {
+        "greeting": "Привет, {{name}}!",
+        "level": "Уровень HSK {{level}}",
+        "xp": "XP",
+        "achievements": "Достижения",
+        "viewAll": "Смотреть все >",
+        "stats": "Статистика",
+        "wordsLearned": "Изучено слов",
+        "charactersLearned": "Изучено иероглифов",
+        "daysStreak": "Дней подряд",
+        "studyTime": "Время обучения",
+        "gamesPlayed": "Игр сыграно",
+        "averageResult": "Средний результат",
+        "achievementsList": {
+            "firstSteps": "Первые шаги",
+            "firstStepsDesc": "Изучить 10 слов",
+            "sevenDays": "7 дней подряд",
+            "sevenDaysDesc": "Учись каждый день",
+            "cardMaster": "Карточный мастер",
+            "cardMasterDesc": "Выиграй 50 игр"
+        },
+        "tabs": {
+            "profile": "Профиль",
+            "pet": "Питомец",
+            "game": "Игра"
+        }
+    },
+    "games": {
+        "card": "Охотник за карточками",
+        "quiz": {
+            "hello": "Привет",
+            "goodbye": "Пока",
+            "thanks": "Спасибо",
+            "please": "Пожалуйста",
+            "no": "Нет",
+            "yes": "Да",
+            "sorry": "Прости"
+        }
+    }
+}

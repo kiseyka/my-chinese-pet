@@ -1,0 +1,45 @@
+{
+    "common": {
+        "hello": "你好",
+        "next": "下一步"
+    },
+    "profile": {
+        "greeting": "你好，{{name}}！",
+        "level": "HSK {{level}} 级",
+        "xp": "经验值",
+        "achievements": "成就",
+        "viewAll": "查看全部 >",
+        "stats": "统计",
+        "wordsLearned": "已学单词",
+        "charactersLearned": "已学汉字",
+        "daysStreak": "连续天数",
+        "studyTime": "学习时间",
+        "gamesPlayed": "游戏场次",
+        "averageResult": "平均成绩",
+        "achievementsList": {
+            "firstSteps": "第一步",
+            "firstStepsDesc": "学习10个单词",
+            "sevenDays": "连续7天",
+            "sevenDaysDesc": "每天学习",
+            "cardMaster": "卡片大师",
+            "cardMasterDesc": "赢得50场游戏"
+        },
+        "tabs": {
+            "profile": "个人资料",
+            "pet": "宠物",
+            "game": "游戏"
+        }
+    },
+    "games": {
+        "card": "汉字挑战",
+        "quiz": {
+            "hello": "你好",
+            "goodbye": "再见",
+            "thanks": "谢谢",
+            "please": "请",
+            "no": "Нет",
+            "yes": "Да",
+            "sorry": "Прости"
+        }
+    }
+}
