@@ -31,15 +31,32 @@
         }
     },
     "games": {
-        "card": "汉字挑战",
+        "title": "趣味练习",
+        "flashcards": {
+            "title": "卡",
+            "description": "通过卡片学习汉字"
+        },
+        "tones": {
+            "title": "声调",
+            "description": "练习发音，辨别声调"
+        },
+        "writting": {
+            "title": "书写",
+            "description": "学习正确书写汉字"
+        },
         "quiz": {
             "hello": "你好",
             "goodbye": "再见",
             "thanks": "谢谢",
             "please": "请",
-            "no": "Нет",
+            "no": "不",
             "yes": "Да",
-            "sorry": "Прости"
+            "sorry": "对不起",
+            "one": "一",
+            "two": "二",
+            "three": "三",
+            "mom": "妈妈",
+            "dad": "爸爸"
         }
     }
 }

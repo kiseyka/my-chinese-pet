@@ -54,7 +54,7 @@ const ProfileScreen = () => {
   const xpProgress = (user.currentXP / user.maxXP) * 100;
 
   return (
-    <SafeAreaView className="flex-1 ">
+    <SafeAreaView className="flex-1 " style={{ backgroundColor: "#F4E9D6" }}>
       <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
         {/* Заголовок профиля */}
         <View className=" rounded-b-3xl  px-6 pt-8 pb-6">

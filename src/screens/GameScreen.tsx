@@ -48,7 +48,7 @@ const ProfileScreen = () => {
     }
   };
   return (
-    <SafeAreaView className="bg-[#F3EFE2] flex-1" edges={["top"]}>
+    <SafeAreaView className="bg-background flex-1" edges={["top"]}>
       <View
         style={{
           display: "flex",
@@ -108,9 +108,9 @@ const ProfileScreen = () => {
         >
           <View className="flex flex-col justify-between gap-10">
             <Text
+              className="text-text"
               style={{
                 fontSize: 64,
-                color: "#2C241E",
                 textAlign: "center",
                 fontFamily: "NotoSansSC",
               }}
@@ -118,7 +118,7 @@ const ProfileScreen = () => {
               {currentQuestion.question}
             </Text>
 
-            <Text className="text-center text-xl text-[#7D2619]">
+            <Text className="text-center text-xl text-primary">
               {currentQuestion.pinyin}
             </Text>
           </View>
@@ -136,13 +136,13 @@ const ProfileScreen = () => {
                   disabled={isAnswered}
                   className={`w-[48%] py-4 px-4 rounded-xl border ${
                     isAnswered && isCorrect
-                      ? "bg-[#7D2619] border-[#E1D8C9]"
-                      : "bg-[#F4ECDF] border-[#DFD4C2]"
+                      ? "bg-primary border-[#E1D8C9]"
+                      : "bg-[#F4ECDF] border-border"
                   }`}
                 >
                   <Text
                     className={`text-center ${
-                      isAnswered && isCorrect ? "text-white" : "text-[#2C241E]"
+                      isAnswered && isCorrect ? "text-white" : "text-text"
                     }`}
                   >
                     {t(option)}
