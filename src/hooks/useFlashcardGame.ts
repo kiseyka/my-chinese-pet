@@ -3,11 +3,13 @@
 import { generateQuiz } from "@/content/flashcards/generator";
 import { practiceSets } from "@/content/flashcards/sets";
 import { QuizQuestion } from "@/content/flashcards/types";
-import { completeFlashcardLevel } from "@/services/storage/progressStorage";
+import {
+  completeFlashcardSet,
+  updateWordProgress,
+} from "@/services/storage/progressStorage";
 import { useGameStore } from "@/store/gameStore";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-
 interface UseFlashcardGameProps {
   setId: string;
 }
@@ -70,8 +72,8 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
 
     setDuration(duration);
 
-    await completeFlashcardLevel({
-      levelId: practiceSet.id,
+    await completeFlashcardSet({
+      setId: practiceSet.id,
       score,
       totalQuestions: questions.length,
       duration,
@@ -103,7 +105,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
     isProcessingAnswer.current = false;
   };
 
-  const handleSelect = (option: string) => {
+  const handleSelect = async (option: string) => {
     // Защита от быстрых повторных кликов
     if (isProcessingAnswer.current) {
       return;
@@ -120,6 +122,10 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       hanzi: currentQuestion.hanzi,
       pinyin: currentQuestion.pinyin,
       translation: currentQuestion.correctAnswer,
+      isCorrect,
+    });
+    await updateWordProgress({
+      wordId: currentQuestion.id,
       isCorrect,
     });
 
