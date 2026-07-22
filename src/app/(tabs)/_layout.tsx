@@ -12,7 +12,9 @@ export default function TabLayout() {
   const pathname = usePathname();
 
   const hideTabBar =
-    pathname.startsWith("/games/flashcards/") || pathname === "/games/stats";
+    (pathname.startsWith("/games/flashcards/") &&
+      pathname !== "/games/flashcards/sets") ||
+    pathname === "/games/stats";
 
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();

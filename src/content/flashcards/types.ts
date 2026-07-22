@@ -1,3 +1,5 @@
+import { ImageSourcePropType } from "react-native";
+
 export type Word = {
   id: string;
   hanzi: string;
@@ -11,6 +13,7 @@ export type PracticeSet = {
   description?: string;
   words: Word[];
   xpReward: number;
+  image: ImageSourcePropType;
 };
 
 export type QuizQuestion = {

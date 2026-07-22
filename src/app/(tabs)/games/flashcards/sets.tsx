@@ -1,18 +1,24 @@
 // app/(game)/sets.tsx
 
-import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { practiceSets } from "@/content/flashcards/sets";
 import { loadProgress } from "@/services/storage/progressStorage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 export default function PracticeSetsScreen() {
-  const router = useRouter();
   const { t } = useTranslation();
-
+  const router = useRouter();
+  const { width, height } = useWindowDimensions();
   const [progress, setProgress] = useState<any>(null);
 
   useFocusEffect(
@@ -27,37 +33,76 @@ export default function PracticeSetsScreen() {
   );
 
   return (
-    <Screen>
+    <View className="flex-1 p-4 mt-8 relative">
       {/* Header */}
-      <View className="px-4 pt-2 flex-row items-center justify-between">
+      <Image
+        source={require("@/assets/images/bg/sets1.png")}
+        resizeMode="cover"
+        style={{
+          position: "absolute",
+          width,
+          height,
+          bottom: 0,
+          opacity: 0.6,
+          zIndex: 0,
+        }}
+      />
+      <View className=" py-2 flex-row items-center justify-between">
         <BackButton href="/games" />
 
-        <Text className="text-text font-bold text-2xl pr-4 font-['NotoSansSCBold']">
-          Practice Sets
+        <Text className="text-text text-xl pr-4 font-chineseMedium">
+          {t("games.flashcards.title")}
         </Text>
-
         <View className="w-10" />
       </View>
 
+      <Text className="text-text text-base mb-6 font-['NunitoRegular']">
+        {t("games.flashcards.mascotBubble")}
+      </Text>
+      <View className="flex-col gap-2 mb-4">
+        <Text className="text-xl ml-2">
+          {t("games.flashcards.sectionTitle")}
+        </Text>
+        <Text> {t("games.flashcards.sectionSubtitle")}</Text>
+      </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingTop: 24,
-          paddingBottom: 60,
+          paddingBottom: 20,
         }}
       >
-        <Text className="text-textSecondary text-base mb-6 font-['NunitoRegular']">
-          Choose a topic to practice
-        </Text>
-
         <View className="gap-4">
-          {practiceSets.map((practiceSet, index) => {
-            const stats = progress?.flashcards?.sets?.[practiceSet.id];
+          {practiceSets.map((practiceSet) => {
+            // Все слова текущего сета
+            const words = practiceSet.words;
 
-            const isCompleted = !!stats;
+            // Прогресс каждого слова
+            const wordProgress = words.map(
+              (word) => progress?.flashcards?.words?.[word.id],
+            );
 
-            const accuracy = stats?.accuracy ?? 0;
+            // Сколько слов уже встречались пользователю
+            const learnedWords = wordProgress.filter(
+              (word) => word && word.mastery > 0,
+            ).length;
+
+            // Сколько слов достигли mastery 5
+            const masteredWords = wordProgress.filter(
+              (word) => word && word.mastery === 5,
+            ).length;
+
+            // Средний mastery по сету
+            const totalMastery = wordProgress.reduce(
+              (sum, word) => sum + (word?.mastery ?? 0),
+              0,
+            );
+
+            const maxMastery = words.length * 5;
+
+            const masteryPercent =
+              maxMastery > 0
+                ? Math.round((totalMastery / maxMastery) * 100)
+                : 0;
 
             return (
               <Pressable
@@ -70,53 +115,59 @@ export default function PracticeSetsScreen() {
                     },
                   })
                 }
-                className="bg-background border border-border/50 rounded-2xl p-5 active:opacity-70"
+                className="bg-background rounded-2xl overflow-hidden active:opacity-70"
+                style={{
+                  shadowColor: "#E6DBCA",
+                  shadowOffset: {
+                    width: -2,
+                    height: 5,
+                  },
+                  shadowOpacity: 0.84,
+                  shadowRadius: 6,
+                  elevation: 5,
+                }}
               >
-                <View className="flex-row items-center">
-                  {/* Иконка */}
-                  <View className="w-14 h-14 rounded-full bg-[#E2D9CD] items-center justify-center mr-4">
-                    <Text className="text-2xl">
-                      {index === 0 ? "👋" : index === 1 ? "123" : "👨‍👩‍👧"}
-                    </Text>
-                  </View>
+                <View className="flex-row h-30">
+                  {/* Image */}
+                  <Image
+                    source={practiceSet.image}
+                    resizeMode="cover"
+                    className="h-full w-28 rounded-full"
+                  />
 
-                  {/* Основная информация */}
-                  <View className="flex-1">
-                    <Text className="text-text text-xl font-['NotoSansSCMedium']">
-                      {practiceSet.title}
-                    </Text>
-
-                    {practiceSet.description && (
-                      <Text
-                        numberOfLines={2}
-                        className="text-textSecondary text-sm mt-1 font-['NunitoRegular']"
-                      >
-                        {practiceSet.description}
+                  {/* Main content */}
+                  <View className="flex-1 p-5 justify-between">
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-text text-xl font-['NotoSansSCMedium']">
+                        {t(practiceSet.title)}
                       </Text>
-                    )}
+                      <Text className="text-text text-xs">
+                        {practiceSet.words.length}
+                        {t("games.flashcards.wordsCount")}
+                      </Text>
+                    </View>
 
-                    <Text className="text-textSecondary text-xs mt-2">
-                      {practiceSet.words.length} words
-                    </Text>
-                  </View>
-
-                  {/* Статус */}
-                  <View className="items-end ml-3">
-                    {isCompleted ? (
-                      <>
-                        <Text className="text-primary text-lg font-bold">
-                          {accuracy}%
+                    {/* Mastery progress */}
+                    <View className="mt-3">
+                      <View className="flex-row justify-between mb-1">
+                        <Text className="text-text text-xs">
+                          {t("games.flashcards.mastery")}
                         </Text>
 
-                        <Text className="text-textSecondary text-xs mt-1">
-                          Completed
+                        <Text className="text-text text-xs">
+                          {masteryPercent}%
                         </Text>
-                      </>
-                    ) : (
-                      <Text className="text-textSecondary text-xs">
-                        Not started
-                      </Text>
-                    )}
+                      </View>
+
+                      <View className="h-2 bg-[#E2D9CD] rounded-full overflow-hidden">
+                        <View
+                          className="h-full bg-primary rounded-full"
+                          style={{
+                            width: `${masteryPercent}%`,
+                          }}
+                        />
+                      </View>
+                    </View>
                   </View>
                 </View>
               </Pressable>
@@ -124,6 +175,6 @@ export default function PracticeSetsScreen() {
           })}
         </View>
       </ScrollView>
-    </Screen>
+    </View>
   );
 }

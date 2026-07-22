@@ -44,14 +44,14 @@ export default function LevelGameScreen() {
   return (
     <View className="flex-1 relative w-full h-full">
       <Image
-        source={require("@/assets/images/bg/game1.png")}
+        source={require("@/assets/images/bg/game-1.png")}
         resizeMode="cover"
         style={{
           position: "absolute",
           width,
           height,
-          bottom: 50,
-          opacity: 0.6,
+          bottom: 0,
+          opacity: 0.8,
           zIndex: 0,
         }}
       />

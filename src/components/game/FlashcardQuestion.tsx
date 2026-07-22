@@ -13,6 +13,21 @@ interface FlashcardQuestionProps {
   onSelect: (option: string) => void;
 }
 
+// Подбираем размер шрифта под длину иероглифа,
+// чтобы он всегда помещался в 1 строку
+const getHanziFontSize = (length: number) => {
+  if (length <= 2) return 84;
+  if (length === 3) return 68;
+  if (length === 4) return 56;
+  if (length === 5) return 46;
+  if (length === 6) return 40;
+  return 34; // 7+ символов
+};
+
+// Фиксированная высота блока с иероглифом + пиньинем,
+// чтобы низ карточки (вопрос, варианты) никогда не "прыгал"
+const HANZI_BLOCK_HEIGHT = 180;
+
 export function FlashcardQuestion({
   hanzi,
   pinyin,
@@ -23,15 +38,22 @@ export function FlashcardQuestion({
   onSelect,
 }: FlashcardQuestionProps) {
   const { t } = useTranslation();
+  const hanziFontSize = getHanziFontSize(hanzi.length);
 
   return (
     <View className="flex-col gap-5">
-      <View className="py-10">
+      <View
+        style={{ height: HANZI_BLOCK_HEIGHT }}
+        className="justify-center items-center"
+      >
         <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.4}
           className="text-text mb-4"
           style={{
-            lineHeight: 100,
-            fontSize: 84,
+            lineHeight: hanziFontSize * 1.2,
+            fontSize: hanziFontSize,
             textAlign: "center",
             fontFamily: "NotoSansSC",
           }}

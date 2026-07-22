@@ -1,25 +1,30 @@
-// types/progress.ts
+export type WordProgress = {
+  wordId: string;
 
-export interface GameState {
+  correctAnswers: number;
+  incorrectAnswers: number;
+
+  mastery: 0 | 1 | 2 | 3 | 4 | 5;
+
+  lastAnsweredAt: number;
+};
+
+export type FlashcardSetProgress = {
+  bestScore: number;
+  totalQuestions: number;
+  accuracy: number;
+  bestTime: number;
+  completedAt: number;
+};
+
+export type GameState = {
   user: {
     level: number;
     xp: number;
-
-    learnedWords: string[];
   };
 
   flashcards: {
-    levels: Record<string, FlashcardLevelStats>;
+    sets: Record<string, FlashcardSetProgress>;
+    words: Record<string, WordProgress>;
   };
-}
-
-export interface FlashcardLevelStats {
-  bestScore: number;
-  totalQuestions: number;
-
-  accuracy: number;
-
-  bestTime: number;
-
-  completedAt: number;
-}
+};
