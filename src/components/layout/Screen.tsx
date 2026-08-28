@@ -6,11 +6,12 @@ export const Screen = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <View
+      className="relative"
       style={{
         flex: 1,
-        paddingTop: insets.top,
+        paddingTop: insets.top + 16,
         paddingHorizontal: 16,
-        paddingBottom: insets.bottom,
+        paddingBottom: 16,
       }}
     >
       {children}

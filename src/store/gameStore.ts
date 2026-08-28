@@ -3,6 +3,7 @@
 import { create } from "zustand";
 
 export interface FlashcardQuestionResult {
+  vocabularyId: string;
   hanzi: string;
   pinyin: string;
   translation: string;

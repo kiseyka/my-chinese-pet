@@ -1,4 +1,5 @@
 // BrushProgressCircle.tsx
+import { colors } from "@/theme/colors";
 import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import Animated, {
@@ -31,8 +32,8 @@ export const BrushProgressCircle: React.FC<BrushProgressCircleProps> = ({
   percentage,
   size = 140,
   strokeWidth = 12,
-  progressColor = "#A03927",
-  backgroundColor = "#E2D9CD",
+  progressColor = colors.primary,
+  backgroundColor = colors.progress.inactive,
   showPercentage = true,
   label = "Точность",
   animationDuration = 1500,
@@ -89,7 +90,7 @@ export const BrushProgressCircle: React.FC<BrushProgressCircleProps> = ({
         viewBox={`0 0 ${size} ${size}`}
         style={{ transform: [{ rotate: "-90deg" }] }}
       >
-        {/* 1. Базовый серо-бежевый круг (незаполненный) */}
+        {/* 1. Базовый круг (незаполненный) */}
         <Circle
           cx={center}
           cy={center}
@@ -99,7 +100,7 @@ export const BrushProgressCircle: React.FC<BrushProgressCircleProps> = ({
           strokeWidth={strokeWidth}
         />
 
-        {/* 2. Активный графитовый круг (заполняющийся) */}
+        {/* 2. Активный круг (заполняющийся) */}
         <AnimatedCircle
           cx={center}
           cy={center}
