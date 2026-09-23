@@ -69,7 +69,7 @@ export default function GeneralStatsScreen() {
               <View className="flex-row items-center">
                 <Image
                   style={{ width: 30, height: 30, opacity: 0.7 }}
-                  source={require("@/assets/images/coins.png")}
+                  source={require("@/assets/images/coin.png")}
                   resizeMode="contain"
                 />
                 <Text className="text-sm text-center">Получено</Text>

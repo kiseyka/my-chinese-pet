@@ -6,12 +6,12 @@ export const Screen = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <View
-      className="relative"
+      className="relative bg-background"
       style={{
         flex: 1,
-        paddingTop: insets.top + 16,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
         paddingHorizontal: 16,
-        paddingBottom: 16,
       }}
     >
       {children}

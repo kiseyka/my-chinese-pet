@@ -6,7 +6,7 @@ module.exports = {
     extend: {
       colors: {
         // Основной фон (светло-бежевый/кремовый)
-        background: "#F4F0E9",
+        background: "#EDE0CE",
 
         // Фон подложек (карточки, модалки) — чистый белый
         surface: "#FFFFFF",

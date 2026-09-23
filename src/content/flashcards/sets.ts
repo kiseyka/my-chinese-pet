@@ -23,7 +23,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.greetings",
     xpReward: 10,
     words: greetings,
-    image: require("@/assets/images/sets/greetings.png"),
   },
   {
     id: "numbers",
@@ -31,7 +30,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.numbers",
     xpReward: 10,
     words: numbers,
-    image: require("@/assets/images/sets/numbers.png"),
   },
   {
     id: "family",
@@ -39,7 +37,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.family",
     xpReward: 10,
     words: family,
-    image: require("@/assets/images/sets/family.png"),
   },
   {
     id: "animals",
@@ -47,7 +44,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.animals",
     xpReward: 10,
     words: animals,
-    image: require("@/assets/images/sets/animals.png"),
   },
   {
     id: "food",
@@ -55,7 +51,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.food",
     xpReward: 10,
     words: food,
-    image: require("@/assets/images/sets/food.png"),
   },
   {
     id: "clothing",
@@ -63,7 +58,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.clothing",
     xpReward: 10,
     words: clothing,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "weather",
@@ -71,7 +65,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.weather",
     xpReward: 10,
     words: weather,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "colors",
@@ -79,7 +72,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.colors",
     xpReward: 10,
     words: colors,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "transportation",
@@ -87,7 +79,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.transportation",
     xpReward: 10,
     words: transportation,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "house",
@@ -95,7 +86,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.house",
     xpReward: 10,
     words: house,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "body",
@@ -103,7 +93,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.body",
     xpReward: 10,
     words: body,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "hobbies",
@@ -111,7 +100,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.hobbies",
     xpReward: 10,
     words: hobbies,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "time",
@@ -119,7 +107,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.time",
     xpReward: 10,
     words: time,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "professions",
@@ -127,7 +114,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.professions",
     xpReward: 10,
     words: professions,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "places",
@@ -135,7 +121,6 @@ export const practiceSets: PracticeSet[] = [
     description: "description.places",
     xpReward: 10,
     words: places,
-    image: require("@/assets/images/sets/clothing.png"),
   },
   {
     id: "directions",
@@ -143,6 +128,5 @@ export const practiceSets: PracticeSet[] = [
     description: "description.directions",
     xpReward: 10,
     words: directions,
-    image: require("@/assets/images/sets/clothing.png"),
   },
 ];

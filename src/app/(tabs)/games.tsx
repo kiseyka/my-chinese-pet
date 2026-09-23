@@ -102,17 +102,13 @@ export default function GamesScreen() {
                         </View>
                       ) : (
                         <View>
-                          <Image
+                          {/* <Image
                             className="absolute bottom-0 right-0"
                             source={require("@/assets/images/bg-arrow.png")}
                             style={{ width: 120, height: 90 }}
-                          />
+                          /> */}
                           <View className="pr-3 mb-3">
-                            <NextIcon
-                              width={22}
-                              height={22}
-                              color={colors.surface}
-                            />
+                            <NextIcon width={22} height={22} />
                           </View>
                         </View>
                       )}

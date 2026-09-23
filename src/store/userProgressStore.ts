@@ -14,11 +14,12 @@ interface UserProgressState {
 
   addXp: (amount: number) => void;
   addCoins: (amount: number) => void;
+  spendCoins: (amount: number) => boolean;
 }
 
 export const useProgressStore = create<UserProgressState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       xp: 0,
       coins: 0,
       level: 1,
@@ -30,6 +31,19 @@ export const useProgressStore = create<UserProgressState>()(
         }),
 
       addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
+
+      // Списывает монеты, если хватает. Возвращает true при успехе,
+      // false — если монет недостаточно (ничего не списывает).
+      // Проверка внутри store, а не снаружи через coins < price —
+      // так нет гонки между чтением coins в UI и вызовом set().
+      spendCoins: (amount) => {
+        const currentCoins = get().coins;
+        if (currentCoins < amount) {
+          return false;
+        }
+        set({ coins: currentCoins - amount });
+        return true;
+      },
     }),
     {
       name: "user_progress",

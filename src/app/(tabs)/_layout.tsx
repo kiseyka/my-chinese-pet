@@ -1,6 +1,3 @@
-import PandaIcon from "@/assets/images/tab-icons/house.svg";
-import UserIcon from "@/assets/images/tab-icons/user-icon.svg";
-import VocabularyIcon from "@/assets/images/tab-icons/vocabulary.svg";
 import { colors } from "@/theme/colors";
 import { useFonts } from "expo-font";
 import { Tabs, usePathname } from "expo-router";
@@ -10,11 +7,6 @@ import "../../i18n";
 
 export default function TabLayout() {
   const pathname = usePathname();
-
-  const hideTabBar =
-    (pathname.startsWith("/games/flashcards/") &&
-      pathname !== "/games/flashcards/sets") ||
-    pathname === "/games/stats";
 
   const insets = useSafeAreaInsets();
   const [loaded] = useFonts({
@@ -34,11 +26,11 @@ export default function TabLayout() {
         sceneStyle: { backgroundColor: colors.background },
         tabBarShowLabel: false,
         tabBarStyle: {
-          display: hideTabBar ? "none" : "flex",
+          display: "none",
           backgroundColor: colors.background,
           borderTopWidth: 1,
           borderColor: colors.border,
-          height: 60 + insets.bottom,
+          height: 50 + insets.bottom,
           paddingBottom: insets.bottom,
         },
         tabBarItemStyle: {
@@ -54,9 +46,6 @@ export default function TabLayout() {
         name="pet"
         options={{
           headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <PandaIcon width={30} height={30} color={color} strokeWidth={1} />
-          ),
         }}
       />
 
@@ -71,14 +60,6 @@ export default function TabLayout() {
         name="vocabulary"
         options={{
           headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <VocabularyIcon
-              width={30}
-              height={30}
-              color={color}
-              strokeWidth={1}
-            />
-          ),
         }}
       />
 
@@ -86,9 +67,6 @@ export default function TabLayout() {
         name="profile"
         options={{
           headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <UserIcon width={30} height={30} color={color} strokeWidth={1} />
-          ),
         }}
       />
 
@@ -108,6 +86,13 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="games/flashcards/[setId]"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="shop"
         options={{
           href: null,
           headerShown: false,

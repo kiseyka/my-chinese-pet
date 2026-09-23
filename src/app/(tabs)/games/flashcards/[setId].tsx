@@ -21,9 +21,7 @@ export default function LevelGameScreen() {
 
   const {
     practiceSet,
-    questions,
     currentQuestion,
-    currentIndex,
     selected,
     isAnswered,
     progressPercent,
