@@ -1,4 +1,3 @@
-// src/@types/assets.d.ts
 declare module "*.png" {
   const value: any;
   export default value;
@@ -22,4 +21,9 @@ declare module "*.gif" {
 declare module "*.svg" {
   const content: any;
   export default content;
+}
+
+declare module "*.riv" {
+  const value: any;
+  export default value;
 }

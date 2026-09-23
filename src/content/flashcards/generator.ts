@@ -26,6 +26,7 @@ export function generateQuiz(words: Word[]): QuizQuestion[] {
     const options = shuffle([word.translation, ...wrongAnswers]);
 
     return {
+      vocabularyId: word.vocabularyId,
       id: word.id,
       hanzi: word.hanzi,
       pinyin: word.pinyin,

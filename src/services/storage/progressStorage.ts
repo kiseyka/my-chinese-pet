@@ -1,13 +1,18 @@
 import { practiceSets } from "@/content/flashcards/sets";
-import { GameState, WordProgress } from "@/types/progress";
+import { useProgressStore } from "@/store/userProgressStore";
+import {
+  GameState,
+  MasteryBucket,
+  SkillProgress,
+  WordProgress,
+} from "@/types/progress";
+import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface CompleteFlashcardSetParams {
   setId: string;
-
   score: number;
   totalQuestions: number;
-
   duration: number;
 }
 
@@ -15,12 +20,14 @@ const STORAGE_KEY = "game_progress";
 
 const createDefaultProgress = (): GameState => ({
   user: {
-    level: 1,
     xp: 0,
   },
 
   flashcards: {
     sets: {},
+    words: {},
+  },
+  vocabulary: {
     words: {},
   },
 });
@@ -36,9 +43,27 @@ export async function loadProgress(): Promise<GameState> {
     return createDefaultProgress();
   }
 
-  return JSON.parse(saved);
-}
+  const progress = JSON.parse(saved) as GameState;
 
+  return {
+    ...createDefaultProgress(),
+    ...progress,
+
+    flashcards: {
+      ...createDefaultProgress().flashcards,
+      ...progress.flashcards,
+    },
+
+    vocabulary: {
+      ...createDefaultProgress().vocabulary,
+      ...progress.vocabulary,
+      words: {
+        ...createDefaultProgress().vocabulary.words,
+        ...progress.vocabulary?.words,
+      },
+    },
+  };
+}
 export async function resetProgress() {
   await AsyncStorage.removeItem(STORAGE_KEY);
 }
@@ -63,7 +88,6 @@ export async function completeFlashcardSet({
   const previous = progress.flashcards.sets[setId];
 
   if (!previous) {
-    // Первый раз прошёл сет
     progress.flashcards.sets[setId] = {
       bestScore: score,
       totalQuestions,
@@ -71,11 +95,7 @@ export async function completeFlashcardSet({
       bestTime: duration,
       completedAt: Date.now(),
     };
-
-    // XP начисляем только за первое прохождение
-    progress.user.xp += practiceSet.xpReward;
   } else {
-    // Повторное прохождение
     previous.bestScore = Math.max(previous.bestScore, score);
     previous.accuracy = Math.max(previous.accuracy, accuracy);
 
@@ -86,49 +106,125 @@ export async function completeFlashcardSet({
     previous.completedAt = Date.now();
   }
 
+  // xp начисляется за каждое прохождение, независимо от рекордов
+  useProgressStore.getState().addXp(score);
+  useProgressStore.getState().addCoins(calculateCoinsEarned(accuracy));
+
   await saveProgress(progress);
 
   return progress;
 }
 
+function applySkillAnswer(
+  skill: SkillProgress,
+  isCorrect: boolean,
+): SkillProgress {
+  if (isCorrect) {
+    return {
+      ...skill,
+      correctAnswers: skill.correctAnswers + 1,
+      streak: Math.min(skill.streak + 1, 3),
+    };
+  }
+
+  // Ошибка. Если навык уже освоен (streak === 3) — не откатываем.
+  const nextStreak = skill.streak === 3 ? 3 : Math.max(skill.streak - 1, 0);
+
+  return {
+    ...skill,
+    incorrectAnswers: skill.incorrectAnswers + 1,
+    streak: nextStreak,
+  };
+}
+
 export async function updateWordProgress({
   wordId,
+  skill, // 'reading' | 'writing'
   isCorrect,
 }: {
   wordId: string;
+  skill: "reading" | "writing";
   isCorrect: boolean;
 }) {
   const progress = await loadProgress();
+  const previous = progress.flashcards.words[wordId] ?? {
+    wordId,
+    reading: { streak: 0, correctAnswers: 0, incorrectAnswers: 0 },
+    writing: { streak: 0, correctAnswers: 0, incorrectAnswers: 0 },
+    lastAnsweredAt: Date.now(),
+  };
 
-  const previous = progress.flashcards.words[wordId];
+  const updated: WordProgress = {
+    ...previous,
+    [skill]: applySkillAnswer(previous[skill], isCorrect),
+    lastAnsweredAt: Date.now(),
+  };
+
+  progress.flashcards.words[wordId] = updated;
+  await saveProgress(progress);
+
+  return updated;
+}
+
+export function getMasteryBucket(
+  progress: WordProgress | undefined,
+  isKnown: boolean,
+): MasteryBucket {
+  if (isKnown) return "learned";
+  if (!progress) return "seen";
+
+  const { reading, writing } = progress;
+
+  if (reading.streak === 3 && writing.streak === 3) return "learned";
+  if (reading.streak > 0 || writing.streak > 0) return "recognizing";
+  return "seen";
+}
+export async function updateVocabularyWordProgress({
+  wordId,
+  isFavorite,
+  isKnown,
+}: {
+  wordId: string;
+  isFavorite?: boolean;
+  isKnown?: boolean;
+}) {
+  const progress = await loadProgress();
+
+  const previous = progress.vocabulary.words[wordId];
 
   if (!previous) {
-    progress.flashcards.words[wordId] = {
-      wordId,
-      correctAnswers: isCorrect ? 1 : 0,
-      incorrectAnswers: isCorrect ? 0 : 1,
-      mastery: isCorrect ? 1 : 0,
-      lastAnsweredAt: Date.now(),
+    progress.vocabulary.words[wordId] = {
+      isFavorite: isFavorite ?? false,
+      isKnown: isKnown ?? false,
     };
   } else {
-    if (isCorrect) {
-      previous.correctAnswers += 1;
-      previous.mastery = Math.min(
-        previous.mastery + 1,
-        5,
-      ) as WordProgress["mastery"];
-    } else {
-      previous.incorrectAnswers += 1;
-      previous.mastery = Math.max(
-        previous.mastery - 1,
-        0,
-      ) as WordProgress["mastery"];
+    if (isFavorite !== undefined) {
+      previous.isFavorite = isFavorite;
     }
 
-    previous.lastAnsweredAt = Date.now();
+    if (isKnown !== undefined) {
+      previous.isKnown = isKnown;
+    }
   }
 
   await saveProgress(progress);
 
-  return progress.flashcards.words[wordId];
+  return progress.vocabulary.words[wordId];
+}
+
+export async function toggleFavorite(wordId: string) {
+  const progress = await loadProgress();
+
+  const previous = progress.vocabulary.words[wordId];
+
+  const updated = {
+    isFavorite: !(previous?.isFavorite ?? false),
+    isKnown: previous?.isKnown ?? false,
+  };
+
+  progress.vocabulary.words[wordId] = updated;
+
+  await saveProgress(progress);
+
+  return updated;
 }

@@ -1,30 +1,27 @@
-// app/(tabs)/games/flashcards/[levelId].tsx
+// app/(tabs)/games/flashcards/[setsId].tsx
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
 import { GameHeader } from "@/components/game/GameHeader";
 import { Screen } from "@/components/layout/Screen";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useFlashcardGame } from "@/hooks/useFlashcardGame";
+import { useSettingsStore } from "@/store/settingsStore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, Text, View, useWindowDimensions } from "react-native";
+import { Text, View } from "react-native";
 
 export default function LevelGameScreen() {
   const router = useRouter();
-
+  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
   const { setId } = useLocalSearchParams<{
     setId: string;
   }>();
 
-  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
-
-  const { width, height } = useWindowDimensions();
+  const showPinyin = useSettingsStore((s) => s.showPinyin);
 
   const {
     practiceSet,
-    questions,
     currentQuestion,
-    currentIndex,
     selected,
     isAnswered,
     progressPercent,
@@ -43,19 +40,6 @@ export default function LevelGameScreen() {
 
   return (
     <View className="flex-1 relative w-full h-full">
-      <Image
-        source={require("@/assets/images/bg/game-1.png")}
-        resizeMode="cover"
-        style={{
-          position: "absolute",
-          width,
-          height,
-          bottom: 0,
-          opacity: 0.8,
-          zIndex: 0,
-        }}
-      />
-
       <Screen>
         <ConfirmModal
           isVisible={isExitModalVisible}
@@ -68,8 +52,6 @@ export default function LevelGameScreen() {
 
         <GameHeader
           progress={progressPercent}
-          currentQuestion={currentIndex + 1}
-          totalQuestions={questions.length}
           onExit={() => setIsExitModalVisible(true)}
         />
 
@@ -80,6 +62,7 @@ export default function LevelGameScreen() {
           correctAnswer={currentQuestion.correctAnswer}
           selected={selected}
           isAnswered={isAnswered}
+          showPinyin={showPinyin}
           onSelect={handleSelect}
         />
       </Screen>

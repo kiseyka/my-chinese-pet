@@ -8,6 +8,7 @@ import {
   updateWordProgress,
 } from "@/services/storage/progressStorage";
 import { useGameStore } from "@/store/gameStore";
+import { usePandaStore } from "@/store/pandaStore";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 interface UseFlashcardGameProps {
@@ -22,6 +23,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
 
   const score = useGameStore((s) => s.score);
   const startTime = useGameStore((s) => s.startTime);
+  const results = useGameStore((s) => s.results);
 
   const startGame = useGameStore((s) => s.startGame);
   const answerQuestion = useGameStore((s) => s.answerQuestion);
@@ -79,11 +81,17 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       duration,
     });
 
+    usePandaStore.getState().setPendingTrainingResult({
+      type: "flashcards_completed",
+      score,
+      total: questions.length,
+      results,
+    });
+
     router.replace({
       pathname: "/games/stats",
       params: {
         gameId: "flashcards",
-        xp: practiceSet.xpReward,
       },
     });
   };
@@ -119,13 +127,16 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
     const isCorrect = option === currentQuestion.correctAnswer;
 
     answerQuestion({
+      vocabularyId: currentQuestion.vocabularyId,
       hanzi: currentQuestion.hanzi,
       pinyin: currentQuestion.pinyin,
       translation: currentQuestion.correctAnswer,
       isCorrect,
     });
+
     await updateWordProgress({
       wordId: currentQuestion.id,
+      skill: "reading",
       isCorrect,
     });
 
@@ -133,7 +144,6 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       handleAnswer();
     }, 600);
   };
-
   const progressPercent =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 

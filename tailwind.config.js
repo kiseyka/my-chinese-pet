@@ -5,31 +5,37 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#F7F4ED",
-        backgroundPrimary: "#B54230",
+        // Основной фон (светло-бежевый/кремовый)
+        background: "#EDE0CE",
 
-        primary: "#A03927",
-        // primary: "#7D2619",
-        primaryDark: "#5E1D13",
+        // Фон подложек (карточки, модалки) — чистый белый
+        surface: "#FFFFFF",
 
-        text: "#3C3730",
-        textSecondary: "#E2D9CD",
+        // Основной оливково-серый цвет (используется для активных кнопок, прогресс-бара, активных иконок)
+        primary: "#9EA792",
+        primaryDark: "#78826D", // Для нажатых состояний
 
-        border: "#B5AD9F",
+        // Текстовые цвета
+        text: "#4A4A4A", // Основной текст (темно-серый, почти черный)
+        textSecondary: "#A3A3A3", // Вторичный текст (серый, для подписей и неактивных элементов)
 
+        // Цвета границ и разделителей (очень светлый бежевый)
+        border: "#E5E0D8",
+
+        // Акценты (цвета кнопок внизу)
+        accentOlive: "#B2B8A5", // Кнопка "ТРЕНИРОВКИ" (оливковая)
+        accentBeige: "#EBDCC5", // Кнопка "МАГАЗИН" (бежевая)
+
+        // Прогресс-бар
         progress: {
-          active: "#B54230",
-          inactive: "#BDB4A0",
+          active: "#9EA792", // Заливка (оливковый)
+          inactive: "#DCD6CC", // Пустая часть
         },
-
-        // success: "#4A7C59",
-        // error: "#B54230",
       },
       fontFamily: {
         nunito: ["NunitoRegular"],
         nunitoMedium: ["NunitoMedium"],
         nunitoBold: ["NunitoBold"],
-
         chinese: ["NotoSansSC"],
         chineseMedium: ["NotoSansSCMedium"],
         chineseBold: ["NotoSansSCBold"],

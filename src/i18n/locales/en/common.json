@@ -1,0 +1,17 @@
+{
+    "games": {
+        "title": "Trainings",
+        "tones": {
+            "title": "Tones",
+            "description": "Writing characters"
+        },
+        "writting": {
+            "title": "Character Writing",
+            "description": "Learn to write characters correctly"
+        },
+        "Flashcards": {
+            "title": "Flashcards",
+            "description": "Learn Chinese characters with flashcards"
+        }
+    }
+}

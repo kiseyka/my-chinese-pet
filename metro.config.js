@@ -11,7 +11,7 @@ config.resolver.assetExts = config.resolver.assetExts.filter(
 );
 
 config.resolver.sourceExts.push("svg");
-
+config.resolver.assetExts.push("riv");
 module.exports = withNativeWind(config, {
   input: "./src/global.css",
 });
