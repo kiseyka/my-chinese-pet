@@ -7,7 +7,7 @@ import {
 } from "@/content/roomInputMaps";
 import { useApplyRiveInputs } from "@/hooks/useApplyRiveInputs";
 import { View, ViewStyle } from "react-native";
-import Rive, { Fit } from "rive-react-native";
+import Rive, { Alignment, Fit } from "rive-react-native";
 
 interface PandaScenePreviewProps {
   previewCabinetType: CabinetType;
@@ -27,6 +27,7 @@ export const PandaScenePreview = ({
 
   return (
     <View
+      className="border border-primary rounded-lg"
       style={[{ position: "absolute", inset: 0, overflow: "hidden" }, style]}
     >
       <Rive
@@ -35,6 +36,7 @@ export const PandaScenePreview = ({
         artboardName="background 5"
         stateMachineName="State Machine 1"
         fit={Fit.Contain}
+        alignment={Alignment.TopCenter}
         style={{ position: "absolute", inset: 0 }}
         onPlay={onPlay}
       />

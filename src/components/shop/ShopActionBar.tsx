@@ -15,7 +15,7 @@ export const ShopActionBar = ({
   onBuy,
 }: ShopActionBarProps) => {
   return (
-    <View className="flex-row gap-3 px-4 pt-4 pb-4">
+    <View className="flex-row gap-3 pt-4 pb-4">
       <Pressable
         onPress={onCancel}
         className="flex-1 items-center py-3 rounded-2xl border border-[#D8C3A3] bg-[#F3E5D0]"

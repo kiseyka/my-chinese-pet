@@ -23,12 +23,6 @@ export const ShopProductList = ({
         flex: 1,
       }}
     >
-      <View className="flex-row items-center gap-2 mb-2">
-        <Text className="font-nunito text-base text-text" numberOfLines={1}>
-          {categoryLabel}
-        </Text>
-      </View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

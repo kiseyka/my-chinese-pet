@@ -13,57 +13,49 @@ export const ShopProductCard = ({
   isSelected,
   onPress,
 }: ShopProductCardProps) => {
+  const isOwned = product.owned;
   const isEquipped = product.owned && product.equipped;
 
   return (
     <Pressable
       onPress={() => onPress(product.id)}
-      className={`rounded-2xl border-2 overflow-hidden bg-[#F8EFDF] ${
-        isSelected ? "border-primary" : "border-[#D8C3A3]"
-      }`}
+      className={`
+        rounded-lg
+        border
+        overflow-hidden
+        bg-[#F8EFDF]
+        ${isSelected ? "border-primary" : "border-[#D8C3A3]"}
+      `}
     >
-      {/* Название */}
-      <View className="px-2.5 pt-2 pb-1.5">
-        <Text className="font-nunito text-xs text-text" numberOfLines={1}>
-          {product.name}
-        </Text>
-      </View>
-
-      {/* Изображение */}
       <View
-        className="items-center justify-center bg-[#EFE2CB]"
-        style={{ height: 90 }}
+        className="items-center justify-start bg-[#EFE2CB]"
+        style={{ aspectRatio: 1, width: "100%" }}
       >
         <Image
           source={product.image}
-          style={{ width: "75%", height: "85%" }}
+          style={{ width: "100%", height: "100%" }}
           resizeMode="contain"
         />
 
+        {/* Цена — только для ещё не купленных */}
+        {!isOwned && (
+          <View className="absolute top-2 right-2 flex items-center">
+            <Image
+              source={require("@/assets/images/paw-coin.png")}
+              className="w-5 h-5"
+            />
+            <Text className="font-nunito text-sm text-text">
+              {product.price}
+            </Text>
+          </View>
+        )}
+
+        {/* Галочка — только для установленного */}
         {isEquipped && (
-          <View className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary items-center justify-center">
+          <View className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary items-center justify-center">
             <Text className="text-white text-xs">✓</Text>
           </View>
         )}
-      </View>
-
-      {/* Цена / статус */}
-      <View className="p-2">
-        <View className="items-center py-1.5 rounded-xl bg-[#EFE2CB]">
-          {isEquipped ? (
-            <Text className="font-nunito text-[10px] text-[#5C7355]">
-              Установлен
-            </Text>
-          ) : product.owned ? (
-            <Text className="font-nunito text-[10px] text-[#967F67]">
-              Применить
-            </Text>
-          ) : (
-            <Text className="font-nunito text-[10px] text-[#967F67]">
-              🪙 {product.price}
-            </Text>
-          )}
-        </View>
       </View>
     </Pressable>
   );

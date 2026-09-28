@@ -44,14 +44,8 @@ const ShopScreen = () => {
           />
         )}
       </View>
-      <View className="flex-row mt-2 gap-3 flex-1">
-        <View
-          style={{
-            flex: 1.85,
-            height: "100%",
-            alignSelf: "flex-start",
-          }}
-        >
+      <View className="flex-row gap-1 flex-1 mt-4">
+        <View style={{ flex: 3.35 }}>
           <PandaScenePreview
             previewCabinetType={previewCabinetType}
             previewPosterType={previewPosterType}
