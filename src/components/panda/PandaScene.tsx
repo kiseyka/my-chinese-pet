@@ -1,60 +1,41 @@
 // src/components/panda/PandaScene.tsx
+import { CABINET_TYPE_MAP, POSTER_TYPE_MAP } from "@/content/roomInputMaps";
+import { useApplyRiveInputs } from "@/hooks/useApplyRiveInputs";
 import { useRoomStore } from "@/store/roomStore";
-import { useEffect, useRef, useState } from "react";
 import { View, ViewStyle } from "react-native";
-import Rive, { Alignment, Fit, RiveRef } from "rive-react-native";
-
-type CabinetType = "stand" | "wardrobe";
-
-const CABINET_TYPE_MAP: Record<CabinetType, number> = {
-  stand: 0,
-  wardrobe: 1,
-};
+import Rive, { Fit } from "rive-react-native";
 
 interface PandaSceneProps {
   style?: ViewStyle;
 }
 
 export const PandaScene = ({ style }: PandaSceneProps) => {
-  const riveRef = useRef<RiveRef>(null);
-  const [isRiveReady, setIsRiveReady] = useState(false);
   const cabinetType = useRoomStore((s) => s.cabinetType);
+  const posterType = useRoomStore((s) => s.posterType);
 
-  // Применяем input, как только Rive реально готов,
-  // и повторно — при каждой смене cabinetType в сторе.
-  useEffect(() => {
-    if (!isRiveReady) return;
-
-    riveRef.current?.setInputState(
-      "State Machine 1",
-      "cabinet_type",
-      CABINET_TYPE_MAP[cabinetType],
-    );
-  }, [cabinetType, isRiveReady]);
+  const { riveRef, onPlay } = useApplyRiveInputs("State Machine 1", {
+    cabinet_type: CABINET_TYPE_MAP[cabinetType],
+    poster_type: POSTER_TYPE_MAP[posterType],
+  });
 
   return (
     <View
-      style={[
-        {
-          position: "absolute",
-          left: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          overflow: "hidden",
-        },
-        style,
-      ]}
+      style={[{ position: "absolute", inset: 0, overflow: "hidden" }, style]}
     >
       <Rive
         ref={riveRef}
-        source={require("@/assets/motion/panda03.riv")}
+        source={require("@/assets/motion/bg_03.riv")}
+        artboardName="background 3"
         stateMachineName="State Machine 1"
-        artboardName="background 2"
         fit={Fit.Fill}
-        alignment={Alignment.Center}
-        style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}
-        onPlay={() => setIsRiveReady(true)}
+        style={{ position: "absolute", inset: 0 }}
+        onPlay={onPlay}
+      />
+      <Rive
+        source={require("@/assets/motion/panda_01.riv")}
+        stateMachineName="State Machine 1"
+        fit={Fit.Fill}
+        style={{ position: "absolute", inset: 0, zIndex: 100 }}
       />
     </View>
   );

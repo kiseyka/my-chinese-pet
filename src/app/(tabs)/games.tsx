@@ -2,6 +2,7 @@ import NextIcon from "@/assets/images/icons/arrow-right.svg";
 import LockIcon from "@/assets/images/icons/lock-keyhole.svg";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
+import { Title } from "@/components/ui/Title";
 import { colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -42,9 +43,7 @@ export default function GamesScreen() {
       <View className="w-full gap-10">
         <View className="flex-row w-full justify-between items-center">
           <BackButton href="/" />
-          <Text className="text-3xl font-nunito self-center">
-            {t("games.title")}
-          </Text>
+          <Title>{t("games.title")}</Title>
           <View className="w-10" />
         </View>
 

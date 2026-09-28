@@ -1,5 +1,6 @@
 // src/screens/PandaScreen.tsx
 
+import { CoinBalance } from "@/components/CoinBalance";
 import { Screen } from "@/components/layout/Screen";
 import { PandaScene } from "@/components/panda/PandaScene";
 import { NavIconButton } from "@/components/ui/NavIconButton";
@@ -8,7 +9,7 @@ import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const PandaScreen = () => {
@@ -59,18 +60,7 @@ const PandaScreen = () => {
         </View>
 
         {/* Правая колонка: монеты */}
-        <View className="flex-col items-center gap-1">
-          <View className="flex-row items-center gap-1">
-            <Image
-              style={{ width: 30, height: 30, opacity: 0.7 }}
-              source={require("@/assets/images/coin.png")}
-              resizeMode="contain"
-            />
-            <Text className="font-nunito text-xl text-text" numberOfLines={1}>
-              {coins}
-            </Text>
-          </View>
-        </View>
+        <CoinBalance />
       </View>
 
       {/* Сцена с пандой — на весь экран под шапкой. Раньше тут была
