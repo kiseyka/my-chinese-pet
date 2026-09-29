@@ -6,7 +6,7 @@ import { Screen } from "@/components/layout/Screen";
 import { BrushProgressCircle } from "@/components/ui/BrushProgressCircle";
 import { WordCard } from "@/components/ui/WordCard";
 import { useGameStore } from "@/store/gameStore";
-import { useVocabularyStore } from "@/store/vocabularyStore";
+import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
 import { formatDuration } from "@/utils/formatDuration";
@@ -19,8 +19,8 @@ export default function GeneralStatsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
 
-  const progress = useVocabularyStore((s) => s.progress);
-  const toggleFavorite = useVocabularyStore((s) => s.toggleFavorite);
+  const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
+  const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
 
   const { xp } = useLocalSearchParams<{ xp: string }>();
   const earnedXp = Number(xp);
@@ -123,8 +123,7 @@ export default function GeneralStatsScreen() {
                 {showWrongAnswers && (
                   <View className="flex-col gap-2">
                     {wrongAnswers.map((item) => {
-                      const wordProgress =
-                        progress?.vocabulary.words[item.vocabularyId];
+                      const wordProgress = vocabularyWords[item.vocabularyId];
 
                       return (
                         <WordCard

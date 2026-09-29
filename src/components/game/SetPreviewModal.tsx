@@ -1,9 +1,10 @@
 // components/game/SetPreviewModal.tsx
 import { MasteryBar } from "@/components/game/MasteryBar";
 import { WordCard } from "@/components/ui/WordCard";
-import { getMasteryBucket } from "@/services/storage/progressStorage";
-import { useVocabularyStore } from "@/store/vocabularyStore";
-import { GameState } from "@/types/progress";
+import {
+  getMasteryBucket,
+  useWordProgressStore,
+} from "@/store/wordProgressStore";
 import { useTranslation } from "react-i18next";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,7 +27,6 @@ type PracticeSet = {
 type SetPreviewModalProps = {
   visible: boolean;
   practiceSet: PracticeSet | null;
-  progress: GameState | null;
   onStart: () => void;
   onClose: () => void;
 };
@@ -34,26 +34,25 @@ type SetPreviewModalProps = {
 export const SetPreviewModal = ({
   visible,
   practiceSet,
-  progress,
   onStart,
   onClose,
 }: SetPreviewModalProps) => {
   const { t } = useTranslation(["sets"]);
   const insets = useSafeAreaInsets();
-  const vocabularyProgress = useVocabularyStore(
-    (state) => state.progress?.vocabulary,
-  );
 
-  const toggleFavorite = useVocabularyStore((state) => state.toggleFavorite);
+  const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
+  const vocabularyWords = useWordProgressStore(
+    (state) => state.vocabularyWords,
+  );
+  const toggleFavorite = useWordProgressStore((state) => state.toggleFavorite);
 
   if (!practiceSet) return null;
 
   const words = practiceSet.words;
 
   const wordEntries = words.map((word) => {
-    const skillProgress = progress?.flashcards?.words?.[word.vocabularyId];
-
-    const vocabWordProgress = vocabularyProgress?.words?.[word.vocabularyId];
+    const skillProgress = flashcardWords[word.vocabularyId];
+    const vocabWordProgress = vocabularyWords[word.vocabularyId];
 
     return {
       word,
@@ -61,6 +60,7 @@ export const SetPreviewModal = ({
       bucket: getMasteryBucket(
         skillProgress,
         vocabWordProgress?.isKnown ?? false,
+        ["reading"],
       ),
     };
   });
@@ -113,11 +113,6 @@ export const SetPreviewModal = ({
               total: words.length,
             })}
           </Text>
-
-          {/* Как повысить прогресс */}
-          {/* <View className="bg-text/5 rounded-xl p-3 mb-4">
-            <Text className="text-text text-xs">{t("sets.howToImprove")}</Text>
-          </View> */}
 
           {/* Список слов */}
           <ScrollView showsVerticalScrollIndicator={false} className="mb-4">

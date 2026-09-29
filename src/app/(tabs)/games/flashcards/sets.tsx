@@ -5,8 +5,10 @@ import { SetPreviewModal } from "@/components/game/SetPreviewModal";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { practiceSets } from "@/content/flashcards/sets";
-import { getMasteryBucket } from "@/services/storage/progressStorage"; // путь поправь под своё расположение
-import { useVocabularyStore } from "@/store/vocabularyStore";
+import {
+  getMasteryBucket,
+  useWordProgressStore,
+} from "@/store/wordProgressStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,7 +17,12 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 export default function PracticeSetsScreen() {
   const { t } = useTranslation(["sets"]);
   const router = useRouter();
-  const progress = useVocabularyStore((state) => state.progress);
+
+  const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
+  const vocabularyWords = useWordProgressStore(
+    (state) => state.vocabularyWords,
+  );
+
   const [selectedSet, setSelectedSet] = useState<
     (typeof practiceSets)[number] | null
   >(null);
@@ -37,7 +44,6 @@ export default function PracticeSetsScreen() {
       <SetPreviewModal
         visible={!!selectedSet}
         practiceSet={selectedSet}
-        progress={progress}
         onClose={() => setSelectedSet(null)}
         onStart={() => {
           if (!selectedSet) return;
@@ -59,15 +65,13 @@ export default function PracticeSetsScreen() {
             const words = practiceSet.words;
 
             const buckets = words.map((word) => {
-              const skillProgress =
-                progress?.flashcards?.words?.[word.vocabularyId];
-
-              const vocabWordProgress =
-                progress?.vocabulary?.words?.[word.vocabularyId];
+              const skillProgress = flashcardWords[word.vocabularyId];
+              const vocabWordProgress = vocabularyWords[word.vocabularyId];
 
               return getMasteryBucket(
                 skillProgress,
                 vocabWordProgress?.isKnown ?? false,
+                ["reading"],
               );
             });
 

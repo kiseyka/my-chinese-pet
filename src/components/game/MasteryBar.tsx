@@ -9,7 +9,7 @@ type MasteryBarProps = {
 
 const colors = {
   new: "#E2D9CD",
-  learning: "#A03927",
+  learning: "#E0A458",
   mastered: "#B54230",
 };
 

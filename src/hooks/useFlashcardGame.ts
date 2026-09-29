@@ -3,14 +3,12 @@
 import { generateQuiz } from "@/content/flashcards/generator";
 import { practiceSets } from "@/content/flashcards/sets";
 import { QuizQuestion } from "@/content/flashcards/types";
-import {
-  completeFlashcardSet,
-  updateWordProgress,
-} from "@/services/storage/progressStorage";
 import { useGameStore } from "@/store/gameStore";
 import { usePandaStore } from "@/store/pandaStore";
+import { useWordProgressStore } from "@/store/wordProgressStore";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+
 interface UseFlashcardGameProps {
   setId: string;
 }
@@ -28,6 +26,11 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
   const startGame = useGameStore((s) => s.startGame);
   const answerQuestion = useGameStore((s) => s.answerQuestion);
   const setDuration = useGameStore((s) => s.setDuration);
+
+  const completeFlashcardSet = useWordProgressStore(
+    (s) => s.completeFlashcardSet,
+  );
+  const updateWordProgress = useWordProgressStore((s) => s.updateWordProgress);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -67,14 +70,14 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
     };
   }, []);
 
-  const finishLevel = async () => {
+  const finishLevel = () => {
     if (!practiceSet) return;
 
     const duration = Date.now() - startTime;
 
     setDuration(duration);
 
-    await completeFlashcardSet({
+    completeFlashcardSet({
       setId: practiceSet.id,
       score,
       totalQuestions: questions.length,
@@ -96,12 +99,12 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
     });
   };
 
-  const handleAnswer = async () => {
+  const handleAnswer = () => {
     const isLast = currentIndex >= questions.length - 1;
 
     if (isLast) {
       // На последнем вопросе больше не принимаем клики
-      await finishLevel();
+      finishLevel();
       return;
     }
 
@@ -113,7 +116,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
     isProcessingAnswer.current = false;
   };
 
-  const handleSelect = async (option: string) => {
+  const handleSelect = (option: string) => {
     // Защита от быстрых повторных кликов
     if (isProcessingAnswer.current) {
       return;
@@ -134,8 +137,8 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       isCorrect,
     });
 
-    await updateWordProgress({
-      wordId: currentQuestion.id,
+    updateWordProgress({
+      wordId: currentQuestion.vocabularyId,
       skill: "reading",
       isCorrect,
     });
@@ -144,6 +147,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       handleAnswer();
     }, 600);
   };
+
   const progressPercent =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 

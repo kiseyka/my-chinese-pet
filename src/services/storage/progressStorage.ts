@@ -169,16 +169,18 @@ export async function updateWordProgress({
 export function getMasteryBucket(
   progress: WordProgress | undefined,
   isKnown: boolean,
+  requiredSkills: Array<"reading" | "writing"> = ["reading"],
 ): MasteryBucket {
   if (isKnown) return "learned";
   if (!progress) return "seen";
 
-  const { reading, writing } = progress;
+  const relevantSkills = requiredSkills.map((skill) => progress[skill]);
 
-  if (reading.streak === 3 && writing.streak === 3) return "learned";
-  if (reading.streak > 0 || writing.streak > 0) return "recognizing";
+  if (relevantSkills.every((s) => s.streak === 3)) return "learned";
+  if (relevantSkills.some((s) => s.streak > 0)) return "recognizing";
   return "seen";
 }
+
 export async function updateVocabularyWordProgress({
   wordId,
   isFavorite,

@@ -2,8 +2,10 @@ import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { VocabularyWordItem } from "@/components/VocabularyWordItem";
 import { allWords } from "@/content/flashcards/data";
-import { getMasteryBucket } from "@/services/storage/progressStorage";
-import { useVocabularyStore } from "@/store/vocabularyStore";
+import {
+  getMasteryBucket,
+  useWordProgressStore,
+} from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,18 +14,15 @@ import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 type WordFilter = "all" | "favorites" | "learned" | "inProgress";
 
 export default function VocabularyScreen() {
-  const progress = useVocabularyStore((s) => s.progress);
-  const toggleFavorite = useVocabularyStore((s) => s.toggleFavorite);
+  const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
+  const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
+  const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<WordFilter>("all");
   const { t } = useTranslation(["sets"]);
 
   const filteredWords = useMemo(() => {
-    if (!progress) {
-      return [];
-    }
-
     const query = search.trim().toLowerCase();
 
     if (!query && filter === "all") {
@@ -31,18 +30,19 @@ export default function VocabularyScreen() {
     }
 
     return allWords.filter((word) => {
-      const vocabWordProgress = progress.vocabulary.words[word.vocabularyId];
+      const vocabWordProgress = vocabularyWords[word.vocabularyId];
 
       if (filter === "favorites" && !vocabWordProgress?.isFavorite) {
         return false;
       }
 
       if (filter === "learned" || filter === "inProgress") {
-        const skillProgress = progress.flashcards.words[word.vocabularyId];
+        const skillProgress = flashcardWords[word.vocabularyId];
 
         const bucket = getMasteryBucket(
           skillProgress,
           vocabWordProgress?.isKnown ?? false,
+          ["reading"],
         );
 
         if (filter === "learned" && bucket !== "learned") {
@@ -67,7 +67,7 @@ export default function VocabularyScreen() {
 
       return true;
     });
-  }, [search, filter, progress, t]);
+  }, [search, filter, flashcardWords, vocabularyWords, t]);
 
   const handleToggleFavorite = useCallback(
     (wordId: string) => {
@@ -75,10 +75,6 @@ export default function VocabularyScreen() {
     },
     [toggleFavorite],
   );
-
-  if (!progress) {
-    return null;
-  }
 
   return (
     <Screen>
@@ -137,7 +133,7 @@ export default function VocabularyScreen() {
         windowSize={5}
         removeClippedSubviews
         renderItem={({ item }) => {
-          const wordProgress = progress.vocabulary.words[item.vocabularyId];
+          const wordProgress = vocabularyWords[item.vocabularyId];
 
           return (
             <VocabularyWordItem
