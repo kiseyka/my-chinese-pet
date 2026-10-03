@@ -1,16 +1,17 @@
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
+import { Title } from "@/components/ui/Title";
 import { VocabularyWordItem } from "@/components/VocabularyWordItem";
 import { allWords } from "@/content/flashcards/data";
 import {
   getMasteryBucket,
+  getWordLevel,
   useWordProgressStore,
 } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, Pressable, Text, TextInput, View } from "react-native";
-
 type WordFilter = "all" | "favorites" | "learned" | "inProgress";
 
 export default function VocabularyScreen() {
@@ -49,7 +50,11 @@ export default function VocabularyScreen() {
           return false;
         }
 
-        if (filter === "inProgress" && bucket !== "recognizing") {
+        if (
+          filter === "inProgress" &&
+          bucket !== "seen" &&
+          bucket !== "recognizing"
+        ) {
           return false;
         }
       }
@@ -80,9 +85,8 @@ export default function VocabularyScreen() {
     <Screen>
       {/* Header */}
       <View className="flex-row justify-between">
-        <BackButton href="/pet" />
-
-        <Text className="text-3xl font-nunito self-center">Словарь</Text>
+        <BackButton href="/games" />
+        <Title>Словарь</Title>
 
         <View className="w-10" />
       </View>
@@ -139,6 +143,11 @@ export default function VocabularyScreen() {
             <VocabularyWordItem
               word={item}
               isFavorite={wordProgress?.isFavorite ?? false}
+              level={getWordLevel(
+                flashcardWords[item.vocabularyId],
+                wordProgress?.isKnown ?? false,
+                ["reading"],
+              )}
               onToggleFavorite={handleToggleFavorite}
             />
           );

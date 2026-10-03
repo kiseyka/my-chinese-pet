@@ -1,4 +1,6 @@
 // components/game/ToneQuestion.tsx
+
+import { getOptionState, OPTION_STYLES } from "@/components/game/AnswerOption";
 import { Text, TouchableOpacity, View } from "react-native";
 
 interface ToneQuestionProps {
@@ -38,30 +40,30 @@ export function ToneQuestion({
   const pinyinToDisplay = isAnswered ? fullPinyin : blankedPinyin;
 
   return (
-    <View className="flex-col gap-6 items-center py-6">
+    <View className="flex-col items-center gap-6 py-6">
       <View className="flex-row gap-3">
         <TouchableOpacity
           onPress={onPlayAudio}
           activeOpacity={0.7}
-          className="bg-primary rounded-full px-6 py-3 flex-row items-center gap-2"
+          className="flex-row items-center gap-2 rounded-full bg-primary px-6 py-3"
         >
-          <Text className="text-white text-lg">▶</Text>
-          <Text className="text-white text-lg font-nunitoMedium">Играть</Text>
+          <Text className="text-lg text-white">▶</Text>
+          <Text className="text-lg font-nunitoMedium text-white">Играть</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={onPlaySlowAudio}
           activeOpacity={0.7}
-          className="bg-background border border-border rounded-full px-5 py-3 flex-row items-center gap-2"
+          className="flex-row items-center gap-2 rounded-full bg-surface px-5 py-3"
         >
-          <Text className="text-text text-base">🐢</Text>
-          <Text className="text-text text-base font-nunitoMedium">
+          <Text className="text-base text-text">🐢</Text>
+          <Text className="text-base font-nunitoMedium text-text">
             Медленно
           </Text>
         </TouchableOpacity>
       </View>
 
-      <View className="justify-center items-center">
+      <View className="items-center justify-center">
         <Text
           className="text-3xl font-nunitoMedium text-text"
           style={{ opacity: showPinyin ? 1 : 0 }}
@@ -71,47 +73,33 @@ export function ToneQuestion({
       </View>
 
       {/* Иероглиф: место всегда зарезервировано, скрываем через opacity */}
-      <View className="justify-center items-center">
+      <View className="items-center justify-center">
         <Text
-          style={{
-            fontFamily: "NotoSansSC",
-            opacity: showHanzi ? 1 : 0,
-          }}
           className="text-3xl text-text"
+          style={{ fontFamily: "NotoSansSC", opacity: showHanzi ? 1 : 0 }}
         >
           {hanzi}
         </Text>
       </View>
 
-      <View className="flex-row flex-wrap justify-center gap-3 w-full px-4">
+      <View className="w-full flex-row flex-wrap justify-center gap-3 px-4">
         {TONE_OPTION_DEFS.map(({ tone, label, arrow }) => {
-          const isCorrect = tone === correctTone;
-          const isSelected = tone === selectedTone;
-
-          let buttonStyle = "bg-background border border-border/50";
-          let textStyle = "text-text";
-          let containerStyle = "";
-
-          if (isAnswered) {
-            if (isCorrect) {
-              buttonStyle = "bg-primary border border-primary";
-              textStyle = "text-white";
-            } else if (isSelected) {
-              buttonStyle = "bg-accentBeige border border-accentBeige";
-            } else {
-              containerStyle = "opacity-40";
-            }
-          }
+          const state = getOptionState(
+            isAnswered,
+            tone === correctTone,
+            tone === selectedTone,
+          );
+          const { button, text } = OPTION_STYLES[state];
 
           return (
             <TouchableOpacity
               key={tone}
               disabled={isAnswered}
               onPress={() => onSelectTone(tone)}
-              className={`rounded-2xl px-5 py-4 w-[45%] items-center ${buttonStyle} ${containerStyle}`}
+              className={`w-[45%] items-center rounded-xl py-4 ${button}`}
             >
-              <Text className={`text-2xl ${textStyle}`}>{arrow}</Text>
-              <Text className={`text-xl font-nunitoMedium mt-1 ${textStyle}`}>
+              <Text className={`text-2xl ${text}`}>{arrow}</Text>
+              <Text className={`mt-1 text-xl font-nunitoMedium ${text}`}>
                 {label}
               </Text>
             </TouchableOpacity>

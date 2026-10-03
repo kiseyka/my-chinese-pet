@@ -1,7 +1,8 @@
-// components/game/WordCard.tsx
+// components/ui/WordCard.tsx  (в модалке он импортируется из ui, поправь путь, если он другой)
 
 import VolumeOnIcon from "@/assets/images/icons/volume.svg";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
+import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { useTranslation } from "react-i18next";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -13,6 +14,9 @@ interface Props {
 
   isFavorite: boolean;
   onToggleFavorite: () => void;
+
+  /** Уровень изучения: сколько точек показать. Без него точек нет. */
+  level?: WordLevel;
 }
 
 export function WordCard({
@@ -21,13 +25,13 @@ export function WordCard({
   translation,
   isFavorite,
   onToggleFavorite,
+  level,
 }: Props) {
   const { t } = useTranslation(["sets"]);
-  const { speak } = useSpeakHanzi();
   const { speakForced } = useSpeakHanzi();
+
   return (
-    <View className="flex-row items-center p-2 justify-between bg-[#FCF7F3] rounded-xl gap-3">
-      {/* Hanzi */}
+    <View className="flex-row items-center p-2 justify-between bg-surface rounded-xl gap-3">
       <View className="w-28 shrink-0 pr-3 border-r border-textSecondary justify-center">
         <Text
           numberOfLines={1}
@@ -36,9 +40,9 @@ export function WordCard({
         >
           {hanzi}
         </Text>
+        {level !== undefined && <LevelDots level={level} className="mt-1" />}
       </View>
 
-      {/* Pinyin + translation */}
       <View className="flex-1 min-w-0 justify-center py-1">
         <Text numberOfLines={1} className="text-primary font-medium">
           {pinyin}
@@ -52,7 +56,6 @@ export function WordCard({
         </Text>
       </View>
 
-      {/* Actions */}
       <View className="flex-row items-center shrink-0 ml-2 gap-5">
         <TouchableOpacity
           onPress={() => speakForced(hanzi)}

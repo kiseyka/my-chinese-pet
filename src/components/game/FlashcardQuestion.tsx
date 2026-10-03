@@ -1,5 +1,6 @@
 // components/game/FlashcardQuestion.tsx
 
+import { AnswerOption, getOptionState } from "@/components/game/AnswerOption";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,16 +17,13 @@ interface FlashcardQuestionProps {
   onSelect: (option: string) => void;
 }
 
-const getHanziFontSize = (length: number) => {
-  if (length <= 2) return 84;
-  if (length === 3) return 68;
-  if (length === 4) return 56;
-  if (length === 5) return 46;
-  if (length === 6) return 40;
-  return 34;
-};
-
+// Размер шрифта по количеству иероглифов (индекс = длина)
+const HANZI_FONT_SIZES = [84, 84, 84, 68, 56, 46, 40];
+const HANZI_MIN_FONT_SIZE = 34;
 const HANZI_BLOCK_HEIGHT = 180;
+
+const getHanziFontSize = (length: number) =>
+  HANZI_FONT_SIZES[length] ?? HANZI_MIN_FONT_SIZE;
 
 export function FlashcardQuestion({
   hanzi,
@@ -41,17 +39,16 @@ export function FlashcardQuestion({
   const { speak, speakForced } = useSpeakHanzi();
 
   const hanziFontSize = getHanziFontSize(hanzi.length);
-  const answeredCorrectly = isAnswered && selected === correctAnswer;
 
   useEffect(() => {
     speak(hanzi);
-  }, [hanzi]);
+  }, [hanzi, speak]);
 
   return (
     <View className="flex-col gap-5">
       <View
         style={{ height: HANZI_BLOCK_HEIGHT }}
-        className="justify-center items-center"
+        className="items-center justify-center"
       >
         <TouchableOpacity
           onPress={() => speakForced(hanzi)}
@@ -61,7 +58,7 @@ export function FlashcardQuestion({
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.4}
-            className="text-text mt-8 mb-4"
+            className="mb-4 mt-8 text-text"
             style={{
               lineHeight: hanziFontSize * 1.2,
               fontSize: hanziFontSize,
@@ -81,52 +78,20 @@ export function FlashcardQuestion({
         </Text>
       </View>
 
-      <View className="flex-col self-end w-full my-3 gap-y-3">
-        {options.map((option) => {
-          const isCorrect = option === correctAnswer;
-          const isSelected = option === selected;
-
-          let buttonStyle = "bg-background border border-border/50";
-          let textStyle = "text-text";
-          let containerStyle = "";
-
-          if (isAnswered) {
-            if (answeredCorrectly) {
-              // Пользователь угадал: правильный — оливковый, остальные тускнеют
-              if (isCorrect) {
-                buttonStyle = "bg-primary border border-primary";
-                textStyle = "text-white";
-              } else {
-                containerStyle = "opacity-40";
-              }
-            } else {
-              // Пользователь ошибся: его выбор — бежевый, правильный — оливковый, остальные тускнеют
-              if (isSelected) {
-                buttonStyle = "bg-accentBeige border border-accentBeige";
-              } else if (isCorrect) {
-                buttonStyle = "bg-primary border border-primary";
-                textStyle = "text-white";
-              } else {
-                containerStyle = "opacity-40";
-              }
-            }
-          }
-
-          return (
-            <TouchableOpacity
-              key={option}
-              disabled={isAnswered}
-              onPress={() => onSelect(option)}
-              className={`rounded-xl ${buttonStyle} ${containerStyle}`}
-            >
-              <Text
-                className={`py-4 pl-10 rounded-xl text-xl font-['NunitoMedium'] ${textStyle}`}
-              >
-                {t(option)}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      <View className="my-3 w-full flex-col gap-y-3">
+        {options.map((option) => (
+          <AnswerOption
+            key={option}
+            label={t(option)}
+            state={getOptionState(
+              isAnswered,
+              option === correctAnswer,
+              option === selected,
+            )}
+            disabled={isAnswered}
+            onPress={() => onSelect(option)}
+          />
+        ))}
       </View>
     </View>
   );

@@ -39,33 +39,31 @@ export default function LevelGameScreen() {
   }
 
   return (
-    <View className="flex-1 relative w-full h-full">
-      <Screen>
-        <ConfirmModal
-          isVisible={isExitModalVisible}
-          onClose={() => setIsExitModalVisible(false)}
-          onConfirm={() => {
-            setIsExitModalVisible(false);
-            router.replace("/games/flashcards/sets");
-          }}
-        />
+    <Screen>
+      <ConfirmModal
+        isVisible={isExitModalVisible}
+        onClose={() => setIsExitModalVisible(false)}
+        onConfirm={() => {
+          setIsExitModalVisible(false);
+          router.replace("/games/flashcards/sets");
+        }}
+      />
 
-        <GameHeader
-          progress={progressPercent}
-          onExit={() => setIsExitModalVisible(true)}
-        />
+      <GameHeader
+        progress={progressPercent}
+        onExit={() => setIsExitModalVisible(true)}
+      />
 
-        <FlashcardQuestion
-          hanzi={currentQuestion.hanzi}
-          pinyin={currentQuestion.pinyin}
-          options={currentQuestion.options}
-          correctAnswer={currentQuestion.correctAnswer}
-          selected={selected}
-          isAnswered={isAnswered}
-          showPinyin={showPinyin}
-          onSelect={handleSelect}
-        />
-      </Screen>
-    </View>
+      <FlashcardQuestion
+        hanzi={currentQuestion.hanzi}
+        pinyin={currentQuestion.pinyin}
+        options={currentQuestion.options}
+        correctAnswer={currentQuestion.correctAnswer}
+        selected={selected}
+        isAnswered={isAnswered}
+        showPinyin={showPinyin}
+        onSelect={handleSelect}
+      />
+    </Screen>
   );
 }

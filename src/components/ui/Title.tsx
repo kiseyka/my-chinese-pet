@@ -7,7 +7,7 @@ type TitleProps = TextProps & {
 export function Title({ children, className, ...props }: TitleProps) {
   return (
     <Text
-      className={`text-3xl font-nunito self-center ${className ?? ""}`}
+      className={`text-3xl font-nunito self-center text-text ${className ?? ""}`}
       {...props}
     >
       {children}

@@ -183,6 +183,19 @@ export const useWordProgressStore = create<WordProgressStore>()(
     },
   ),
 );
+export type WordLevel = 0 | 1 | 2 | 3;
+
+export function getWordLevel(
+  progress: WordProgress | undefined,
+  isKnown: boolean,
+  requiredSkills: Array<"reading" | "writing"> = ["reading"],
+): WordLevel {
+  if (isKnown) return 3;
+  if (!progress) return 0;
+
+  const streaks = requiredSkills.map((skill) => progress[skill].streak);
+  return Math.min(...streaks) as WordLevel;
+}
 
 export function getMasteryBucket(
   progress: WordProgress | undefined,
@@ -190,7 +203,7 @@ export function getMasteryBucket(
   requiredSkills: Array<"reading" | "writing"> = ["reading"],
 ): MasteryBucket {
   if (isKnown) return "learned";
-  if (!progress) return "seen";
+  if (!progress) return "new";
 
   const relevantSkills = requiredSkills.map((skill) => progress[skill]);
 

@@ -23,12 +23,11 @@ export const ShopProductCard = ({
         rounded-lg
         border
         overflow-hidden
-        bg-[#F8EFDF]
         ${isSelected ? "border-primary" : "border-[#D8C3A3]"}
       `}
     >
       <View
-        className="items-center justify-start bg-[#EFE2CB]"
+        className="items-center justify-start "
         style={{ aspectRatio: 1, width: "100%" }}
       >
         <Image
