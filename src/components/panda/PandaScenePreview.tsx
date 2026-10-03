@@ -27,7 +27,7 @@ export const PandaScenePreview = ({
 
   return (
     <View
-      className="border border-primary rounded-lg"
+      className="border border-[#D8C3A3] rounded-lg"
       style={[{ position: "absolute", inset: 0, overflow: "hidden" }, style]}
     >
       <Rive

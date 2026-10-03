@@ -82,12 +82,6 @@ export function useToneGame() {
     }
   }, [currentQuestion?.hanzi]);
 
-  useEffect(() => {
-    if (currentQuestion) {
-      speak(currentQuestion.hanzi);
-    }
-  }, [currentQuestion?.hanzi]);
-
   const finishSession = () => {
     const duration = Date.now() - startTime;
     setDuration(duration);

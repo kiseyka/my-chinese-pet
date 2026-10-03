@@ -1,6 +1,8 @@
 // src/store/pandaStore.ts
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { FlashcardQuestionResult } from "./gameStore";
 
 export interface PandaTrainingResult {
@@ -12,31 +14,62 @@ export interface PandaTrainingResult {
   results: FlashcardQuestionResult[];
 }
 
-interface PandaStore {
-  pendingTrainingResult: PandaTrainingResult | null;
+const MAX_BOND = 100;
+const RECENT_WORDS_LIMIT = 6;
 
-  setPendingTrainingResult: (result: PandaTrainingResult) => void;
+interface PandaState {
+  /** Привязанность: только растёт, никогда не уменьшается. Сохраняется. */
   bond: number;
+
+  /** Последние слова, которые панда уже упоминала (защита от повторов). Сохраняется. */
+  recentWordIds: string[];
+
+  /** Результат последней тренировки, который панда ещё не прокомментировала. Не сохраняется. */
+  pendingTrainingResult: PandaTrainingResult | null;
+}
+
+interface PandaActions {
   increaseBond: (amount: number) => void;
+  rememberWord: (wordId: string) => void;
+  setPendingTrainingResult: (result: PandaTrainingResult) => void;
   clearPendingTrainingResult: () => void;
 }
 
-export const usePandaStore = create<PandaStore>((set) => ({
-  pendingTrainingResult: null,
+type PandaStore = PandaState & PandaActions;
 
-  setPendingTrainingResult: (result) =>
-    set({
-      pendingTrainingResult: result,
-    }),
-
-  clearPendingTrainingResult: () =>
-    set({
+export const usePandaStore = create<PandaStore>()(
+  persist(
+    (set) => ({
+      bond: 0,
+      recentWordIds: [],
       pendingTrainingResult: null,
-    }),
-  bond: 0,
 
-  increaseBond: (amount) =>
-    set((state) => ({
-      bond: Math.min(100, state.bond + amount),
-    })),
-}));
+      increaseBond: (amount) =>
+        set((state) => ({
+          bond: Math.min(MAX_BOND, state.bond + Math.max(0, amount)),
+        })),
+
+      rememberWord: (wordId) =>
+        set((state) => ({
+          recentWordIds: [
+            wordId,
+            ...state.recentWordIds.filter((id) => id !== wordId),
+          ].slice(0, RECENT_WORDS_LIMIT),
+        })),
+
+      setPendingTrainingResult: (result) =>
+        set({ pendingTrainingResult: result }),
+
+      clearPendingTrainingResult: () => set({ pendingTrainingResult: null }),
+    }),
+    {
+      name: "panda-store",
+      storage: createJSONStorage(() => AsyncStorage),
+      // Персистим только то, что должно пережить перезапуск.
+      partialize: (state) => ({
+        bond: state.bond,
+        recentWordIds: state.recentWordIds,
+      }),
+    },
+  ),
+);

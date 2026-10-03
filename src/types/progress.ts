@@ -12,7 +12,7 @@ export type SkillProgress = {
   incorrectAnswers: number;
 };
 
-export type MasteryBucket = "seen" | "recognizing" | "learned";
+export type MasteryBucket = "new" | "seen" | "recognizing" | "learned";
 
 export type FlashcardSetProgress = {
   bestScore: number;

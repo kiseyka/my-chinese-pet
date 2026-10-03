@@ -1,12 +1,11 @@
 // app/(tabs)/games/stats.tsx
 import DotSvg from "@/assets/images/svg/dot.svg";
 import LineSvg from "@/assets/images/svg/line.svg";
-import RedLineSvg from "@/assets/images/svg/redLine.svg";
 import { Screen } from "@/components/layout/Screen";
 import { BrushProgressCircle } from "@/components/ui/BrushProgressCircle";
 import { WordCard } from "@/components/ui/WordCard";
 import { useGameStore } from "@/store/gameStore";
-import { useVocabularyStore } from "@/store/vocabularyStore";
+import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
 import { formatDuration } from "@/utils/formatDuration";
@@ -19,8 +18,8 @@ export default function GeneralStatsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
 
-  const progress = useVocabularyStore((s) => s.progress);
-  const toggleFavorite = useVocabularyStore((s) => s.toggleFavorite);
+  const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
+  const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
 
   const { xp } = useLocalSearchParams<{ xp: string }>();
   const earnedXp = Number(xp);
@@ -51,48 +50,39 @@ export default function GeneralStatsScreen() {
           {t("games.stats.success")}
         </Text>
 
-        <View className="items-center flex-row justify-between px-5">
-          <View className="items-center justify-center gap-2">
-            <View>
-              <Text className="text-3xl text-text text-center">
-                +{correctCount}
-              </Text>
-              <Text className="text-sm text-center">
-                XP {t("games.stats.gained")}
-              </Text>
-            </View>
+        <View className="flex-row items-center gap-5">
+          <BrushProgressCircle
+            percentage={scorePercentage}
+            size={116}
+            strokeWidth={10}
+            progressColor={colors.primary}
+            backgroundColor={colors.progress.inactive}
+            label="Точность"
+          />
 
-            <View className=" items-center justify-center mt-2">
-              <Text className="text-3xl text-text font-nunitoMedium">
-                +{coinsEarned}
-              </Text>
-              <View className="flex-row items-center">
+          <View className="flex-1">
+            <StatRow
+              label={`XP ${t("games.stats.gained")}`}
+              value={`+${correctCount}`}
+            />
+
+            <StatRow
+              label="Монеты"
+              value={`+${coinsEarned}`}
+              icon={
                 <Image
-                  style={{ width: 30, height: 30, opacity: 0.7 }}
-                  source={require("@/assets/images/coin.png")}
+                  className="h-5 w-5"
+                  source={require("@/assets/images/paw-coin.png")}
                   resizeMode="contain"
                 />
-                <Text className="text-sm text-center">Получено</Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="items-center justify-center">
-            <BrushProgressCircle
-              percentage={scorePercentage}
-              size={140}
-              strokeWidth={12}
-              progressColor={colors.primary}
-              backgroundColor={colors.progress.inactive}
-              label="Точность"
+              }
             />
-          </View>
 
-          <View>
-            <Text className="text-3xl text-center">
-              {formatDuration(duration)}
-            </Text>
-            <Text className="text-sm text-center">{t("games.stats.time")}</Text>
+            <StatRow
+              label={t("games.stats.time")}
+              value={formatDuration(duration)}
+              last
+            />
           </View>
         </View>
 
@@ -123,8 +113,7 @@ export default function GeneralStatsScreen() {
                 {showWrongAnswers && (
                   <View className="flex-col gap-2">
                     {wrongAnswers.map((item) => {
-                      const wordProgress =
-                        progress?.vocabulary.words[item.vocabularyId];
+                      const wordProgress = vocabularyWords[item.vocabularyId];
 
                       return (
                         <WordCard
@@ -165,7 +154,7 @@ export default function GeneralStatsScreen() {
             </Text>
           </Pressable>
 
-          {wrongAnswers.length > 0 && (
+          {/* {wrongAnswers.length > 0 && (
             <Pressable
               onPress={() => router.replace("/games")}
               className="bg-transparent items-center active:bg-primaryDark/10"
@@ -175,9 +164,40 @@ export default function GeneralStatsScreen() {
               </Text>
               <RedLineSvg width="100%" height={12} />
             </Pressable>
-          )}
+          )} */}
         </View>
       </View>
     </Screen>
+  );
+}
+function StatRow({
+  label,
+  value,
+  icon,
+  last = false,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ReactNode;
+  last?: boolean;
+}) {
+  return (
+    <View
+      className={`flex-row items-center justify-between py-3 ${
+        last ? "" : "border-b border-primaryDark"
+      }`}
+    >
+      <Text
+        numberOfLines={1}
+        className="flex-1 pr-2 text-sm font-nunito text-text"
+      >
+        {label}
+      </Text>
+
+      <View className="flex-row items-center gap-1">
+        <Text className="text-xl font-nunitoBold text-text">{value}</Text>
+        {icon}
+      </View>
+    </View>
   );
 }
