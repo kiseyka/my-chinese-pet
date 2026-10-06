@@ -31,8 +31,8 @@ const games = [
     id: "writing",
     title: "games.writting.title",
     description: "games.writting.description",
-    route: "/games/writing",
-    locked: true,
+    route: "/games/writing/sets",
+    locked: false,
     imageSource: require("@/assets/images/games/hanzi.png"),
   },
 ];
@@ -42,7 +42,7 @@ export default function GamesScreen() {
   const { t } = useTranslation(["common"]);
 
   return (
-    <Screen>
+    <Screen className="bg-background">
       <View className="w-full gap-10">
         <View className="flex-row w-full justify-between items-center">
           <BackButton href="/" />

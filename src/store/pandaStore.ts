@@ -4,14 +4,28 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { FlashcardQuestionResult } from "./gameStore";
+import type { WordLevel } from "./wordProgressStore";
+
+/** Что случилось со словом за тренировку (первый уровень «до», последний «после»). */
+export interface WordChange {
+  vocabularyId: string;
+  hanzi: string;
+  pinyin: string;
+  translation: string;
+  levelBefore: WordLevel;
+  levelAfter: WordLevel;
+  /** Правильность последнего ответа на это слово. */
+  isCorrect: boolean;
+}
 
 export interface PandaTrainingResult {
-  type: "flashcards_completed";
+  type: "flashcards_completed" | "writing_completed";
 
   score: number;
   total: number;
 
   results: FlashcardQuestionResult[];
+  wordChanges: WordChange[];
 }
 
 const MAX_BOND = 100;
@@ -24,6 +38,13 @@ interface PandaState {
   /** Последние слова, которые панда уже упоминала (защита от повторов). Сохраняется. */
   recentWordIds: string[];
 
+  /**
+   * Сколько тренировок прошло с последнего диалога с кнопками выбора.
+   * Выбор разрешён, когда значение >= 1 (то есть не чаще раза в две тренировки).
+   * Сохраняется. Начальное значение 1: первый диалог может быть с выбором.
+   */
+  trainingsSinceChoice: number;
+
   /** Результат последней тренировки, который панда ещё не прокомментировала. Не сохраняется. */
   pendingTrainingResult: PandaTrainingResult | null;
 }
@@ -31,6 +52,8 @@ interface PandaState {
 interface PandaActions {
   increaseBond: (amount: number) => void;
   rememberWord: (wordId: string) => void;
+  /** Вызывается после каждой тренировки: hadChoices — был ли диалог с кнопками. */
+  registerTraining: (hadChoices: boolean) => void;
   setPendingTrainingResult: (result: PandaTrainingResult) => void;
   clearPendingTrainingResult: () => void;
 }
@@ -42,6 +65,7 @@ export const usePandaStore = create<PandaStore>()(
     (set) => ({
       bond: 0,
       recentWordIds: [],
+      trainingsSinceChoice: 1,
       pendingTrainingResult: null,
 
       increaseBond: (amount) =>
@@ -57,6 +81,11 @@ export const usePandaStore = create<PandaStore>()(
           ].slice(0, RECENT_WORDS_LIMIT),
         })),
 
+      registerTraining: (hadChoices) =>
+        set((state) => ({
+          trainingsSinceChoice: hadChoices ? 0 : state.trainingsSinceChoice + 1,
+        })),
+
       setPendingTrainingResult: (result) =>
         set({ pendingTrainingResult: result }),
 
@@ -65,10 +94,10 @@ export const usePandaStore = create<PandaStore>()(
     {
       name: "panda-store",
       storage: createJSONStorage(() => AsyncStorage),
-      // Персистим только то, что должно пережить перезапуск.
       partialize: (state) => ({
         bond: state.bond,
         recentWordIds: state.recentWordIds,
+        trainingsSinceChoice: state.trainingsSinceChoice,
       }),
     },
   ),

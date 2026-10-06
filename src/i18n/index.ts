@@ -13,29 +13,21 @@ import ruSets from "./locales/ru/sets.json";
 import enCommon from "./locales/en/common.json";
 import ruCommon from "./locales/ru/common.json";
 
-// import enCommon from "./locales/en/common.json";
-import enPandaPraise from "./locales/en/panda/praise.json";
-import ruPandaPraise from "./locales/ru/panda/praise.json";
-
-import {
-  default as enPandaGreetings,
-  default as ruPandaGreetings,
-} from "./locales/ru/panda/greetings.json";
+import enPhrases from "./locales/en/panda/phrases.json";
+import ruPhrases from "./locales/ru/panda/phrases.json";
 
 const resources = {
   en: {
     translation: en,
     sets: enSets,
     common: enCommon,
-    pandaP: enPandaPraise,
-    pandaG: enPandaGreetings,
+    pandaPhrases: enPhrases,
   },
   ru: {
     translation: ru,
     sets: ruSets,
     common: ruCommon,
-    pandaP: ruPandaPraise,
-    pandaG: ruPandaGreetings,
+    pandaPhrases: ruPhrases,
   },
   zh: { translation: zh },
 };
@@ -48,7 +40,7 @@ i18n.use(initReactI18next).init({
   lng: systemLanguage,
   fallbackLng: "en",
   defaultNS: "translation",
-  ns: ["translation", "sets", "common", "panda"],
+  ns: ["translation", "sets", "common", "panda", "pandaPhrases"],
   interpolation: {
     escapeValue: false,
   },

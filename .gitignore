@@ -37,7 +37,7 @@ yarn-error.*
 *.tsbuildinfo
 
 example
-
+scripts/dictionary.txt
 # generated native folders
 /ios
 /android

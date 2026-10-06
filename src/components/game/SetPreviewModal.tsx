@@ -6,6 +6,7 @@ import {
   getWordLevel,
   useWordProgressStore,
 } from "@/store/wordProgressStore";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,8 +30,15 @@ type PracticeSet = {
 type SetPreviewModalProps = {
   visible: boolean;
   practiceSet: PracticeSet | null;
-  onStart: () => void;
+  /** Если не передан, кнопки «Начать» нет (режим просмотра). */
+  onStart?: () => void;
   onClose: () => void;
+  /** По какому навыку показывать прогресс. По умолчанию — чтение (карточки). */
+  skill?: "reading" | "writing";
+  /** Если передан, слова в списке нажимаются: вызывается с vocabularyId слова. */
+  onSelectWord?: (vocabularyId: string) => void;
+  /** Дополнительный блок под списком слов (например, кнопки режимов). */
+  footer?: ReactNode;
 };
 
 export const SetPreviewModal = ({
@@ -38,6 +46,9 @@ export const SetPreviewModal = ({
   practiceSet,
   onStart,
   onClose,
+  skill = "reading",
+  onSelectWord,
+  footer,
 }: SetPreviewModalProps) => {
   const { t } = useTranslation(["sets"]);
   const insets = useSafeAreaInsets();
@@ -55,14 +66,16 @@ export const SetPreviewModal = ({
   const wordEntries = words.map((word) => {
     const skillProgress = flashcardWords[word.vocabularyId];
     const vocabWordProgress = vocabularyWords[word.vocabularyId];
-    const isKnown = vocabWordProgress?.isKnown ?? false;
+    // Для письма отметка «слово известно» не учитывается: знать слово и уметь его писать — разное
+    const isKnown =
+      skill === "writing" ? false : (vocabWordProgress?.isKnown ?? false);
 
     return {
       word,
       isFavorite: vocabWordProgress?.isFavorite ?? false,
-      level: getWordLevel(skillProgress, isKnown, ["reading"]),
+      level: getWordLevel(skillProgress, isKnown, [skill]),
       isMastered:
-        getMasteryBucket(skillProgress, isKnown, ["reading"]) === "learned",
+        getMasteryBucket(skillProgress, isKnown, [skill]) === "learned",
     };
   });
 
@@ -109,29 +122,46 @@ export const SetPreviewModal = ({
           {/* Список слов */}
           <ScrollView showsVerticalScrollIndicator={false} className="mb-4">
             <View className="gap-2">
-              {wordEntries.map(({ word, isFavorite, level }) => (
-                <WordCard
-                  key={word.id}
-                  hanzi={word.hanzi}
-                  pinyin={word.pinyin}
-                  translation={word.translation}
-                  isFavorite={isFavorite}
-                  level={level}
-                  onToggleFavorite={() => toggleFavorite(word.vocabularyId)}
-                />
-              ))}
+              {wordEntries.map(({ word, isFavorite, level }) => {
+                const card = (
+                  <WordCard
+                    hanzi={word.hanzi}
+                    pinyin={word.pinyin}
+                    translation={word.translation}
+                    isFavorite={isFavorite}
+                    level={level}
+                    onToggleFavorite={() => toggleFavorite(word.vocabularyId)}
+                  />
+                );
+
+                return onSelectWord ? (
+                  <Pressable
+                    key={word.id}
+                    onPress={() => onSelectWord(word.vocabularyId)}
+                    className="active:opacity-70"
+                  >
+                    {card}
+                  </Pressable>
+                ) : (
+                  <View key={word.id}>{card}</View>
+                );
+              })}
             </View>
           </ScrollView>
 
+          {footer}
+
           {/* Начать */}
-          <Pressable
-            onPress={onStart}
-            className="bg-primary rounded-2xl py-4 items-center active:opacity-80"
-          >
-            <Text className="text-white text-base font-['NunitoBold']">
-              {t("common.start")}
-            </Text>
-          </Pressable>
+          {onStart && (
+            <Pressable
+              onPress={onStart}
+              className="bg-primary rounded-2xl py-4 items-center active:opacity-80"
+            >
+              <Text className="text-white text-base font-['NunitoBold']">
+                {t("common.start")}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Modal>

@@ -84,6 +84,20 @@ export default function TabLayout() {
           headerShown: false,
         }}
       />
+
+      <Tabs.Screen
+        name="games/writing/sets"
+        options={{
+          headerShown: false,
+        }}
+      />
+      {/* <Tabs.Screen
+        name="games/writing/[setId]"
+        options={{
+          headerShown: false,
+        }}
+      /> */}
+
       <Tabs.Screen
         name="games/flashcards/[setId]"
         options={{

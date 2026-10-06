@@ -22,7 +22,6 @@ export const VocabularyWordItem = memo(function VocabularyWordItem({
       pinyin={word.pinyin}
       translation={word.translation}
       isFavorite={isFavorite}
-      level={level}
       onToggleFavorite={() => onToggleFavorite(word.vocabularyId)}
     />
   );

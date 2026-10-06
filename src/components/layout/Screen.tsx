@@ -1,12 +1,17 @@
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export const Screen = ({ children }: { children: React.ReactNode }) => {
+type ScreenProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+export const Screen = ({ children, className = "" }: ScreenProps) => {
   const insets = useSafeAreaInsets();
 
   return (
     <View
-      className="relative bg-background"
+      className={`relative  ${className}`}
       style={{
         flex: 1,
         paddingTop: insets.top,
