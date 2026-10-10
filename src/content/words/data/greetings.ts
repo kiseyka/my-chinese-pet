@@ -1,0 +1,130 @@
+import type { WordEntry } from "../types";
+
+export const greetingsWords: WordEntry[] = [
+  {
+    id: "greetings_hello",
+    hanzi: "你好",
+    pinyin: "nǐ hǎo",
+    translation: "greetings.hello",
+  },
+  {
+    id: "greetings_hello_polite",
+    hanzi: "您好",
+    pinyin: "nín hǎo",
+    translation: "greetings.hello_polite",
+  },
+  {
+    id: "greetings_thanks",
+    hanzi: "谢谢",
+    pinyin: "xièxie",
+    translation: "greetings.thanks",
+  },
+  {
+    id: "greetings_goodbye",
+    hanzi: "再见",
+    pinyin: "zàijiàn",
+    translation: "greetings.goodbye",
+  },
+  {
+    id: "greetings_sorry",
+    hanzi: "对不起",
+    pinyin: "duìbuqǐ",
+    translation: "greetings.sorry",
+  },
+  {
+    id: "greetings_good_morning",
+    hanzi: "早上好",
+    pinyin: "zǎoshang hǎo",
+    translation: "greetings.good_morning",
+  },
+  {
+    id: "greetings_good_night",
+    hanzi: "晚安",
+    pinyin: "wǎn'ān",
+    translation: "greetings.good_night",
+  },
+  {
+    id: "greetings_you_are_welcome",
+    hanzi: "不客气",
+    pinyin: "bú kèqi",
+    translation: "greetings.you_are_welcome",
+  },
+  {
+    id: "greetings_it_does_not_matter",
+    hanzi: "没关系",
+    pinyin: "méi guānxi",
+    translation: "greetings.it_does_not_matter",
+  },
+  {
+    id: "greetings_please",
+    hanzi: "请",
+    pinyin: "qǐng",
+    translation: "greetings.please",
+  },
+  {
+    id: "greetings_see_you_tomorrow",
+    hanzi: "明天见",
+    pinyin: "míngtiān jiàn",
+    translation: "greetings.see_you_tomorrow",
+  },
+  {
+    id: "greetings_how_are_you",
+    hanzi: "你好吗",
+    pinyin: "nǐ hǎo ma",
+    translation: "greetings.how_are_you",
+  },
+  {
+    id: "greetings_im_fine",
+    hanzi: "我很好",
+    pinyin: "wǒ hěn hǎo",
+    translation: "greetings.im_fine",
+  },
+  {
+    id: "greetings_have_you_eaten",
+    hanzi: "吃了吗",
+    pinyin: "chī le ma",
+    translation: "greetings.have_you_eaten",
+  },
+  {
+    id: "greetings_bye_bye",
+    hanzi: "拜拜",
+    pinyin: "bàibài",
+    translation: "greetings.bye_bye",
+  },
+  {
+    id: "greetings_see_you_later",
+    hanzi: "回头见",
+    pinyin: "huítóu jiàn",
+    translation: "greetings.see_you_later",
+  },
+  {
+    id: "greetings_excuse_me",
+    hanzi: "打扰一下",
+    pinyin: "dǎrǎo yíxià",
+    translation: "greetings.excuse_me",
+  },
+  {
+    id: "greetings_thank_you_for_hard_work",
+    hanzi: "辛苦了",
+    pinyin: "xīnkǔ le",
+    translation: "greetings.thank_you_for_hard_work",
+  },
+  {
+    id: "greetings_nice_to_meet_you",
+    hanzi: "很高兴认识你",
+    pinyin: "hěn gāoxìng rènshi nǐ",
+    translation: "greetings.nice_to_meet_you",
+  },
+  {
+    id: "greetings_long_time_no_see",
+    hanzi: "好久不见",
+    pinyin: "hǎojiǔ bú jiàn",
+    translation: "greetings.long_time_no_see",
+  },
+  {
+    id: "greetings_measure_phrase",
+    hanzi: "句",
+    pinyin: "jù",
+    translation: "greetings.measure_ju",
+  },
+];

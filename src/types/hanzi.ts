@@ -7,6 +7,14 @@ export interface HanziEtymology {
   semantic?: string;
 }
 
+/** Часть иероглифа для поэтапного изучения. */
+export interface HanziPart {
+  /** Как часть выглядит в тексте (для подписи), например «女». */
+  label: string;
+  /** Индексы черт иероглифа, которые относятся к этой части, по порядку. */
+  strokes: number[];
+}
+
 export interface HanziData {
   /** Контуры черт (SVG-пути) в квадрате 1024×1024, по порядку написания. */
   strokes: string[];
@@ -14,7 +22,7 @@ export interface HanziData {
   medians: number[][][];
   radical?: string;
   decomposition?: string;
-  /** matches[i] — путь компонента, которому принадлежит черта i (null — не разбивается). */
-  matches?: (number[] | null)[];
   etymology?: HanziEtymology;
+  /** Части для поэтапного изучения. Нет у иероглифов, которые не делятся. */
+  parts?: HanziPart[];
 }

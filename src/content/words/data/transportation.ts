@@ -1,0 +1,130 @@
+import type { WordEntry } from "../types";
+
+export const transportationWords: WordEntry[] = [
+  {
+    id: "transportation_car",
+    hanzi: "汽车",
+    pinyin: "qìchē",
+    translation: "transportation.car",
+  },
+  {
+    id: "transportation_train",
+    hanzi: "火车",
+    pinyin: "huǒchē",
+    translation: "transportation.train",
+  },
+  {
+    id: "transportation_airplane",
+    hanzi: "飞机",
+    pinyin: "fēijī",
+    translation: "transportation.airplane",
+  },
+  {
+    id: "transportation_subway",
+    hanzi: "地铁",
+    pinyin: "dìtiě",
+    translation: "transportation.subway",
+  },
+  {
+    id: "transportation_bus",
+    hanzi: "公交车",
+    pinyin: "gōngjiāochē",
+    translation: "transportation.bus",
+  },
+  {
+    id: "transportation_taxi",
+    hanzi: "出租车",
+    pinyin: "chūzūchē",
+    translation: "transportation.taxi",
+  },
+  {
+    id: "transportation_bicycle",
+    hanzi: "自行车",
+    pinyin: "zìxíngchē",
+    translation: "transportation.bicycle",
+  },
+  {
+    id: "transportation_boat",
+    hanzi: "船",
+    pinyin: "chuán",
+    translation: "transportation.boat",
+  },
+  {
+    id: "transportation_truck",
+    hanzi: "卡车",
+    pinyin: "kǎchē",
+    translation: "transportation.truck",
+  },
+  {
+    id: "transportation_motorcycle",
+    hanzi: "摩托车",
+    pinyin: "mótuōchē",
+    translation: "transportation.motorcycle",
+  },
+  {
+    id: "transportation_traffic",
+    hanzi: "交通",
+    pinyin: "jiāotōng",
+    translation: "transportation.traffic",
+  },
+  {
+    id: "transportation_traffic_light",
+    hanzi: "红绿灯",
+    pinyin: "hónglǜdēng",
+    translation: "transportation.traffic_light",
+  },
+  {
+    id: "transportation_station",
+    hanzi: "站",
+    pinyin: "zhàn",
+    translation: "transportation.station",
+  },
+  {
+    id: "transportation_ticket",
+    hanzi: "票",
+    pinyin: "piào",
+    translation: "transportation.ticket",
+  },
+  {
+    id: "transportation_drive",
+    hanzi: "开车",
+    pinyin: "kāichē",
+    translation: "transportation.drive",
+  },
+  {
+    id: "transportation_take_vehicle",
+    hanzi: "坐车",
+    pinyin: "zuòchē",
+    translation: "transportation.take_vehicle",
+  },
+  {
+    id: "transportation_walk",
+    hanzi: "走路",
+    pinyin: "zǒulù",
+    translation: "transportation.walk",
+  },
+  {
+    id: "transportation_road",
+    hanzi: "路",
+    pinyin: "lù",
+    translation: "transportation.road",
+  },
+  {
+    id: "transportation_street",
+    hanzi: "街",
+    pinyin: "jiē",
+    translation: "transportation.street",
+  },
+  {
+    id: "transportation_bridge",
+    hanzi: "桥",
+    pinyin: "qiáo",
+    translation: "transportation.bridge",
+  },
+  {
+    id: "transportation_measure_liang",
+    hanzi: "辆",
+    pinyin: "liàng",
+    translation: "transportation.measure_liang",
+  },
+];

@@ -40,6 +40,17 @@ module.exports = {
         chineseMedium: ["NotoSansSCMedium"],
         chineseBold: ["NotoSansSCBold"],
       },
+      // Шкала размеров текста. Ориентиры: основной текст iOS — 17, Android — 16;
+      // мельче 12 не используем. Иероглифы и пиньинь — компоненты Hanzi и Pinyin
+      // (src/components/ui), у них свои размеры.
+      fontSize: {
+        caption: ["12px", { lineHeight: "16px" }], // служебное: «3/10», бейджи
+        small: ["14px", { lineHeight: "20px" }], // вторичные подписи
+        body: ["16px", { lineHeight: "24px" }], // основной текст, пояснения, кнопки
+        lead: ["18px", { lineHeight: "26px" }], // крупный текст: перевод слова, важные фразы
+        title: ["22px", { lineHeight: "28px" }], // заголовки блоков
+        heading: ["28px", { lineHeight: "34px" }], // заголовки экранов
+      },
     },
   },
   plugins: [],

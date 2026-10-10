@@ -91,12 +91,12 @@ export default function TabLayout() {
           headerShown: false,
         }}
       />
-      {/* <Tabs.Screen
-        name="games/writing/[setId]"
+      <Tabs.Screen
+        name="games/writing/classic"
         options={{
           headerShown: false,
         }}
-      /> */}
+      />
 
       <Tabs.Screen
         name="games/flashcards/[setId]"

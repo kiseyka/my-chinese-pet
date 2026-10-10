@@ -5,7 +5,17 @@
 
 export type Point = { x: number; y: number };
 
-export type StrokeCheckReason = "too_short" | "wrong_direction" | "wrong_shape";
+/**
+ * too_short — случайное касание или слишком короткая линия;
+ * wrong_position — форма и направление верные, но черта проведена в стороне от нужного места;
+ * wrong_direction — форма подходит, но проведена в обратную сторону;
+ * wrong_shape — не та черта.
+ */
+export type StrokeCheckReason =
+  | "too_short"
+  | "wrong_position"
+  | "wrong_direction"
+  | "wrong_shape";
 
 export type StrokeCheckResult =
   | { ok: true }
@@ -28,6 +38,12 @@ const MIN_ABSOLUTE_LENGTH = 25;
 
 /** Минимальная длина вектора начало→конец, при которой проверяем общее направление. */
 const DIRECTION_MIN_VECTOR = 100;
+
+/**
+ * Насколько далеко (в единицах 1024) черта может быть сдвинута от нужного места, чтобы
+ * считаться «правильной, но в стороне». Дальше — это уже другая черта.
+ */
+const POSITION_SHIFT_LIMIT = 350;
 
 const dist = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -75,6 +91,14 @@ export function resample(points: Point[], count: number): Point[] {
   }
 
   return result;
+}
+
+function center(points: Point[]): Point {
+  const sum = points.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), {
+    x: 0,
+    y: 0,
+  });
+  return { x: sum.x / points.length, y: sum.y / points.length };
 }
 
 function averageDistance(a: Point[], b: Point[]): number {
@@ -130,6 +154,25 @@ export function checkStroke(
 
   if (forward <= avgLimit && startOk && endOk && !pointsBackwards) {
     return { ok: true };
+  }
+
+  // Форма и направление верные, но черта сдвинута: совмещаем центры и сравниваем ещё раз
+  if (!pointsBackwards) {
+    const drawnCenter = center(a);
+    const referenceCenter = center(b);
+    const shift = dist(drawnCenter, referenceCenter);
+
+    const moved = a.map((p) => ({
+      x: p.x - drawnCenter.x + referenceCenter.x,
+      y: p.y - drawnCenter.y + referenceCenter.y,
+    }));
+
+    if (
+      shift <= POSITION_SHIFT_LIMIT &&
+      averageDistance(moved, b) <= avgLimit
+    ) {
+      return { ok: false, reason: "wrong_position" };
+    }
   }
 
   // Форма подходит, но линия проведена в обратную сторону

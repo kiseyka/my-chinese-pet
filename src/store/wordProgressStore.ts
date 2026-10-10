@@ -1,11 +1,11 @@
 import { practiceSets } from "@/content/flashcards/sets";
+import { mergeAliasedProgress } from "@/store/migrations/mergeAliasedProgress";
 import { useProgressStore } from "@/store/userProgressStore";
 import { MasteryBucket, SkillProgress, WordProgress } from "@/types/progress";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-
 interface FlashcardSetProgress {
   bestScore: number;
   totalQuestions: number;
@@ -19,10 +19,20 @@ interface VocabularyWordProgress {
   isKnown: boolean;
 }
 
+/** Слово в списке «Повторение» режима «Написание». */
+interface WritingReviewEntry {
+  addedAt: number;
+}
+
 interface WordProgressState {
   flashcardSets: Record<string, FlashcardSetProgress>;
   flashcardWords: Record<string, WordProgress>;
   vocabularyWords: Record<string, VocabularyWordProgress>;
+  /**
+   * «Повторение» в письме: слова и иероглифы (id вида «char:么»), которые пользователь
+   * хочет отработать. Отдельно от избранного словаря: это временный список.
+   */
+  writingReview: Record<string, WritingReviewEntry>;
 }
 
 interface WordProgressActions {
@@ -43,6 +53,9 @@ interface WordProgressActions {
     isKnown?: boolean;
   }) => void;
   toggleFavorite: (wordId: string) => void;
+  /** Добавляет слово в «Повторение» письма или убирает оттуда. */
+  toggleWritingReview: (wordId: string) => void;
+  removeFromWritingReview: (wordId: string) => void;
   reset: () => void;
 }
 
@@ -82,6 +95,7 @@ export const useWordProgressStore = create<WordProgressStore>()(
       flashcardSets: {},
       flashcardWords: {},
       vocabularyWords: {},
+      writingReview: {},
 
       completeFlashcardSet: ({ setId, score, totalQuestions, duration }) => {
         const practiceSet = practiceSets.find((s) => s.id === setId);
@@ -173,13 +187,47 @@ export const useWordProgressStore = create<WordProgressStore>()(
         });
       },
 
+      toggleWritingReview: (wordId) => {
+        set((state) => {
+          const next = { ...state.writingReview };
+
+          if (next[wordId]) delete next[wordId];
+          else next[wordId] = { addedAt: Date.now() };
+
+          return { writingReview: next };
+        });
+      },
+
+      removeFromWritingReview: (wordId) => {
+        set((state) => {
+          if (!state.writingReview[wordId]) return state;
+
+          const next = { ...state.writingReview };
+          delete next[wordId];
+          return { writingReview: next };
+        });
+      },
+
       reset: () => {
-        set({ flashcardSets: {}, flashcardWords: {}, vocabularyWords: {} });
+        set({
+          flashcardSets: {},
+          flashcardWords: {},
+          vocabularyWords: {},
+          writingReview: {},
+        });
       },
     }),
     {
       name: "word-progress",
       storage: createJSONStorage(() => AsyncStorage),
+      // Версия 1: склеены дубликаты слов (см. content/words/aliases.ts).
+      // writingReview добавлен без смены версии: у старых сохранений его нет,
+      // и persist подставляет значение по умолчанию ({}).
+      version: 1,
+      migrate: (persisted, version) =>
+        version < 1
+          ? mergeAliasedProgress(persisted as any)
+          : (persisted as any),
     },
   ),
 );

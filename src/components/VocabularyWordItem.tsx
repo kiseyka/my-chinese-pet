@@ -1,7 +1,7 @@
 // components/VocabularyWordItem.tsx
 
 import type { WordLevel } from "@/components/ui/LevelDots";
-import { allWords } from "@/content/flashcards/data";
+import { allWords } from "@/content/words/vocabulary";
 import { memo } from "react";
 import { WordCard } from "./ui/WordCard";
 

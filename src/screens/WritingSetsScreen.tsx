@@ -1,79 +1,153 @@
 // src/screens/WritingSetsScreen.tsx
 //
-// Вход в режим «Написание»: классическая тренировка, а также слова по наборам:
-// из набора можно выбрать слово для свободной тренировки или повторить тему.
+// Вход в режим «Написание»:
+//   - поиск по иероглифу, пиньиню (без тонов) и переводу;
+//   - «Повторение»: слова, которые пользователь отрабатывает, и тренировка по ним;
+//   - сетка слов текущего раздела HSK, разбитая на ступени по 10 слов (текущая ступень
+//     развёрнута, остальные свёрнуты);
+//   - следующие разделы HSK (пока закрыты) и «Другие слова» (свёрнуты).
+// Нажатие на слово открывает выбор: что писать, в каком формате, и переключатель «Повторять».
 
-import { SetPreviewModal } from "@/components/game/SetPreviewModal";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { Title } from "@/components/ui/Title";
-import { practiceSets } from "@/content/flashcards/sets";
-import type { PracticeSet } from "@/content/flashcards/types";
+import { HanziGrid } from "@/components/writing/HanziGrid";
+import { PracticeChoiceModal } from "@/components/writing/PracticeChoiceModal";
+import type { Word } from "@/content/flashcards/types";
 import { useWordProgressStore } from "@/store/wordProgressStore";
+import { colors } from "@/theme/colors";
 import {
-  REVIEW_WORD_COUNT,
-  getLearnedWords,
-  getSimpleWords,
-  groupByWritingLevel,
+  NO_HSK_LEVEL,
+  REPEAT_LESSON_SIZE,
+  describeLevel,
+  getAvailableLevels,
+  getLevelSequence,
+  getLevelStepsProgress,
+  getRepeatWords,
+  getWordCharacters,
+  getWordWritingDots,
+  searchWritingWords,
+  type FreeFormat,
 } from "@/utils/writingLessons";
-import { getWritableWords } from "@/utils/writingWords";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+
+/** Отступы Screen по бокам: от них считается ширина ячеек сетки. */
+const SCREEN_INSET = 32;
+
+/** Набор переводов, где лежат переводы слов (как на экране урока). */
+const WORDS_NAMESPACE = "sets";
+
+interface SectionHeaderProps {
+  title: string;
+  subtitle: string;
+  expanded: boolean;
+  onPress: () => void;
+}
+
+function SectionHeader({
+  title,
+  subtitle,
+  expanded,
+  onPress,
+}: SectionHeaderProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="min-h-12 flex-row items-center justify-between rounded-2xl bg-surface px-4 py-3 active:opacity-70"
+      accessibilityRole="button"
+      accessibilityState={{ expanded }}
+    >
+      <Text className="font-nunito text-body text-text">{title}</Text>
+      <View className="flex-row items-center gap-2">
+        <Text className="font-nunito text-small text-text">{subtitle}</Text>
+        <Text className="font-nunito text-body text-text">
+          {expanded ? "▴" : "▾"}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
 
 export default function WritingSetsScreen() {
   const router = useRouter();
-  const { t } = useTranslation(["sets"]);
+  const { t } = useTranslation([WORDS_NAMESPACE]);
 
-  const [selectedSet, setSelectedSet] = useState<PracticeSet | null>(null);
-
-  // Подписка на прогресс: экран перерисовывается при каждом его изменении
+  // Подписка на прогресс: точки, ступени и «Повторение» пересчитываются при изменении
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
-
-  const groups = groupByWritingLevel(getSimpleWords(), flashcardWords);
-  const summary = {
-    total: groups.fresh.length + groups.learning.length + groups.learned.length,
-    fresh: groups.fresh.length,
-    learning: groups.learning.length,
-    learned: groups.learned.length,
-  };
-
-  // Только наборы, где есть слова из одного иероглифа с данными о чертах
-  const available = useMemo(
-    () =>
-      practiceSets
-        .map((practiceSet) => ({
-          practiceSet,
-          writable: getWritableWords(practiceSet.words),
-        }))
-        .filter((item) => item.writable.length > 0),
-    [],
+  const writingReview = useWordProgressStore((s) => s.writingReview);
+  const toggleWritingReview = useWordProgressStore(
+    (s) => s.toggleWritingReview,
   );
 
-  const learnedInSelected = selectedSet
-    ? getLearnedWords(selectedSet.words, flashcardWords).length
-    : 0;
-  const canReview = learnedInSelected >= REVIEW_WORD_COUNT;
+  const levels = useMemo(() => getAvailableLevels(), []);
+  const hskLevels = levels.filter((level) => level !== NO_HSK_LEVEL);
+  const hasOtherWords = levels.includes(NO_HSK_LEVEL);
 
-  const startFree = (vocabularyId: string) => {
-    setSelectedSet(null);
+  // Пока финалов ступеней нет, открыт только первый раздел HSK
+  const currentLevel = hskLevels[0];
+  const lockedLevels = hskLevels.slice(1);
+
+  const progress =
+    currentLevel !== undefined
+      ? getLevelStepsProgress(currentLevel, flashcardWords)
+      : null;
+
+  // Развёрнутые блоки: «step-3», «review» или «other». Сначала — текущая ступень
+  const [expanded, setExpanded] = useState<Set<string>>(
+    () => new Set(progress ? [`step-${progress.currentIndex}`] : []),
+  );
+
+  const toggle = (key: string) =>
+    setExpanded((previous) => {
+      const next = new Set(previous);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => searchWritingWords(query, t), [query, t]);
+  const isSearching = query.trim().length > 0;
+
+  const repeatWords = useMemo(
+    () => getRepeatWords(Object.keys(writingReview)),
+    [writingReview],
+  );
+
+  const [selected, setSelected] = useState<Word | null>(null);
+  const characters = useMemo(
+    () => (selected ? getWordCharacters(selected) : []),
+    [selected],
+  );
+
+  const getLevel = (word: Word) => getWordWritingDots(word, flashcardWords);
+  const isInReview = (word: Word) => !!writingReview[word.vocabularyId];
+
+  const start = (word: Word, format: FreeFormat) => {
+    setSelected(null);
     router.push({
       pathname: "/games/writing/free" as any,
-      params: { wordId: vocabularyId },
+      params: { wordId: word.vocabularyId, format },
     });
   };
 
-  const startReview = () => {
-    if (!selectedSet || !canReview) return;
-
-    const setId = selectedSet.id;
-    setSelectedSet(null);
-    router.push({
-      pathname: "/games/writing/review" as any,
-      params: { setId },
-    });
+  const startRepeat = () => {
+    if (repeatWords.length === 0) return;
+    router.push("/games/writing/review" as any);
   };
+
+  const grid = (words: Word[]) => (
+    <HanziGrid
+      words={words}
+      getLevel={getLevel}
+      onSelect={setSelected}
+      isMarked={isInReview}
+      horizontalInset={SCREEN_INSET}
+    />
+  );
 
   return (
     <Screen>
@@ -83,97 +157,142 @@ export default function WritingSetsScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <SetPreviewModal
-        visible={!!selectedSet}
-        practiceSet={selectedSet}
-        skill="writing"
-        onSelectWord={startFree}
-        onClose={() => setSelectedSet(null)}
-        footer={
-          <View className="mb-3 gap-2">
-            <Text className="font-nunito text-sm text-text">
-              Нажми на слово, чтобы потренировать его в свободном режиме.
-            </Text>
-
-            <Pressable
-              disabled={!canReview}
-              onPress={startReview}
-              className={`min-h-12 items-center justify-center rounded-2xl bg-surface px-4 py-3 active:opacity-70 ${
-                canReview ? "" : "opacity-50"
-              }`}
-            >
-              <Text className="font-nunito text-base text-text">
-                Повторить тему
-              </Text>
-            </Pressable>
-
-            {!canReview && (
-              <Text className="font-nunito text-xs text-text">
-                Нужно минимум {REVIEW_WORD_COUNT} освоенных слова набора, сейчас{" "}
-                {learnedInSelected}.
-              </Text>
-            )}
-          </View>
-        }
+      <PracticeChoiceModal
+        word={selected}
+        characters={characters}
+        getLevel={getLevel}
+        isInReview={isInReview}
+        onToggleReview={(word) => toggleWritingReview(word.vocabularyId)}
+        onStart={start}
+        onClose={() => setSelected(null)}
       />
+
+      {/* Поиск */}
+      <View className="mt-3 min-h-12 flex-row items-center rounded-2xl bg-surface px-4">
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Иероглиф, пиньинь или перевод"
+          placeholderTextColor={colors.textSecondary}
+          autoCorrect={false}
+          autoCapitalize="none"
+          returnKeyType="search"
+          className="flex-1 py-3 font-nunito text-body text-text"
+          accessibilityLabel="Поиск слова"
+        />
+        {isSearching && (
+          <Pressable
+            onPress={() => setQuery("")}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Очистить поиск"
+          >
+            <Text className="font-nunito text-title text-text">✕</Text>
+          </Pressable>
+        )}
+      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: 16 }}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingVertical: 16, gap: 12 }}
       >
-        <View className="gap-6">
-          <View className="gap-3">
-            <Text className="font-nunito text-lg text-text">
-              Простой уровень
+        {isSearching ? (
+          results.length > 0 ? (
+            grid(results)
+          ) : (
+            <Text className="font-nunito text-body text-text">
+              Ничего не нашлось. Пиньинь можно писать без тонов: «nihao».
             </Text>
+          )
+        ) : (
+          <>
+            {/* Повторение */}
+            {repeatWords.length > 0 && (
+              <View className="gap-3">
+                <SectionHeader
+                  title="Повторение"
+                  subtitle={`${repeatWords.length}`}
+                  expanded={expanded.has("review")}
+                  onPress={() => toggle("review")}
+                />
 
-            <Pressable
-              disabled={summary.total === 0}
-              onPress={() => router.push("/games/writing/classic" as any)}
-              className={`rounded-3xl bg-surface px-5 py-5 gap-1 active:opacity-70 ${
-                summary.total === 0 ? "opacity-50" : ""
-              }`}
-            >
-              <Text className="font-nunito text-xl text-text">
-                Классическая тренировка
-              </Text>
-              <Text className="font-nunito text-sm text-text">
-                Одно слово для изучения и два повторения. Слова из одного слога.
-              </Text>
-              <Text className="font-nunito text-sm text-text">
-                Новых: {summary.fresh} · В процессе: {summary.learning} ·
-                Освоено: {summary.learned}
-              </Text>
-            </Pressable>
-          </View>
+                <Pressable
+                  onPress={startRepeat}
+                  className="min-h-12 items-center justify-center rounded-2xl bg-primary px-4 py-3 active:opacity-80"
+                >
+                  <Text className="font-nunitoBold text-body text-white">
+                    Повторить
+                    {repeatWords.length > REPEAT_LESSON_SIZE
+                      ? ` (${REPEAT_LESSON_SIZE} из ${repeatWords.length})`
+                      : ""}
+                  </Text>
+                </Pressable>
 
-          <View className="gap-3">
-            <Text className="font-nunito text-lg text-text">
-              Слова по наборам
-            </Text>
-            <Text className="font-nunito text-sm text-text">
-              Открой набор: там видно, как продвигается каждое слово, и можно
-              выбрать слово для свободной тренировки или повторить тему.
-            </Text>
+                {expanded.has("review") && grid(repeatWords)}
+              </View>
+            )}
 
-            {available.map(({ practiceSet, writable }) => (
-              <Pressable
-                key={practiceSet.id}
-                onPress={() =>
-                  setSelectedSet({ ...practiceSet, words: writable })
-                }
-                className="rounded-3xl bg-surface px-5 py-4 active:opacity-70"
+            {progress && currentLevel !== undefined && (
+              <>
+                <Text className="font-nunitoBold text-title text-text">
+                  {describeLevel(currentLevel)}
+                </Text>
+                <Text className="font-nunito text-body text-text">
+                  Выбери слово, чтобы потренировать его. Точки под словом —
+                  сколько раз оно написано по памяти.
+                </Text>
+
+                {progress.steps.map((step, index) => {
+                  const key = `step-${index}`;
+                  const isOpen = expanded.has(key);
+                  const isCurrent = index === progress.currentIndex;
+
+                  return (
+                    <View key={key} className="gap-3">
+                      <SectionHeader
+                        title={`Ступень ${index + 1}${isCurrent ? " · сейчас" : ""}`}
+                        subtitle={`${step.started}/${step.words.length}`}
+                        expanded={isOpen}
+                        onPress={() => toggle(key)}
+                      />
+                      {isOpen && grid(step.words)}
+                    </View>
+                  );
+                })}
+              </>
+            )}
+
+            {/* Следующие разделы HSK */}
+            {lockedLevels.map((level) => (
+              <View
+                key={level}
+                className="gap-1 rounded-2xl bg-surface/60 px-4 py-3"
               >
-                <Text className="font-nunito text-lg text-text">
-                  {t(practiceSet.title)}
+                <Text className="font-nunito text-body text-text">
+                  {describeLevel(level)} · закрыт
                 </Text>
-                <Text className="font-nunito text-sm text-text">
-                  Иероглифов для письма: {writable.length}
+                <Text className="font-nunito text-small text-text">
+                  Откроется, когда пройдёшь финалы всех ступеней{" "}
+                  {describeLevel(currentLevel)}.
                 </Text>
-              </Pressable>
+              </View>
             ))}
-          </View>
-        </View>
+
+            {/* Другие слова: твои слова без уровня и слова HSK 5+ */}
+            {hasOtherWords && (
+              <View className="gap-3">
+                <SectionHeader
+                  title={describeLevel(NO_HSK_LEVEL)}
+                  subtitle={`${getLevelSequence(NO_HSK_LEVEL).length}`}
+                  expanded={expanded.has("other")}
+                  onPress={() => toggle("other")}
+                />
+                {expanded.has("other") && grid(getLevelSequence(NO_HSK_LEVEL))}
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
     </Screen>
   );

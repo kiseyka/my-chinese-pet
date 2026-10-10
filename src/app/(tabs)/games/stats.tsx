@@ -4,6 +4,7 @@ import LineSvg from "@/assets/images/svg/line.svg";
 import { Screen } from "@/components/layout/Screen";
 import { BrushProgressCircle } from "@/components/ui/BrushProgressCircle";
 import { WordCard } from "@/components/ui/WordCard";
+import { WritingResultsList } from "@/components/writing/WritingResultsList";
 import { useGameStore } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
@@ -21,8 +22,15 @@ export default function GeneralStatsScreen() {
   const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
   const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
 
-  const { xp } = useLocalSearchParams<{ xp: string }>();
+  const { xp, gameId } = useLocalSearchParams<{
+    xp: string;
+    gameId?: string;
+  }>();
   const earnedXp = Number(xp);
+
+  // После письма показываем все написанные слова, а не только ошибки
+  const writingResults = useGameStore((s) => s.writingResults);
+  const isWriting = gameId === "writing" && writingResults.length > 0;
 
   const score = useGameStore((s) => s.score);
   const duration = useGameStore((s) => s.duration);
@@ -87,7 +95,15 @@ export default function GeneralStatsScreen() {
         </View>
 
         <View className="flex-1 w-full">
-          {wrongAnswers.length > 0 ? (
+          {isWriting ? (
+            <ScrollView
+              className="w-full"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 16 }}
+            >
+              <WritingResultsList results={writingResults} />
+            </ScrollView>
+          ) : wrongAnswers.length > 0 ? (
             <View className="flex-1 flex-col gap-8">
               <View className="relative justify-center items-center py-2">
                 <LineSvg

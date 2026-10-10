@@ -2,6 +2,8 @@
 //
 // Ход урока письма. План (какие слова и в каком формате) приходит снаружи,
 // поэтому тот же хук подходит для разных режимов тренировки.
+//
+// Структура: урок → слова → этапы → ячейки (иероглифы внутри этапа) → черты.
 
 import { getHanzi } from "@/content/writing/hanzi";
 import { useGameStore, type FlashcardQuestionResult } from "@/store/gameStore";
@@ -32,18 +34,21 @@ const REVEAL_AFTER = 2;
 const HINT_AFTER_OUTLINE = 2;
 const HINT_AFTER_MEMORY = 4;
 
-/** Пауза после завершённого этапа, чтобы увидеть результат. */
+/** Пауза после завершённого этапа или иероглифа, чтобы увидеть результат. */
 const STAGE_DONE_DELAY = 500;
 
-type Phase = "active" | "stage_done" | "word_result";
+type Phase = "active" | "slot_done" | "stage_done" | "word_result";
 
 interface LessonWord extends LessonItem {
-  data: HanziData;
+  /** Данные о чертах каждого иероглифа слова. */
+  chars: HanziData[];
   stages: WritingStage[];
 }
 
 interface WordOutcome {
   word: LessonItem["word"];
+  /** Линии пользователя на последнем этапе по каждому иероглифу (для экрана итогов). */
+  raws: Point[][][];
   /** Слово написано на последнем этапе без раскрытых подсказок. */
   success: boolean;
   /** Это была работа над ошибками (в счёт урока не идёт). */
@@ -56,10 +61,19 @@ function prepare(plan: LessonItem[]): LessonWord[] {
   const words: LessonWord[] = [];
 
   for (const item of plan) {
-    const data = getHanzi(item.word.hanzi);
-    if (data) {
-      words.push({ ...item, data, stages: buildStages(data, item.format) });
-    }
+    const chars = Array.from(item.word.hanzi).map((character) =>
+      getHanzi(character),
+    );
+
+    // Слово без данных хотя бы об одном иероглифе пропускаем
+    if (chars.length === 0 || chars.some((data) => !data)) continue;
+
+    const data = chars as HanziData[];
+    words.push({
+      ...item,
+      chars: data,
+      stages: buildStages(data, item.format, Array.from(item.word.hanzi)),
+    });
   }
 
   return words;
@@ -73,13 +87,20 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
 
   const [wordIndex, setWordIndex] = useState(0);
   const [stageIndex, setStageIndex] = useState(0);
+  const [slotIndex, setSlotIndex] = useState(0);
   const [cursor, setCursor] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [revealed, setRevealed] = useState<number[]>([]);
   const [assisted, setAssisted] = useState(false);
-  const [stageRaw, setStageRaw] = useState<Point[][]>([]);
+  /** Принятые линии пользователя по ячейкам текущего этапа. */
+  const [slotRaws, setSlotRaws] = useState<Point[][][]>([]);
   const [phase, setPhase] = useState<Phase>("active");
   const [lastReason, setLastReason] = useState<StrokeCheckReason | null>(null);
+  /**
+   * Черта проведена верно, но в стороне: один раз на черту подсвечиваем её без ошибки.
+   * Сбрасывается, когда черта принята или начинается новая ячейка/этап.
+   */
+  const [softHint, setSoftHint] = useState(false);
   const [outcomes, setOutcomes] = useState<WordOutcome[]>([]);
 
   // Ref, а не state: защита от двойного нажатия «Завершить» срабатывает мгновенно
@@ -91,14 +112,18 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
 
   const current = words[wordIndex];
   const stage = current?.stages[stageIndex];
+  const slot = stage?.slots[slotIndex];
+  const slotData = slot ? current?.chars[slot.charIndex] : undefined;
 
   const resetStage = (index: number) => {
     setStageIndex(index);
+    setSlotIndex(0);
     setCursor(0);
     setMistakes(0);
     setRevealed([]);
-    setStageRaw([]);
+    setSlotRaws([]);
     setLastReason(null);
+    setSoftHint(false);
     setPhase("active");
   };
 
@@ -131,46 +156,78 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     }, [buildPlan]),
   );
 
-  // После завершённого (не последнего) этапа переходим к следующему
+  // Короткая пауза после иероглифа или этапа, затем переход дальше
   useEffect(() => {
-    if (phase !== "stage_done") return;
+    if (phase !== "slot_done" && phase !== "stage_done") return;
 
-    const timer = setTimeout(
-      () => resetStage(stageIndex + 1),
-      STAGE_DONE_DELAY,
-    );
+    const timer = setTimeout(() => {
+      if (phase === "slot_done") {
+        setSlotIndex((i) => i + 1);
+        setCursor(0);
+        setMistakes(0);
+        setRevealed([]);
+        setLastReason(null);
+        setSoftHint(false);
+        setPhase("active");
+      } else {
+        resetStage(stageIndex + 1);
+      }
+    }, STAGE_DONE_DELAY);
 
     return () => clearTimeout(timer);
   }, [phase, stageIndex]);
 
-  /** Конец показа написания: переходим к следующему этапу. */
+  /** Конец показа написания: следующий иероглиф слова или следующий этап. */
   const finishDemo = () => {
-    if (phase !== "active" || stage?.mode !== "demo") return;
+    if (phase !== "active" || !stage || stage.mode !== "demo") return;
+
+    if (slotIndex + 1 < stage.slots.length) {
+      setSlotIndex((i) => i + 1);
+      return;
+    }
+
     resetStage(stageIndex + 1);
   };
 
   const handleStroke = (points: Point[]) => {
-    if (phase !== "active" || !current || !stage || stage.mode === "demo") {
+    if (
+      phase !== "active" ||
+      !current ||
+      !stage ||
+      !slot ||
+      !slotData ||
+      stage.mode === "demo"
+    ) {
       return;
     }
 
-    const strokeIndex = stage.strokeIndices[cursor];
+    const strokeIndex = slot.strokeIndices[cursor];
     const result = checkStroke(
       points,
-      current.data.medians[strokeIndex],
+      slotData.medians[strokeIndex],
       stage.mode === "outline" ? STRICTNESS_OUTLINE : STRICTNESS_MEMORY,
     );
 
     if (result.ok) {
       const nextCursor = cursor + 1;
 
-      setStageRaw((prev) => [...prev, points]);
+      setSlotRaws((prev) => {
+        const next = [...prev];
+        next[slotIndex] = [...(next[slotIndex] ?? []), points];
+        return next;
+      });
       setCursor(nextCursor);
       setMistakes(0);
       setLastReason(null);
+      setSoftHint(false);
 
-      if (nextCursor >= stage.strokeIndices.length) {
-        setPhase(stage.isFinal ? "word_result" : "stage_done");
+      if (nextCursor >= slot.strokeIndices.length) {
+        if (slotIndex + 1 < stage.slots.length) {
+          // Иероглиф дописан, впереди следующий иероглиф слова
+          setPhase("slot_done");
+        } else {
+          setPhase(stage.isFinal ? "word_result" : "stage_done");
+        }
       }
       return;
     }
@@ -178,13 +235,20 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     // Случайные касания за ошибку не считаем
     if (result.reason === "too_short") return;
 
+    // Верная черта, но в стороне: в первый раз только подсвечиваем её, без ошибки
+    if (result.reason === "wrong_position" && !softHint) {
+      setSoftHint(true);
+      setLastReason(result.reason);
+      return;
+    }
+
     const nextMistakes = mistakes + 1;
     setMistakes(nextMistakes);
     setLastReason(result.reason);
 
     // Письмо по памяти: если застрял, раскрываем контур нужной части
     if (stage.mode === "memory" && nextMistakes === REVEAL_AFTER) {
-      const group = stage.revealGroups.find((g) => g.includes(strokeIndex)) ?? [
+      const group = slot.revealGroups.find((g) => g.includes(strokeIndex)) ?? [
         strokeIndex,
       ];
 
@@ -216,6 +280,18 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
 
     const results: FlashcardQuestionResult[] = [];
     const wordChanges: WordChange[] = [];
+
+    // Для экрана итогов: все написанные слова с линиями пользователя
+    game.setWritingResults(
+      scored.map(({ word, success, raws }) => ({
+        vocabularyId: word.vocabularyId,
+        hanzi: word.hanzi,
+        pinyin: word.pinyin,
+        translation: word.translation,
+        isCorrect: success,
+        raws,
+      })),
+    );
 
     for (const { word, success } of scored) {
       const levelAfter = readWordLevel(word.vocabularyId, "writing");
@@ -265,6 +341,7 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
       ...outcomes,
       {
         word: current.word,
+        raws: slotRaws,
         success: !assisted,
         deep: current.isDeep === true,
         retryDeep: current.retryDeep === true,
@@ -297,8 +374,8 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     resetStage(0);
   };
 
-  // Что показывать на холсте на текущем этапе
-  const strokeIndices = stage?.strokeIndices ?? [];
+  // Что показывать на холсте в текущей ячейке этапа
+  const strokeIndices = slot?.strokeIndices ?? [];
   const outlineIndices =
     stage?.mode === "outline"
       ? strokeIndices
@@ -307,7 +384,8 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
         : [];
   const snappedIndices =
     stage?.mode === "outline" ? strokeIndices.slice(0, cursor) : [];
-  const rawStrokes = stage?.mode === "memory" ? stageRaw : [];
+  const rawStrokes =
+    stage?.mode === "memory" ? (slotRaws[slotIndex] ?? []) : [];
 
   const hintAfter =
     stage?.mode === "outline" ? HINT_AFTER_OUTLINE : HINT_AFTER_MEMORY;
@@ -315,9 +393,18 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     stage &&
     stage.mode !== "demo" &&
     phase === "active" &&
-    mistakes >= hintAfter
+    (softHint || mistakes >= hintAfter)
       ? strokeIndices[cursor]
       : null;
+
+  // Уже написанные иероглифы слова в этом этапе (для небольшого превью над холстом)
+  const completedSlots =
+    stage && stage.mode !== "demo"
+      ? stage.slots.slice(0, slotIndex).map((s, index) => ({
+          charIndex: s.charIndex,
+          raw: slotRaws[index] ?? [],
+        }))
+      : [];
 
   // Будет ли после этого слова работа над ошибками (чтобы кнопка не говорила «Завершить» зря)
   const deepPending =
@@ -329,17 +416,23 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     isReady,
     hasWords: words.length > 0,
     word: current?.word,
-    data: current?.data,
+    chars: current?.chars,
     roleLabel: current?.roleLabel,
     stage,
     stageIndex,
     stageCount: current?.stages.length ?? 0,
+    slot,
+    slotData,
+    slotIndex,
+    slotCount: stage?.slots.length ?? 0,
     wordIndex,
     wordCount: words.length,
     phase,
     lastReason,
     assisted,
-    finalRaw: stageRaw,
+    /** Линии пользователя по каждому иероглифу слова (для сравнения в конце слова). */
+    finalRaws: slotRaws,
+    completedSlots,
     isLastWord: wordIndex + 1 >= words.length && !deepPending,
     outlineIndices,
     snappedIndices,

@@ -1,0 +1,130 @@
+import type { WordEntry } from "../types";
+
+export const houseWords: WordEntry[] = [
+  {
+    id: "house_house",
+    hanzi: "房子",
+    pinyin: "fángzi",
+    translation: "house.house",
+  },
+  {
+    id: "house_room",
+    hanzi: "房间",
+    pinyin: "fángjiān",
+    translation: "house.room",
+  },
+  {
+    id: "house_door",
+    hanzi: "门",
+    pinyin: "mén",
+    translation: "house.door",
+  },
+  {
+    id: "house_window",
+    hanzi: "窗户",
+    pinyin: "chuānghu",
+    translation: "house.window",
+  },
+  {
+    id: "house_kitchen",
+    hanzi: "厨房",
+    pinyin: "chúfáng",
+    translation: "house.kitchen",
+  },
+  {
+    id: "house_bathroom",
+    hanzi: "厕所",
+    pinyin: "cèsuǒ",
+    translation: "house.bathroom",
+  },
+  {
+    id: "house_living_room",
+    hanzi: "客厅",
+    pinyin: "kètīng",
+    translation: "house.living_room",
+  },
+  {
+    id: "house_bedroom",
+    hanzi: "卧室",
+    pinyin: "wòshì",
+    translation: "house.bedroom",
+  },
+  {
+    id: "house_table",
+    hanzi: "桌子",
+    pinyin: "zhuōzi",
+    translation: "house.table",
+  },
+  {
+    id: "house_chair",
+    hanzi: "椅子",
+    pinyin: "yǐzi",
+    translation: "house.chair",
+  },
+  {
+    id: "house_bed",
+    hanzi: "床",
+    pinyin: "chuáng",
+    translation: "house.bed",
+  },
+  {
+    id: "house_sofa",
+    hanzi: "沙发",
+    pinyin: "shāfā",
+    translation: "house.sofa",
+  },
+  {
+    id: "house_television",
+    hanzi: "电视",
+    pinyin: "diànshì",
+    translation: "house.television",
+  },
+  {
+    id: "house_refrigerator",
+    hanzi: "冰箱",
+    pinyin: "bīngxiāng",
+    translation: "house.refrigerator",
+  },
+  {
+    id: "house_air_conditioner",
+    hanzi: "空调",
+    pinyin: "kōngtiáo",
+    translation: "house.air_conditioner",
+  },
+  {
+    id: "house_lamp",
+    hanzi: "灯",
+    pinyin: "dēng",
+    translation: "house.lamp",
+  },
+  {
+    id: "house_computer",
+    hanzi: "电脑",
+    pinyin: "diànnǎo",
+    translation: "house.computer",
+  },
+  {
+    id: "house_telephone",
+    hanzi: "电话",
+    pinyin: "diànhuà",
+    translation: "house.telephone",
+  },
+  {
+    id: "house_key",
+    hanzi: "钥匙",
+    pinyin: "yàoshi",
+    translation: "house.key",
+  },
+  {
+    id: "house_book",
+    hanzi: "书",
+    pinyin: "shū",
+    translation: "house.book",
+  },
+  {
+    id: "house_measure_ba",
+    hanzi: "把",
+    pinyin: "bǎ",
+    translation: "house.measure_ba",
+  },
+];

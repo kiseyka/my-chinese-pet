@@ -3,6 +3,8 @@ import * as Localization from "expo-localization";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
+import { hskWords } from "@/content/words/generated/hskWords";
+
 import en from "./locales/en.json";
 import ru from "./locales/ru.json";
 import zh from "./locales/zh.json";
@@ -16,18 +18,31 @@ import ruCommon from "./locales/ru/common.json";
 import enPhrases from "./locales/en/panda/phrases.json";
 import ruPhrases from "./locales/ru/panda/phrases.json";
 
+import ruHsk from "./locales/ru/hsk.json";
+
+/**
+ * Английские переводы HSK-слов берутся прямо из сгенерированного файла
+ * (ключ — id слова, например "hsk-需要"). Русские — из locales/ru/hsk.json,
+ * его ведёшь вручную. Если русского перевода нет, срабатывает fallbackLng "en".
+ */
+const enHsk: Record<string, string> = Object.fromEntries(
+  hskWords.map((word) => [word.id, word.translationEn]),
+);
+
 const resources = {
   en: {
     translation: en,
     sets: enSets,
     common: enCommon,
     pandaPhrases: enPhrases,
+    hsk: enHsk,
   },
   ru: {
     translation: ru,
     sets: ruSets,
     common: ruCommon,
     pandaPhrases: ruPhrases,
+    hsk: ruHsk,
   },
   zh: { translation: zh },
 };
@@ -40,7 +55,7 @@ i18n.use(initReactI18next).init({
   lng: systemLanguage,
   fallbackLng: "en",
   defaultNS: "translation",
-  ns: ["translation", "sets", "common", "panda", "pandaPhrases"],
+  ns: ["translation", "sets", "common", "panda", "pandaPhrases", "hsk"],
   interpolation: {
     escapeValue: false,
   },

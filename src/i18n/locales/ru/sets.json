@@ -418,5 +418,8 @@
         "inside_side": "Внутри",
         "outside_side": "Снаружи",
         "measure_chu": "Счётное слово для мест"
+    },
+    "characters": {
+        "good": "Хороший"
     }
 }

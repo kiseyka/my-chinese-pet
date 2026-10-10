@@ -18,8 +18,14 @@ export function useShopCatalog() {
   const addOwnedProduct = useShopStore((s) => s.addOwnedProduct);
   const setCabinetType = useRoomStore((s) => s.setCabinetType);
   const setPosterType = useRoomStore((s) => s.setPosterType);
+  const setWallType = useRoomStore((s) => s.setWallType);
+  const setFloorType = useRoomStore((s) => s.setFloorType);
+  const setCarpetType = useRoomStore((s) => s.setCarpetType);
   const currentCabinetType = useRoomStore((s: any) => s.cabinetType);
   const currentPosterType = useRoomStore((s: any) => s.posterType);
+  const currentWallType = useRoomStore((s: any) => s.wallType);
+  const currentFloorType = useRoomStore((s: any) => s.floorType);
+  const currentCarpetType = useRoomStore((s: any) => s.carpetType);
 
   const [activeDomain, setActiveDomain] = useState<Domain>("interior");
   const [activeCategory, setActiveCategory] = useState<string | null>(
@@ -49,12 +55,19 @@ export function useShopCatalog() {
   // самом товаре, а не в отдельном словаре.
   const isEquipped = (product: ProductBlueprint) => {
     if (!product.roomEffect) return false;
+
     const { field, value } = product.roomEffect;
-    const currentValue =
-      field === "cabinetType" ? currentCabinetType : currentPosterType;
+
+    const currentValue = {
+      cabinetType: currentCabinetType,
+      posterType: currentPosterType,
+      wallType: currentWallType,
+      floorType: currentFloorType,
+      carpetType: currentCarpetType,
+    }[field];
+
     return currentValue === value;
   };
-
   const products = blueprints.map((p) => ({
     ...p,
     owned: isOwned(p.id),
@@ -76,6 +89,9 @@ export function useShopCatalog() {
     const { field, value } = selectedProduct.roomEffect;
     if (field === "cabinetType") setCabinetType(value as any);
     if (field === "posterType") setPosterType(value as any);
+    if (field === "wallType") setWallType(value as any);
+    if (field === "floorType") setFloorType(value as any);
+    if (field === "carpetType") setCarpetType(value as any);
     router.back();
   };
 
@@ -105,6 +121,18 @@ export function useShopCatalog() {
     selectedProduct?.roomEffect?.field === "posterType"
       ? selectedProduct.roomEffect.value
       : currentPosterType;
+  const previewWallType =
+    selectedProduct?.roomEffect?.field === "wallType"
+      ? selectedProduct.roomEffect.value
+      : currentWallType;
+  const previewFloorType =
+    selectedProduct?.roomEffect?.field === "floorType"
+      ? selectedProduct.roomEffect.value
+      : currentFloorType;
+  const previewCarpetType =
+    selectedProduct?.roomEffect?.field === "carpetType"
+      ? selectedProduct.roomEffect.value
+      : currentCarpetType;
 
   return {
     activeDomain,
@@ -115,6 +143,9 @@ export function useShopCatalog() {
     selectedProductId,
     previewCabinetType,
     previewPosterType,
+    previewWallType,
+    previewFloorType,
+    previewCarpetType,
     handleDomainChange,
     handleCategoryChange,
     handleCancel,
