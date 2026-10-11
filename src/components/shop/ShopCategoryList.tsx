@@ -14,7 +14,7 @@ export const ShopCategoryList = ({
   onChange,
 }: ShopCategoryListProps) => {
   return (
-    <View className="border border-[#D8C3A3] border-b-0 rounded-2xl pt-2 overflow-hidden">
+    <View className="overflow-hidden rounded-2xl border border-primary/30 bg-surface/60 pt-2">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -22,9 +22,9 @@ export const ShopCategoryList = ({
           flexGrow: 0,
         }}
         contentContainerStyle={{
-          gap: 4,
-          paddingHorizontal: 2,
-          paddingBottom: 4,
+          gap: 6,
+          paddingHorizontal: 8,
+          paddingBottom: 8,
           alignItems: "flex-start",
         }}
       >

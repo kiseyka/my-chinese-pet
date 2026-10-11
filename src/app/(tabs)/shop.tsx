@@ -18,6 +18,8 @@ const ShopScreen = () => {
     products,
     selectedProduct,
     selectedProductId,
+    hasDrafts,
+    totalPrice,
     previewCabinetType,
     previewPosterType,
     previewWallType,
@@ -69,7 +71,9 @@ const ShopScreen = () => {
       </View>
 
       <ShopActionBar
-        selectedProduct={selectedProduct}
+        hasSelectionInCategory={!!selectedProduct}
+        hasDrafts={hasDrafts}
+        totalPrice={totalPrice}
         onApply={handleApply}
         onBuy={handleBuy}
         onCancel={handleCancel}

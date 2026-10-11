@@ -42,7 +42,7 @@ export const PandaScenePreview = ({
 
   return (
     <View
-      className="border border-[#D8C3A3] rounded-lg"
+      className="border border-transparent rounded-xl"
       style={[{ position: "absolute", inset: 0, overflow: "hidden" }, style]}
     >
       <Rive
@@ -50,7 +50,7 @@ export const PandaScenePreview = ({
         source={require("@/assets/motion/preview_01.riv")}
         artboardName="background 5"
         stateMachineName="State Machine 1"
-        fit={Fit.Contain}
+        fit={Fit.Cover}
         alignment={Alignment.TopCenter}
         style={{ position: "absolute", inset: 0 }}
         onPlay={onPlay}

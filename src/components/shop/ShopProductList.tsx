@@ -26,12 +26,12 @@ export const ShopProductList = ({
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          gap: 10,
+          gap: 8,
           paddingBottom: 8,
         }}
       >
         {products.length === 0 ? (
-          <Text className="font-nunito text-sm text-[#967F67] mt-2">
+          <Text className="mt-2 font-nunito text-small text-textSecondary">
             Тут пока пусто — скоро добавим товары.
           </Text>
         ) : (

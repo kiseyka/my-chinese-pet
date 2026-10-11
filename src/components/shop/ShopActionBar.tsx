@@ -1,40 +1,62 @@
-import { Product } from "@/content/shop/shopCatalog";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 
 type ShopActionBarProps = {
-  selectedProduct?: Product;
+  // Есть ли в текущей категории выбранный предмет — от этого зависит,
+  // отменяет ли левая кнопка выбор или выходит из магазина.
+  hasSelectionInCategory: boolean;
+  // Выбран ли хоть один предмет в любой категории.
+  hasDrafts: boolean;
+  // Общая стоимость всех некупленных предметов из примерки.
+  // 0 — значит всё выбранное уже куплено и можно применять.
+  totalPrice: number;
   onCancel: () => void;
   onApply: () => void;
   onBuy: () => void;
 };
 
 export const ShopActionBar = ({
-  selectedProduct,
+  hasSelectionInCategory,
+  hasDrafts,
+  totalPrice,
   onCancel,
   onApply,
   onBuy,
 }: ShopActionBarProps) => {
+  const needsPurchase = totalPrice > 0;
+
   return (
-    <View className="flex-row gap-3 pt-4 pb-4">
+    <View className="flex-row gap-2 pt-4 pb-4">
+      {/* Второстепенная кнопка — как «Полная тренировка» */}
       <Pressable
         onPress={onCancel}
-        className="flex-1 items-center py-3 rounded-2xl border border-[#D8C3A3] bg-[#F3E5D0]"
+        className="min-h-14 flex-1 items-center justify-center rounded-2xl border border-primary/30 bg-surface px-5 py-4 active:opacity-70"
       >
-        <Text className="font-nunito text-sm text-[#967F67]">
-          {selectedProduct ? "Отменить" : "Выйти"}
+        <Text className="font-nunitoBold text-body text-text">
+          {hasSelectionInCategory ? "Отменить" : "Выйти"}
         </Text>
       </Pressable>
 
-      {selectedProduct && (
+      {/* Основная кнопка — как «Быстрая тренировка» */}
+      {hasDrafts && (
         <Pressable
-          onPress={selectedProduct.owned ? onApply : onBuy}
-          className="flex-1 items-center py-3 rounded-2xl bg-primary"
+          onPress={needsPurchase ? onBuy : onApply}
+          className="min-h-14 flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 active:opacity-80"
         >
-          <Text className="font-nunito text-sm text-white">
-            {selectedProduct.owned
-              ? "Применить"
-              : `Купить за ${selectedProduct.price} 🪙`}
-          </Text>
+          {needsPurchase ? (
+            <>
+              <Text className="font-nunitoBold text-body text-white">
+                Купить за {totalPrice}
+              </Text>
+              <Image
+                source={require("@/assets/images/paw-coin.png")}
+                className="w-5 h-5"
+              />
+            </>
+          ) : (
+            <Text className="font-nunitoBold text-body text-white">
+              Применить
+            </Text>
+          )}
         </Pressable>
       )}
     </View>

@@ -39,26 +39,28 @@ export const ShopDomainTabs = ({
           <Pressable
             key={domain.id}
             onPress={() => onChange(domain.id)}
-            className={`flex-1 flex-row items-center justify-center gap-1 py-3.5 px-2 rounded-t-2xl border-t border-l border-r ${
+            className={`flex-1 flex-row items-center justify-center gap-2 rounded-t-2xl border-l border-r border-t px-2 py-3.5 ${
               isActive
-                ? "bg-primary border-primary"
-                : "bg-[#E8DAC3] border-[#D8C3A3]"
+                ? "border-primary bg-primary active:opacity-80"
+                : "border-primary/30 bg-surface active:opacity-70"
             }`}
           >
             {isEmojiIcon ? (
-              <Text className="text-base">{domain.icon as string}</Text>
+              <Text className="text-body">{domain.icon as string}</Text>
             ) : (
               DomainIcon && (
                 <DomainIcon
-                  width={28}
-                  height={28}
-                  color={isActive ? "#ffffff" : "#9EA792"}
+                  width={24}
+                  height={24}
+                  // Цвет через проп color: SVG-иконки не понимают className.
+                  // #78826D — primary из tailwind.config.js
+                  color={isActive ? "#FFFFFF" : "#78826D"}
                 />
               )
             )}
             <Text
-              className={`font-nunito text-lg ${
-                isActive ? "text-white" : "text-[#967F67]"
+              className={`font-nunitoBold text-body ${
+                isActive ? "text-white" : "text-text"
               }`}
             >
               {domain.label}

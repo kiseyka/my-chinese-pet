@@ -8,13 +8,16 @@ import { useRoomStore } from "@/store/roomStore";
 import { useShopStore } from "@/store/shopStore";
 import { useProgressStore } from "@/store/userProgressStore";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { Alert } from "react-native";
 
 export function useShopCatalog() {
   const router = useRouter();
 
-  const isOwned = useShopStore((s) => s.isOwned);
+  // Подписываемся на сам массив купленных id, а не на функцию isOwned.
+  // Функция isOwned в сторе никогда не меняется, поэтому подписка на неё
+  // не вызывала перерисовку после покупки — предмет выглядел некупленным.
+  const ownedProductIds = useShopStore((s) => s.ownedProductIds);
   const addOwnedProduct = useShopStore((s) => s.addOwnedProduct);
   const setCabinetType = useRoomStore((s) => s.setCabinetType);
   const setPosterType = useRoomStore((s) => s.setPosterType);
@@ -31,19 +34,36 @@ export function useShopCatalog() {
   const [activeCategory, setActiveCategory] = useState<string | null>(
     CATEGORIES_BY_DOMAIN["interior"][0]?.id ?? null,
   );
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    null,
-  );
+  // Черновик примерки: для каждой категории запоминаем выбранный товар.
+  // При смене категории или вкладки выбор не сбрасывается, поэтому можно
+  // выбрать стену, перейти к полам и посмотреть, как они смотрятся вместе.
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  const selectedProductId = activeCategory
+    ? (drafts[activeCategory] ?? null)
+    : null;
+
+  // Та же сигнатура, что у обычного setState, чтобы ShopProductList
+  // и ShopProductCard не пришлось менять.
+  const setSelectedProductId: Dispatch<SetStateAction<string | null>> = (
+    next,
+  ) => {
+    if (!activeCategory) return;
+    setDrafts((prev) => {
+      const current = prev[activeCategory] ?? null;
+      const value = typeof next === "function" ? next(current) : next;
+      const { [activeCategory]: _removed, ...rest } = prev;
+      return value ? { ...rest, [activeCategory]: value } : rest;
+    });
+  };
 
   const handleDomainChange = (domain: Domain) => {
     setActiveDomain(domain);
     setActiveCategory(CATEGORIES_BY_DOMAIN[domain][0]?.id ?? null);
-    setSelectedProductId(null);
   };
 
   const handleCategoryChange = (categoryId: string) => {
     setActiveCategory(categoryId);
-    setSelectedProductId(null);
   };
 
   const categories = CATEGORIES_BY_DOMAIN[activeDomain];
@@ -70,12 +90,27 @@ export function useShopCatalog() {
   };
   const products = blueprints.map((p) => ({
     ...p,
-    owned: isOwned(p.id),
+    owned: ownedProductIds.includes(p.id),
     equipped: isEquipped(p), // передаём объект целиком, не p.id
   }));
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
 
+  // Все товары из черновика (по всем категориям), чтобы показать их
+  // в превью комнаты одновременно.
+  const draftProducts = Object.entries(drafts)
+    .map(([categoryId, productId]) =>
+      (PRODUCTS_BY_CATEGORY[categoryId] ?? []).find((p) => p.id === productId),
+    )
+    .filter((p): p is ProductBlueprint => !!p);
+
+  const getPreviewValue = (field: string, currentValue: any) => {
+    const draft = draftProducts.find((p) => p.roomEffect?.field === field);
+    return draft?.roomEffect ? draft.roomEffect.value : currentValue;
+  };
+
+  // «Отменить» снимает выбор только в текущей категории,
+  // выбор в остальных категориях остаётся.
   const handleCancel = () => {
     if (selectedProductId) {
       setSelectedProductId(null);
@@ -84,55 +119,58 @@ export function useShopCatalog() {
     }
   };
 
-  const handleApply = () => {
-    if (!selectedProduct?.roomEffect) return;
-    const { field, value } = selectedProduct.roomEffect;
+  const applyEffect = (product: ProductBlueprint) => {
+    if (!product.roomEffect) return;
+    const { field, value } = product.roomEffect;
     if (field === "cabinetType") setCabinetType(value as any);
     if (field === "posterType") setPosterType(value as any);
     if (field === "wallType") setWallType(value as any);
     if (field === "floorType") setFloorType(value as any);
     if (field === "carpetType") setCarpetType(value as any);
+  };
+
+  // «Применить» устанавливает все купленные товары из черновика сразу.
+  // Некупленные просто не применяются: примерить можно, установить нельзя.
+  const handleApply = () => {
+    const owned = useShopStore.getState().ownedProductIds;
+    draftProducts.filter((p) => owned.includes(p.id)).forEach(applyEffect);
     router.back();
   };
 
-  const handleBuy = () => {
-    if (!selectedProduct) return;
+  // Некупленные товары из примерки и их общая стоимость — для кнопки «Купить».
+  const unownedDraftProducts = draftProducts.filter(
+    (p) => !ownedProductIds.includes(p.id),
+  );
+  const totalPrice = unownedDraftProducts.reduce((sum, p) => sum + p.price, 0);
+  const hasDrafts = draftProducts.length > 0;
 
-    const success = useProgressStore
-      .getState()
-      .spendCoins(selectedProduct.price);
+  // Покупает сразу все некупленные товары из примерки одним списанием.
+  const handleBuy = () => {
+    // Защита от повторной покупки: проверяем по свежему состоянию стора,
+    // а не по тому, что сейчас нарисовано на экране. Даже если интерфейс
+    // когда-нибудь снова отстанет, монеты второй раз не спишутся.
+    const owned = useShopStore.getState().ownedProductIds;
+    const toBuy = draftProducts.filter((p) => !owned.includes(p.id));
+    if (toBuy.length === 0) return;
+
+    const total = toBuy.reduce((sum, p) => sum + p.price, 0);
+    const success = useProgressStore.getState().spendCoins(total);
 
     if (!success) {
       Alert.alert("Недостаточно монет", "Заработай ещё немного и возвращайся!");
       return;
     }
 
-    addOwnedProduct(selectedProduct.id);
+    toBuy.forEach((p) => addOwnedProduct(p.id));
   };
 
-  // Раньше это доставалось из CABINET_PRODUCT_TO_TYPE/POSTER_PRODUCT_TO_TYPE
-  // по id товара; теперь — прямо из roomEffect самого выбранного товара.
-  const previewCabinetType =
-    selectedProduct?.roomEffect?.field === "cabinetType"
-      ? selectedProduct.roomEffect.value
-      : currentCabinetType;
-
-  const previewPosterType =
-    selectedProduct?.roomEffect?.field === "posterType"
-      ? selectedProduct.roomEffect.value
-      : currentPosterType;
-  const previewWallType =
-    selectedProduct?.roomEffect?.field === "wallType"
-      ? selectedProduct.roomEffect.value
-      : currentWallType;
-  const previewFloorType =
-    selectedProduct?.roomEffect?.field === "floorType"
-      ? selectedProduct.roomEffect.value
-      : currentFloorType;
-  const previewCarpetType =
-    selectedProduct?.roomEffect?.field === "carpetType"
-      ? selectedProduct.roomEffect.value
-      : currentCarpetType;
+  // Превью берёт значение из черновика любой категории,
+  // а если там ничего не выбрано — то, что сейчас установлено в комнате.
+  const previewCabinetType = getPreviewValue("cabinetType", currentCabinetType);
+  const previewPosterType = getPreviewValue("posterType", currentPosterType);
+  const previewWallType = getPreviewValue("wallType", currentWallType);
+  const previewFloorType = getPreviewValue("floorType", currentFloorType);
+  const previewCarpetType = getPreviewValue("carpetType", currentCarpetType);
 
   return {
     activeDomain,
@@ -141,6 +179,8 @@ export function useShopCatalog() {
     products,
     selectedProduct,
     selectedProductId,
+    hasDrafts,
+    totalPrice,
     previewCabinetType,
     previewPosterType,
     previewWallType,

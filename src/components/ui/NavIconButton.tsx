@@ -2,7 +2,6 @@ import {
   Image,
   ImageSourcePropType,
   Pressable,
-  Text,
   View,
   ViewStyle,
 } from "react-native";
@@ -21,9 +20,9 @@ export const NavIconButton = ({
   style,
 }: NavIconButtonProps) => {
   return (
-    <Pressable onPress={onPress} className="items-center  w-[76px]" hitSlop={8}>
+    <Pressable onPress={onPress} className="items-center w-[76px]" hitSlop={8}>
       <View
-        className="items-center justify-center rounded-full border border-[#D8C3A3] overflow-hidden"
+        className="items-center justify-center bg-surface/80 rounded-full border border-primary overflow-hidden"
         style={{ width: 72, height: 72 }}
       >
         <Image
@@ -33,9 +32,9 @@ export const NavIconButton = ({
         />
       </View>
 
-      <Text className="font-nunito text-lg text-text mt-1" numberOfLines={1}>
+      {/* <Text className="font-nunito text-lg text-text mt-1" numberOfLines={1}>
         {label}
-      </Text>
+      </Text> */}
     </Pressable>
   );
 };
