@@ -16,10 +16,25 @@ export interface WritingPoint {
   y: number;
 }
 
+/** Иероглиф внутри написанного слова, засчитанный как отдельное слово из базы. */
+export interface WritingCharResult {
+  vocabularyId: string;
+  hanzi: string;
+  pinyin: string;
+  /** Точки письма до и после урока (0–3). */
+  levelBefore: number;
+  levelAfter: number;
+}
+
 /** Написанное слово для экрана итогов письма. */
 export interface WritingWordResult extends FlashcardQuestionResult {
   /** Линии пользователя по каждому иероглифу слова: [иероглиф][черта][точка]. */
   raws: WritingPoint[][][];
+  /** Точки письма слова до и после урока (0–3). */
+  levelBefore: number;
+  levelAfter: number;
+  /** Иероглифы слова, которые есть в базе как отдельные слова (у слов из одного иероглифа — пусто). */
+  characters: WritingCharResult[];
 }
 
 interface GameStore {

@@ -6,7 +6,11 @@
 // Структура: урок → слова → этапы → ячейки (иероглифы внутри этапа) → черты.
 
 import { getHanzi } from "@/content/writing/hanzi";
-import { useGameStore, type FlashcardQuestionResult } from "@/store/gameStore";
+import {
+  useGameStore,
+  type FlashcardQuestionResult,
+  type WritingCharResult,
+} from "@/store/gameStore";
 import { usePandaStore, type WordChange } from "@/store/pandaStore";
 import { useProgressStore } from "@/store/userProgressStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
@@ -18,7 +22,11 @@ import {
   type StrokeCheckReason,
 } from "@/utils/strokeCheck";
 import { readWordLevel } from "@/utils/wordLevel";
-import { composeDeepItems, type LessonItem } from "@/utils/writingLessons";
+import {
+  composeDeepItems,
+  getCharacterWord,
+  type LessonItem,
+} from "@/utils/writingLessons";
 import { buildStages, type WritingStage } from "@/utils/writingStages";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -45,12 +53,24 @@ interface LessonWord extends LessonItem {
   stages: WritingStage[];
 }
 
+interface CharOutcome {
+  hanzi: string;
+  /** Иероглиф написан на итоговом этапе без раскрытых подсказок. */
+  success: boolean;
+}
+
 interface WordOutcome {
   word: LessonItem["word"];
   /** Линии пользователя на последнем этапе по каждому иероглифу (для экрана итогов). */
   raws: Point[][][];
   /** Слово написано на последнем этапе без раскрытых подсказок. */
   success: boolean;
+  /**
+   * Результат каждого иероглифа слова (только для слов из нескольких иероглифов,
+   * повторяющийся иероглиф — один раз). Каждый получает точку как отдельный иероглиф:
+   * под словом из базы или под «char:么», как в окне выбора.
+   */
+  chars: CharOutcome[];
   /** Это была работа над ошибками (в счёт урока не идёт). */
   deep: boolean;
   /** Слово нужно отправить на работу над ошибками, если не получилось. */
@@ -79,6 +99,20 @@ function prepare(plan: LessonItem[]): LessonWord[] {
   return words;
 }
 
+/** Результаты отдельных иероглифов слова по тому, где на итоговом этапе были подсказки. */
+function charOutcomesOf(hanzi: string, assistedChars: number[]): CharOutcome[] {
+  const list = Array.from(hanzi);
+  if (list.length < 2) return [];
+
+  return Array.from(new Set(list)).map((character) => ({
+    hanzi: character,
+    // Повторяющийся иероглиф засчитывается, только если все его вхождения без подсказок
+    success: list.every(
+      (c, index) => c !== character || !assistedChars.includes(index),
+    ),
+  }));
+}
+
 export function useWritingLesson(buildPlan: () => LessonItem[]) {
   const router = useRouter();
 
@@ -92,6 +126,8 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
   const [mistakes, setMistakes] = useState(0);
   const [revealed, setRevealed] = useState<number[]>([]);
   const [assisted, setAssisted] = useState(false);
+  /** Номера иероглифов слова, в которых на итоговом этапе раскрывались подсказки. */
+  const [assistedChars, setAssistedChars] = useState<number[]>([]);
   /** Принятые линии пользователя по ячейкам текущего этапа. */
   const [slotRaws, setSlotRaws] = useState<Point[][][]>([]);
   const [phase, setPhase] = useState<Phase>("active");
@@ -107,7 +143,7 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
   const isFinishing = useRef(false);
   // Работа над ошибками добавляется в урок только один раз
   const deepAdded = useRef(false);
-  // Уровни слов в начале урока: нужны, чтобы показать, что изменилось
+  // Уровни слов до начисления точек: нужны, чтобы показать, что изменилось
   const levelsBefore = useRef<Record<string, number>>({});
 
   const current = words[wordIndex];
@@ -127,6 +163,12 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     setPhase("active");
   };
 
+  /** Начало нового слова: сбрасываем подсказки слова. */
+  const resetWordAssist = () => {
+    setAssisted(false);
+    setAssistedChars([]);
+  };
+
   // Экран может оставаться смонтированным между заходами, поэтому
   // новый урок собираем при каждом входе на экран
   useFocusEffect(
@@ -142,7 +184,7 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
 
       setWords(prepared);
       setWordIndex(0);
-      setAssisted(false);
+      resetWordAssist();
       setOutcomes([]);
       isFinishing.current = false;
       deepAdded.current = false;
@@ -254,8 +296,13 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
 
       setRevealed((prev) => Array.from(new Set([...prev, ...group])));
 
-      // Подсказки на последнем этапе значат, что слово написано с помощью
-      if (stage.isFinal) setAssisted(true);
+      // Подсказки на последнем этапе значат, что слово (и этот иероглиф) написано с помощью
+      if (stage.isFinal) {
+        setAssisted(true);
+        setAssistedChars((prev) =>
+          prev.includes(slot.charIndex) ? prev : [...prev, slot.charIndex],
+        );
+      }
     }
   };
 
@@ -263,17 +310,60 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     const game = useGameStore.getState();
     const wordProgress = useWordProgressStore.getState();
 
-    // 1. Слово, написанное без подсказок, получает точку.
-    //    С подсказками точки не меняются: тренировка учебная, а не проверка.
-    for (const { word, success } of allOutcomes) {
-      if (success) {
-        wordProgress.updateWordProgress({
-          wordId: word.vocabularyId,
-          skill: "writing",
-          isCorrect: true,
-        });
+    // Иероглиф как отдельное «слово» — так же, как в окне выбора:
+    // слово из базы (你) или «char:么» со своим прогрессом
+    const characterOf = (hanzi: string, parent: LessonItem["word"]) =>
+      getCharacterWord(hanzi, parent);
+
+    // 0. Уровни иероглифов до начисления точек (у слов урока они уже записаны в начале)
+    for (const { word, chars } of allOutcomes) {
+      for (const { hanzi } of chars) {
+        const character = characterOf(hanzi, word);
+        if (
+          character &&
+          levelsBefore.current[character.vocabularyId] === undefined
+        ) {
+          levelsBefore.current[character.vocabularyId] = readWordLevel(
+            character.vocabularyId,
+            "writing",
+          );
+        }
       }
     }
+
+    // 1. Точки. Тренировка учебная: точки только прибавляются, за подсказки не снимаются.
+    //    Каждое слово получает за урок не больше одной точки.
+    const credited = new Set<string>();
+    const credit = (wordId: string) => {
+      if (credited.has(wordId)) return;
+      credited.add(wordId);
+      wordProgress.updateWordProgress({
+        wordId,
+        skill: "writing",
+        isCorrect: true,
+      });
+    };
+
+    // Слова, написанные без подсказок
+    for (const { word, success } of allOutcomes) {
+      if (success) credit(word.vocabularyId);
+    }
+
+    // Иероглифы внутри слов, написанные без подсказок
+    for (const { word, chars } of allOutcomes) {
+      for (const { hanzi, success } of chars) {
+        if (!success) continue;
+        const character = characterOf(hanzi, word);
+        if (character) credit(character.vocabularyId);
+      }
+    }
+
+    /** Точки слова «было → стало». */
+    const levelChange = (wordId: string) => {
+      const levelAfter = readWordLevel(wordId, "writing");
+      const levelBefore = levelsBefore.current[wordId] ?? levelAfter;
+      return { levelBefore, levelAfter };
+    };
 
     // 2. В счёт урока идут основные задания, без работы над ошибками
     const scored = allOutcomes.filter((outcome) => !outcome.deep);
@@ -281,22 +371,34 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     const results: FlashcardQuestionResult[] = [];
     const wordChanges: WordChange[] = [];
 
-    // Для экрана итогов: все написанные слова с линиями пользователя
+    // Для экрана итогов: все написанные слова с линиями пользователя и точками,
+    // у слов из нескольких иероглифов — ещё и точки каждого иероглифа
     game.setWritingResults(
-      scored.map(({ word, success, raws }) => ({
+      scored.map(({ word, success, raws, chars }) => ({
         vocabularyId: word.vocabularyId,
         hanzi: word.hanzi,
         pinyin: word.pinyin,
         translation: word.translation,
         isCorrect: success,
         raws,
+        ...levelChange(word.vocabularyId),
+        characters: chars.flatMap(({ hanzi }): WritingCharResult[] => {
+          const character = characterOf(hanzi, word);
+          if (!character) return [];
+          return [
+            {
+              vocabularyId: character.vocabularyId,
+              hanzi: character.hanzi,
+              pinyin: character.pinyin,
+              ...levelChange(character.vocabularyId),
+            },
+          ];
+        }),
       })),
     );
 
     for (const { word, success } of scored) {
-      const levelAfter = readWordLevel(word.vocabularyId, "writing");
-      const levelBefore = (levelsBefore.current[word.vocabularyId] ??
-        levelAfter) as WordChange["levelBefore"];
+      const { levelBefore, levelAfter } = levelChange(word.vocabularyId);
 
       const result: FlashcardQuestionResult = {
         vocabularyId: word.vocabularyId,
@@ -308,7 +410,11 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
 
       game.answerQuestion(result);
       results.push(result);
-      wordChanges.push({ ...result, levelBefore, levelAfter });
+      wordChanges.push({
+        ...result,
+        levelBefore: levelBefore as WordChange["levelBefore"],
+        levelAfter: levelAfter as WordChange["levelAfter"],
+      });
     }
 
     const { score, startTime } = useGameStore.getState();
@@ -343,6 +449,7 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
         word: current.word,
         raws: slotRaws,
         success: !assisted,
+        chars: charOutcomesOf(current.word.hanzi, assistedChars),
         deep: current.isDeep === true,
         retryDeep: current.retryDeep === true,
       },
@@ -358,7 +465,7 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
         if (deepWords.length > 0) {
           setWords((prev) => [...prev, ...deepWords]);
           setWordIndex((i) => i + 1);
-          setAssisted(false);
+          resetWordAssist();
           resetStage(0);
           return;
         }
@@ -370,7 +477,7 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     }
 
     setWordIndex((i) => i + 1);
-    setAssisted(false);
+    resetWordAssist();
     resetStage(0);
   };
 
@@ -412,6 +519,17 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     (outcomes.some((o) => !o.success && o.retryDeep) ||
       (assisted && current?.retryDeep === true));
 
+  // Шкала урока: одно деление = один этап, считаются этапы всех слов.
+  // Этап засчитывается сразу после завершения (во время паузы и на сравнении в конце слова).
+  // Если добавилась работа над ошибками, делений становится больше.
+  const totalStages = words.reduce((sum, w) => sum + w.stages.length, 0);
+  const stagesBefore = words
+    .slice(0, wordIndex)
+    .reduce((sum, w) => sum + w.stages.length, 0);
+  const stageFinished = phase === "stage_done" || phase === "word_result";
+  const doneStages = stagesBefore + stageIndex + (stageFinished ? 1 : 0);
+  const progress = totalStages === 0 ? 0 : (doneStages / totalStages) * 100;
+
   return {
     isReady,
     hasWords: words.length > 0,
@@ -427,6 +545,8 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     slotCount: stage?.slots.length ?? 0,
     wordIndex,
     wordCount: words.length,
+    /** Прогресс всего урока в процентах (0–100) для шкалы в шапке. */
+    progress,
     phase,
     lastReason,
     assisted,

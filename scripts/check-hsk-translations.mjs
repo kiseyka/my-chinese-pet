@@ -1,104 +1,71 @@
 // scripts/check-hsk-translations.mjs
 //
-// Сверяет русские переводы (src/i18n/locales/ru/hsk.json) со списком HSK-слов
-// (src/content/words/generated/hskWords.ts) и показывает:
-//   — сколько слов переведено;
-//   — каких слов ещё нет в переводе (с английским рядом);
-//   — лишние ключи (опечатка в id или слова уже нет в списке);
-//   — повторяющиеся ключи (JSON молча оставляет только последний);
-//   — пустые переводы.
+// Проверяет src/content/words/data/words.ts:
+//   — сколько слов уже с русским переводом;
+//   — какие слова ещё без русского (с пиньинем и английским рядом);
+//   — слова без английского;
+//   — повторы id и повторы иероглифов.
 //
 // Запуск: node scripts/check-hsk-translations.mjs
-// Результат также пишется в scripts/.cache/hsk-missing.txt (недостающие слова).
+// Слова без русского также пишутся в scripts/.cache/hsk-missing.txt.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { WORDS_RELATIVE_PATH, parseWords } from "./lib/hskList.mjs";
+
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const WORDS_PATH = join(root, "src/content/words/generated/hskWords.ts");
-const RU_PATH = join(root, "src/i18n/locales/ru/hsk.json");
+const WORDS_PATH = join(root, WORDS_RELATIVE_PATH);
 const REPORT_PATH = join(root, "scripts/.cache/hsk-missing.txt");
 
-// 1. Слова из сгенерированного файла (в порядке файла: по уровню, потом по частоте)
-const wordsSource = readFileSync(WORDS_PATH, "utf8");
-const words = [];
+const words = parseWords(readFileSync(WORDS_PATH, "utf8"));
 
-for (const match of wordsSource.matchAll(
-  /\{\s*id:\s*("(?:[^"\\]|\\.)*"),\s*hanzi:\s*("(?:[^"\\]|\\.)*"),\s*pinyin:\s*("(?:[^"\\]|\\.)*"),\s*translationEn:\s*("(?:[^"\\]|\\.)*")/g,
-)) {
-  words.push({
-    id: JSON.parse(match[1]),
-    hanzi: JSON.parse(match[2]),
-    pinyin: JSON.parse(match[3]),
-    en: JSON.parse(match[4]),
-  });
+const countBy = (key) => {
+  const counts = new Map();
+  for (const word of words) counts.set(word[key], (counts.get(word[key]) ?? 0) + 1);
+  return [...counts].filter(([, count]) => count > 1);
+};
+
+const duplicateIds = countBy("id");
+const duplicateHanzi = countBy("hanzi");
+const missingRu = words.filter((word) => !word.ru?.trim());
+const missingEn = words.filter((word) => !word.en?.trim());
+
+const translated = words.length - missingRu.length;
+
+console.log(`Слов в words.ts:  ${words.length}`);
+console.log(`С русским:        ${translated} (${Math.round((translated / words.length) * 100)}%)`);
+console.log(`Без русского:     ${missingRu.length}`);
+
+if (duplicateIds.length > 0) {
+  console.log(`\nПовторяющиеся id (прогресс у них общий — так быть не должно): ${duplicateIds.length}`);
+  for (const [id, count] of duplicateIds) console.log(`  ${id} ×${count}`);
 }
 
-const wordIds = new Set(words.map((word) => word.id));
-
-// 2. Переводы. Сначала проверяем, что JSON вообще читается.
-const ruSource = readFileSync(RU_PATH, "utf8");
-let ru;
-
-try {
-  ru = JSON.parse(ruSource);
-} catch (error) {
-  console.error(`hsk.json не читается: ${error.message}`);
-  console.error("Чаще всего это лишняя или пропущенная запятая рядом с указанным местом.");
-  process.exit(1);
+if (duplicateHanzi.length > 0) {
+  console.log(`\nОдинаковые иероглифы у разных слов: ${duplicateHanzi.length}`);
+  for (const [hanzi, count] of duplicateHanzi) console.log(`  ${hanzi} ×${count}`);
 }
 
-// 3. Повторы ключей ищем по исходному тексту: после JSON.parse их уже не видно
-const keyCounts = new Map();
-for (const match of ruSource.matchAll(/"((?:[^"\\]|\\.)*)"\s*:/g)) {
-  const key = JSON.parse(`"${match[1]}"`);
-  keyCounts.set(key, (keyCounts.get(key) ?? 0) + 1);
-}
-const duplicates = [...keyCounts].filter(([, count]) => count > 1);
-
-// 4. Сверка
-const missing = words.filter((word) => !(word.id in ru));
-const extra = Object.keys(ru).filter((key) => !wordIds.has(key));
-const empty = Object.entries(ru)
-  .filter(([key, value]) => wordIds.has(key) && !String(value).trim())
-  .map(([key]) => key);
-
-const translated = words.length - missing.length;
-
-console.log(`Слов в hskWords.ts: ${words.length}`);
-console.log(`Ключей в hsk.json:  ${Object.keys(ru).length}`);
-console.log(`Переведено:         ${translated} (${Math.round((translated / words.length) * 100)}%)`);
-console.log(`Без перевода:       ${missing.length}`);
-
-if (duplicates.length > 0) {
-  console.log(`\nПовторяющиеся ключи (остался только последний перевод): ${duplicates.length}`);
-  for (const [key, count] of duplicates) console.log(`  ${key} ×${count}`);
+if (missingEn.length > 0) {
+  console.log(`\nБез английского (необязательно): ${missingEn.length}`);
+  console.log(`  ${missingEn.map((word) => word.hanzi).join(" ")}`);
 }
 
-if (extra.length > 0) {
-  console.log(`\nЛишние ключи (нет такого слова в списке — опечатка или слово ушло): ${extra.length}`);
-  for (const key of extra) console.log(`  ${key}`);
-}
-
-if (empty.length > 0) {
-  console.log(`\nПустые переводы: ${empty.length}`);
-  for (const key of empty) console.log(`  ${key}`);
-}
-
-if (missing.length > 0) {
-  const lines = missing.map(
-    (word) => `${word.id}\t${word.pinyin}\t${word.en}`,
+if (missingRu.length > 0) {
+  const lines = missingRu.map(
+    (word) => `${word.hanzi}\t${word.pinyin}\t${word.en ?? ""}`,
   );
 
   mkdirSync(dirname(REPORT_PATH), { recursive: true });
   writeFileSync(REPORT_PATH, `${lines.join("\n")}\n`);
 
-  console.log(`\nПервые без перевода (полный список: scripts/.cache/hsk-missing.txt):`);
+  console.log(`\nПервые без русского (полный список: scripts/.cache/hsk-missing.txt):`);
   for (const line of lines.slice(0, 20)) console.log(`  ${line}`);
   if (lines.length > 20) console.log(`  … и ещё ${lines.length - 20}`);
 }
 
-if (missing.length === 0 && extra.length === 0 && duplicates.length === 0 && empty.length === 0) {
+if (missingRu.length === 0 && duplicateIds.length === 0 && duplicateHanzi.length === 0) {
   console.log("\nВсё сходится 🎉");
 }

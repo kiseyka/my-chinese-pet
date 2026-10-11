@@ -1,9 +1,11 @@
 // src/components/writing/WritingResultsList.tsx
 //
 // Итоги тренировки письма на экране статистики: все написанные слова — твоё написание,
-// слово, написано ли без подсказок, и переключатель «Повторение».
+// слово, написано ли без подсказок, точки «было → стало» (у слова и у его иероглифов)
+// и переключатель «Повторение».
 
 import { Hanzi } from "@/components/ui/Hanzi";
+import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { Pinyin } from "@/components/ui/Pinyin";
 import { HanziView } from "@/components/writing/HanziView";
 import type { WritingWordResult } from "@/store/gameStore";
@@ -16,6 +18,25 @@ const WORDS_NAMESPACE = "sets";
 
 /** Размер превью твоего написания одного иероглифа. */
 const PREVIEW_SIZE = 56;
+
+const toLevel = (value: number) =>
+  Math.min(3, Math.max(0, Math.round(value))) as WordLevel;
+
+/** Точки «было → стало». Если ничего не изменилось — просто текущие точки. */
+function LevelChange({ before, after }: { before: number; after: number }) {
+  const from = toLevel(before);
+  const to = toLevel(after);
+
+  if (from === to) return <LevelDots level={to} />;
+
+  return (
+    <View className="flex-row items-center gap-2">
+      <LevelDots level={from} />
+      <Text className="font-nunito text-caption text-text">→</Text>
+      <LevelDots level={to} />
+    </View>
+  );
+}
 
 interface WritingResultsListProps {
   results: WritingWordResult[];
@@ -75,11 +96,37 @@ export function WritingResultsList({ results }: WritingResultsListProps) {
                 >
                   {t(item.translation)}
                 </Text>
-                <Text className="font-nunito text-caption text-text">
-                  {item.isCorrect ? "Без подсказок ✓" : "С подсказками"}
-                </Text>
+                <View className="flex-row items-center justify-between gap-2">
+                  <Text className="font-nunito text-caption text-text">
+                    {item.isCorrect ? "Без подсказок ✓" : "С подсказками"}
+                  </Text>
+                  <LevelChange
+                    before={item.levelBefore}
+                    after={item.levelAfter}
+                  />
+                </View>
               </View>
             </View>
+
+            {/* Иероглифы слова: каждый засчитывается как отдельное слово */}
+            {item.characters.length > 0 && (
+              <View className="gap-1 pl-2">
+                {item.characters.map((char) => (
+                  <View
+                    key={char.vocabularyId}
+                    className="flex-row items-center gap-2"
+                  >
+                    <Hanzi size={18}>{char.hanzi}</Hanzi>
+                    <Pinyin size="sm">{char.pinyin}</Pinyin>
+                    <View className="flex-1" />
+                    <LevelChange
+                      before={char.levelBefore}
+                      after={char.levelAfter}
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
 
             <Pressable
               onPress={() => toggleWritingReview(item.vocabularyId)}

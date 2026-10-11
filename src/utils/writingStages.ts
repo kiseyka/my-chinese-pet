@@ -2,31 +2,44 @@
 //
 // Строит этапы урока для слова (из одного или нескольких иероглифов).
 //
-// Полный формат (новое слово). На каждом масштабе одна и та же последовательность:
-//   показ написания → по контуру → сам по памяти.
+// Полный формат (новое слово):
+//   Иероглиф, который делится на части (графемы):
+//     каждая часть: показ → контур → память
+//     (у иероглифов из 3+ частей между ними ещё «первые части вместе», по памяти),
+//     затем иероглиф целиком: контур → память, без показа.
+//   Иероглиф, который не делится: показ → контур → память.
 //
-//   Иероглиф, который делится на части, изучается поэтапно:
-//     часть 1 (показ, контур, сам) → часть 2 (показ, контур, сам) → части 1–2 вместе (сам) →
-//     часть 3 ... → в конце иероглиф целиком.
-//   Иероглиф, который не делится, сразу проходит «показ → контур → сам».
+//   Слово из нескольких иероглифов: так проходится каждый иероглиф
+//   (повторяющийся, как в 画画, — один раз), в конце всё слово по памяти.
 //
-//   Слово из нескольких иероглифов: сначала так проходится каждый (повторяющийся иероглиф,
-//   как в 画画, — один раз), затем слово целиком: показ → контур → сам.
+// Последний этап всегда «по памяти» и содержит весь иероглиф или всё слово:
+// он определяет результат слова и даёт линии для экрана сравнения.
 //
-// Последний этап — «сам по памяти», он определяет результат слова.
-//
-// Быстрый формат (повторение): слово целиком, по контуру → по памяти, без показа.
+// Облегчённый формат: целиком показ → контур → память.
+// Быстрый формат (повторение): целиком контур → память, без показа.
 
 import type { HanziData } from "@/types/hanzi";
 
 /**
- * full — новое слово: части, показ, контур, сам.
+ * full — новое слово: части, затем сборка иероглифа.
  * light — знакомство без частей: целиком показ → контур → сам.
  * quick — повторение: целиком контур → сам.
  */
 export type LessonFormat = "full" | "light" | "quick";
 
 export type StageMode = "demo" | "outline" | "memory";
+
+/**
+ * Что пишем в ячейке: часть иероглифа (показываем её знак)
+ * или иероглиф целиком (показываем пиньинь, чтобы не подсказывать написание).
+ */
+export type StageTarget =
+  | {
+      kind: "part";
+      /** Знак части или нескольких частей подряд, например «亻» или «亻尔». */
+      label: string;
+    }
+  | { kind: "character" };
 
 /** Один иероглиф внутри этапа: этап слова из двух иероглифов состоит из двух ячеек. */
 export interface StageSlot {
@@ -39,6 +52,8 @@ export interface StageSlot {
    * Нужны только для этапов «по памяти».
    */
   revealGroups: number[][];
+  /** Что именно пишем: часть или иероглиф целиком. */
+  target: StageTarget;
 }
 
 export interface WritingStage {
@@ -46,17 +61,9 @@ export interface WritingStage {
   kind: "component" | "character" | "word";
   mode: StageMode;
   slots: StageSlot[];
-  title: string;
-  modeLabel: string;
   /** Последний этап слова: именно он определяет, получилось ли слово без подсказок. */
   isFinal: boolean;
 }
-
-const MODE_LABELS: Record<StageMode, string> = {
-  demo: "смотри, как пишется",
-  outline: "обведи по контуру",
-  memory: "напиши сам",
-};
 
 const range = (count: number) => Array.from({ length: count }, (_, i) => i);
 
@@ -82,6 +89,7 @@ export function buildStages(
     charIndex,
     strokeIndices: range(chars[charIndex].strokes.length),
     revealGroups: groupsOf(chars[charIndex]),
+    target: { kind: "character" },
   });
 
   const add = (
@@ -89,136 +97,104 @@ export function buildStages(
     kind: WritingStage["kind"],
     mode: StageMode,
     slots: StageSlot[],
-    title: string,
     isFinal = false,
   ) => {
-    stages.push({
-      id,
-      kind,
-      mode,
-      slots,
-      title,
-      modeLabel: MODE_LABELS[mode],
-      isFinal,
-    });
+    stages.push({ id, kind, mode, slots, isFinal });
   };
 
+  /**
+   * Лесенка на одном масштабе: (показ →) контур → память.
+   * finalMemory — этап «память» последний в слове и определяет результат.
+   */
   const ladder = (
     idPrefix: string,
     kind: WritingStage["kind"],
     slots: StageSlot[],
-    title: string,
+    { withDemo = true, finalMemory = false } = {},
   ) => {
-    add(`${idPrefix}-demo`, kind, "demo", slots, title);
-    add(`${idPrefix}-outline`, kind, "outline", slots, title);
-    add(`${idPrefix}-memory`, kind, "memory", slots, title);
+    if (withDemo) add(`${idPrefix}-demo`, kind, "demo", slots);
+    add(`${idPrefix}-outline`, kind, "outline", slots);
+    add(`${idPrefix}-memory`, kind, "memory", slots, finalMemory);
   };
 
-  /**
-   * Этапы одного иероглифа. Если он делится на части, иероглиф «собирается» по кусочкам.
-   * Последний шаг («иероглиф целиком») добавляется отдельно, если он нужен как итоговый.
-   * Возвращает true, если иероглиф целиком уже пройден (иначе его нужно пройти снаружи).
-   */
-  const characterLadder = (
-    charIndex: number,
-    prefix: string,
-    titlePrefix: string,
-  ) => {
-    const data = chars[charIndex];
-    const parts = data.parts;
-
-    if (!parts) return false;
+  /** Части иероглифа по очереди: показ → контур → память для каждой. */
+  const partsLadder = (charIndex: number) => {
+    const parts = chars[charIndex].parts ?? [];
 
     parts.forEach((part, partIndex) => {
-      ladder(
-        `${prefix}-part-${partIndex}`,
-        "component",
-        [
-          {
-            charIndex,
-            strokeIndices: part.strokes,
-            revealGroups: part.strokes.map((i) => [i]),
-          },
-        ],
-        `${titlePrefix}Часть ${partIndex + 1} из ${parts.length}: ${part.label}`,
-      );
+      ladder(`char-${charIndex}-part-${partIndex}`, "component", [
+        {
+          charIndex,
+          strokeIndices: part.strokes,
+          revealGroups: part.strokes.map((i) => [i]),
+          target: { kind: "part", label: part.label },
+        },
+      ]);
 
-      // Первые k частей вместе (последний шаг — иероглиф целиком — делается отдельно)
+      // Первые k частей вместе, по памяти (только у иероглифов из 3+ частей:
+      // последний шаг — иероглиф целиком — идёт отдельно)
       const together = partIndex + 1;
       if (together >= 2 && together < parts.length) {
-        const groups = parts.slice(0, together).map((p) => p.strokes);
+        const first = parts.slice(0, together);
+        const groups = first.map((p) => p.strokes);
 
-        add(
-          `${prefix}-together-${together}`,
-          "component",
-          "memory",
-          [
-            {
-              charIndex,
-              strokeIndices: sortedUnion(groups),
-              revealGroups: groups,
+        add(`char-${charIndex}-together-${together}`, "component", "memory", [
+          {
+            charIndex,
+            strokeIndices: sortedUnion(groups),
+            revealGroups: groups,
+            target: {
+              kind: "part",
+              label: first.map((p) => p.label).join(""),
             },
-          ],
-          `${titlePrefix}Части 1–${together} вместе`,
-        );
+          },
+        ]);
+      }
+    });
+  };
+
+  const allSlots = chars.map((_, index) => wholeSlot(index));
+
+  if (format === "full") {
+    const seen = new Set<string>();
+
+    chars.forEach((data, index) => {
+      const character = characters[index] ?? `#${index}`;
+      if (seen.has(character)) return;
+      seen.add(character);
+
+      // У одиночного иероглифа его «память» и есть итоговый этап
+      const finalMemory = !isWord;
+
+      if (data.parts) {
+        // Графемы, затем сборка иероглифа: контур → память, без показа
+        partsLadder(index);
+        ladder(`char-${index}`, "character", [wholeSlot(index)], {
+          withDemo: false,
+          finalMemory,
+        });
+      } else {
+        // Иероглиф без частей: показ → контур → память
+        ladder(`char-${index}`, "character", [wholeSlot(index)], {
+          finalMemory,
+        });
       }
     });
 
-    return true;
-  };
-
-  if (format === "full") {
-    if (!isWord) {
-      characterLadder(0, "char-0", "");
-    } else {
-      // Слово: каждый уникальный иероглиф отдельно
-      const seen = new Set<string>();
-
-      chars.forEach((data, index) => {
-        const character = characters[index] ?? `#${index}`;
-        if (seen.has(character)) return;
-        seen.add(character);
-
-        const titlePrefix = `Иероглиф ${index + 1} из ${chars.length} · `;
-        const hasParts = characterLadder(index, `char-${index}`, titlePrefix);
-
-        if (hasParts) {
-          // Иероглиф собран из частей: целиком — только «сам» (части вместе)
-          add(
-            `char-${index}-whole-memory`,
-            "character",
-            "memory",
-            [wholeSlot(index)],
-            `Иероглиф ${index + 1} из ${chars.length} целиком`,
-          );
-        } else {
-          ladder(
-            `char-${index}`,
-            "character",
-            [wholeSlot(index)],
-            `Иероглиф ${index + 1} из ${chars.length}`,
-          );
-        }
-      });
+    // Слово: в конце всё целиком по памяти
+    if (isWord) {
+      add("whole-memory", "word", "memory", allSlots, true);
     }
+
+    return stages;
   }
 
-  const allSlots = chars.map((_, index) => wholeSlot(index));
-  const singleHasParts = !isWord && chars[0].parts !== undefined;
-
-  const finalTitle = isWord
-    ? "Всё слово"
-    : singleHasParts && format === "full"
-      ? "Весь иероглиф"
-      : "Иероглиф";
   const finalKind = isWord ? "word" : "character";
 
-  if (format !== "quick") {
-    add("whole-demo", finalKind, "demo", allSlots, finalTitle);
-  }
-
-  add("whole-outline", finalKind, "outline", allSlots, finalTitle);
-  add("whole-memory", finalKind, "memory", allSlots, finalTitle, true);
+  ladder("whole", finalKind, allSlots, {
+    withDemo: format === "light",
+    finalMemory: true,
+  });
 
   return stages;
 }

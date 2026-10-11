@@ -9,8 +9,10 @@ export type WordEntry = {
   hanzi: string;
   /** Пиньинь с тоновыми знаками. */
   pinyin: string;
-  /** Ключ перевода (i18n). */
-  translation: string;
+  /** Русский перевод. Пустая строка — ещё не переведено (показывается английский). */
+  ru: string;
+  /** Английский перевод. */
+  en: string;
   /** Разговорный вариант слова (необязательно). */
   colloquial?: {
     hanzi: string;

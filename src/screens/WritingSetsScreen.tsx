@@ -2,20 +2,24 @@
 //
 // Вход в режим «Написание»:
 //   - поиск по иероглифу, пиньиню (без тонов) и переводу;
-//   - «Повторение»: слова, которые пользователь отрабатывает, и тренировка по ним;
-//   - сетка слов текущего раздела HSK, разбитая на ступени по 10 слов (текущая ступень
-//     развёрнута, остальные свёрнуты);
+//   - «Повторение»: карточка с сеткой отмеченных слов и тренировкой по ним;
+//   - слова текущего раздела HSK: заголовок со сводкой «изучено / всего» и ступени
+//     по 10 слов, у каждой своя шкала; ступени сворачиваются (первой развёрнута текущая);
 //   - следующие разделы HSK (пока закрыты) и «Другие слова» (свёрнуты).
+// Блоки разделены ритмом отступов: внутри группы 12, между группами 32.
 // Нажатие на слово открывает выбор: что писать, в каком формате, и переключатель «Повторять».
 
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
+import { SearchField } from "@/components/ui/SearchField";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Title } from "@/components/ui/Title";
 import { HanziGrid } from "@/components/writing/HanziGrid";
 import { PracticeChoiceModal } from "@/components/writing/PracticeChoiceModal";
+import { REVIEW_CARD_INSET, ReviewCard } from "@/components/writing/ReviewCard";
+import { STEP_CARD_INSET, StepCard } from "@/components/writing/StepCard";
 import type { Word } from "@/content/flashcards/types";
 import { useWordProgressStore } from "@/store/wordProgressStore";
-import { colors } from "@/theme/colors";
 import {
   NO_HSK_LEVEL,
   REPEAT_LESSON_SIZE,
@@ -32,44 +36,22 @@ import {
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 /** Отступы Screen по бокам: от них считается ширина ячеек сетки. */
 const SCREEN_INSET = 32;
 
+/** Отступ между группами блоков (внутри группы — gap-3). */
+const GROUP_GAP = 32;
+
 /** Набор переводов, где лежат переводы слов (как на экране урока). */
 const WORDS_NAMESPACE = "sets";
 
-interface SectionHeaderProps {
-  title: string;
-  subtitle: string;
-  expanded: boolean;
-  onPress: () => void;
-}
-
-function SectionHeader({
-  title,
-  subtitle,
-  expanded,
-  onPress,
-}: SectionHeaderProps) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className="min-h-12 flex-row items-center justify-between rounded-2xl bg-surface px-4 py-3 active:opacity-70"
-      accessibilityRole="button"
-      accessibilityState={{ expanded }}
-    >
-      <Text className="font-nunito text-body text-text">{title}</Text>
-      <View className="flex-row items-center gap-2">
-        <Text className="font-nunito text-small text-text">{subtitle}</Text>
-        <Text className="font-nunito text-body text-text">
-          {expanded ? "▴" : "▾"}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
+/**
+ * Сколько точек (написаний по памяти) нужно, чтобы слово считалось изученным.
+ * TODO: заменить на максимум точек / признак «освоено» из writingLessons, если он есть.
+ */
+const LEARNED_DOTS = 3;
 
 export default function WritingSetsScreen() {
   const router = useRouter();
@@ -95,7 +77,7 @@ export default function WritingSetsScreen() {
       ? getLevelStepsProgress(currentLevel, flashcardWords)
       : null;
 
-  // Развёрнутые блоки: «step-3», «review» или «other». Сначала — текущая ступень
+  // Развёрнутые блоки: «step-3» или «other». Сначала — текущая ступень
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(progress ? [`step-${progress.currentIndex}`] : []),
   );
@@ -125,6 +107,20 @@ export default function WritingSetsScreen() {
 
   const getLevel = (word: Word) => getWordWritingDots(word, flashcardWords);
   const isInReview = (word: Word) => !!writingReview[word.vocabularyId];
+  const isLearned = (word: Word) => getLevel(word) >= LEARNED_DOTS;
+
+  // Сводка по разделу: изучено / всего по всем ступеням
+  const levelLearned = progress
+    ? progress.steps.reduce(
+        (sum, step) => sum + step.words.filter(isLearned).length,
+        0,
+      )
+    : 0;
+  const levelTotal = progress
+    ? progress.steps.reduce((sum, step) => sum + step.words.length, 0)
+    : 0;
+
+  const hasMoreGroup = lockedLevels.length > 0 || hasOtherWords;
 
   const start = (word: Word, format: FreeFormat) => {
     setSelected(null);
@@ -139,13 +135,14 @@ export default function WritingSetsScreen() {
     router.push("/games/writing/review" as any);
   };
 
-  const grid = (words: Word[]) => (
+  /** extraInset — дополнительный отступ, если сетка лежит внутри карточки. */
+  const grid = (words: Word[], extraInset = 0) => (
     <HanziGrid
       words={words}
       getLevel={getLevel}
       onSelect={setSelected}
       isMarked={isInReview}
-      horizontalInset={SCREEN_INSET}
+      horizontalInset={SCREEN_INSET + extraInset}
     />
   );
 
@@ -167,35 +164,18 @@ export default function WritingSetsScreen() {
         onClose={() => setSelected(null)}
       />
 
-      {/* Поиск */}
-      <View className="mt-3 min-h-12 flex-row items-center rounded-2xl bg-surface px-4">
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Иероглиф, пиньинь или перевод"
-          placeholderTextColor={colors.textSecondary}
-          autoCorrect={false}
-          autoCapitalize="none"
-          returnKeyType="search"
-          className="flex-1 py-3 font-nunito text-body text-text"
-          accessibilityLabel="Поиск слова"
-        />
-        {isSearching && (
-          <Pressable
-            onPress={() => setQuery("")}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Очистить поиск"
-          >
-            <Text className="font-nunito text-title text-text">✕</Text>
-          </Pressable>
-        )}
-      </View>
+      <SearchField
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Иероглиф, пиньинь или перевод"
+        accessibilityLabel="Поиск слова"
+        className="my-3"
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingVertical: 16, gap: 12 }}
+        contentContainerStyle={{ paddingVertical: 16, gap: GROUP_GAP }}
       >
         {isSearching ? (
           results.length > 0 ? (
@@ -207,88 +187,82 @@ export default function WritingSetsScreen() {
           )
         ) : (
           <>
-            {/* Повторение */}
+            {/* Группа 1: Повторение */}
             {repeatWords.length > 0 && (
-              <View className="gap-3">
-                <SectionHeader
-                  title="Повторение"
-                  subtitle={`${repeatWords.length}`}
-                  expanded={expanded.has("review")}
-                  onPress={() => toggle("review")}
-                />
-
-                <Pressable
-                  onPress={startRepeat}
-                  className="min-h-12 items-center justify-center rounded-2xl bg-primary px-4 py-3 active:opacity-80"
-                >
-                  <Text className="font-nunitoBold text-body text-white">
-                    Повторить
-                    {repeatWords.length > REPEAT_LESSON_SIZE
-                      ? ` (${REPEAT_LESSON_SIZE} из ${repeatWords.length})`
-                      : ""}
-                  </Text>
-                </Pressable>
-
-                {expanded.has("review") && grid(repeatWords)}
-              </View>
+              <ReviewCard
+                total={repeatWords.length}
+                lessonSize={REPEAT_LESSON_SIZE}
+                onStart={startRepeat}
+              >
+                {grid(repeatWords, REVIEW_CARD_INSET)}
+              </ReviewCard>
             )}
 
+            {/* Группа 2: текущий раздел HSK и его ступени */}
             {progress && currentLevel !== undefined && (
-              <>
-                <Text className="font-nunitoBold text-title text-text">
-                  {describeLevel(currentLevel)}
-                </Text>
-                <Text className="font-nunito text-body text-text">
-                  Выбери слово, чтобы потренировать его. Точки под словом —
-                  сколько раз оно написано по памяти.
-                </Text>
+              <View className="gap-3">
+                <View className="flex-row items-baseline justify-between">
+                  <Text className="font-nunitoBold text-title text-text">
+                    {describeLevel(currentLevel)}
+                  </Text>
+                  <Text
+                    className="font-nunito text-small text-text"
+                    accessibilityLabel={`Изучено ${levelLearned} из ${levelTotal}`}
+                  >
+                    {levelLearned}/{levelTotal} изучено
+                  </Text>
+                </View>
 
                 {progress.steps.map((step, index) => {
                   const key = `step-${index}`;
-                  const isOpen = expanded.has(key);
-                  const isCurrent = index === progress.currentIndex;
 
                   return (
-                    <View key={key} className="gap-3">
-                      <SectionHeader
-                        title={`Ступень ${index + 1}${isCurrent ? " · сейчас" : ""}`}
-                        subtitle={`${step.started}/${step.words.length}`}
-                        expanded={isOpen}
-                        onPress={() => toggle(key)}
-                      />
-                      {isOpen && grid(step.words)}
-                    </View>
+                    <StepCard
+                      key={key}
+                      title={`Ступень ${index + 1}`}
+                      learned={step.words.filter(isLearned).length}
+                      total={step.words.length}
+                      expanded={expanded.has(key)}
+                      onToggle={() => toggle(key)}
+                    >
+                      {grid(step.words, STEP_CARD_INSET)}
+                    </StepCard>
                   );
                 })}
-              </>
+              </View>
             )}
 
-            {/* Следующие разделы HSK */}
-            {lockedLevels.map((level) => (
-              <View
-                key={level}
-                className="gap-1 rounded-2xl bg-surface/60 px-4 py-3"
-              >
-                <Text className="font-nunito text-body text-text">
-                  {describeLevel(level)} · закрыт
-                </Text>
-                <Text className="font-nunito text-small text-text">
-                  Откроется, когда пройдёшь финалы всех ступеней{" "}
-                  {describeLevel(currentLevel)}.
-                </Text>
-              </View>
-            ))}
-
-            {/* Другие слова: твои слова без уровня и слова HSK 5+ */}
-            {hasOtherWords && (
+            {/* Группа 3: следующие разделы HSK и «Другие слова» */}
+            {hasMoreGroup && (
               <View className="gap-3">
-                <SectionHeader
-                  title={describeLevel(NO_HSK_LEVEL)}
-                  subtitle={`${getLevelSequence(NO_HSK_LEVEL).length}`}
-                  expanded={expanded.has("other")}
-                  onPress={() => toggle("other")}
-                />
-                {expanded.has("other") && grid(getLevelSequence(NO_HSK_LEVEL))}
+                {lockedLevels.map((level) => (
+                  <View
+                    key={level}
+                    className="gap-1 rounded-2xl bg-surface/60 px-4 py-3"
+                  >
+                    <Text className="font-nunito text-body text-text">
+                      {describeLevel(level)} · закрыт
+                    </Text>
+                    <Text className="font-nunito text-small text-text">
+                      Откроется, когда пройдёшь финалы всех ступеней{" "}
+                      {describeLevel(currentLevel)}.
+                    </Text>
+                  </View>
+                ))}
+
+                {/* Другие слова: твои слова без уровня и слова HSK 5+ */}
+                {hasOtherWords && (
+                  <View className="gap-3">
+                    <SectionHeader
+                      title={describeLevel(NO_HSK_LEVEL)}
+                      subtitle={`${getLevelSequence(NO_HSK_LEVEL).length}`}
+                      expanded={expanded.has("other")}
+                      onPress={() => toggle("other")}
+                    />
+                    {expanded.has("other") &&
+                      grid(getLevelSequence(NO_HSK_LEVEL))}
+                  </View>
+                )}
               </View>
             )}
           </>

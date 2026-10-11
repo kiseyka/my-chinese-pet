@@ -32,6 +32,13 @@ interface HanziProps {
    * ширины стоит ограничить (1.2), иначе иероглиф не влезет.
    */
   maxFontSizeMultiplier?: number;
+  /** Ограничение по строкам (вместе с fitToWidth — в одну строку). */
+  numberOfLines?: number;
+  /**
+   * Уменьшать шрифт, если слово не влезает по ширине (например, «你好» в узкой карточке).
+   * Работает вместе с numberOfLines.
+   */
+  adjustsFontSizeToFit?: boolean;
   style?: StyleProp<TextStyle>;
 }
 
@@ -41,6 +48,8 @@ export function Hanzi({
   weight = "medium",
   className = "",
   maxFontSizeMultiplier,
+  numberOfLines,
+  adjustsFontSizeToFit,
   style,
 }: HanziProps) {
   const fontSize = typeof size === "number" ? size : HANZI_SIZES[size];
@@ -57,6 +66,8 @@ export function Hanzi({
         style,
       ]}
       maxFontSizeMultiplier={maxFontSizeMultiplier}
+      numberOfLines={numberOfLines}
+      adjustsFontSizeToFit={adjustsFontSizeToFit}
       accessibilityLanguage="zh-CN"
     >
       {children}

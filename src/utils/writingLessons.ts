@@ -3,7 +3,6 @@
 // Составление уроков письма: какие слова и в каком формате пройдут в тренировке.
 
 import type { Word } from "@/content/flashcards/types";
-import { hskWords } from "@/content/words/generated/hskWords";
 import { getWordFrequency, getWordHsk } from "@/content/words/hsk";
 import { allWords } from "@/content/words/vocabulary";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
@@ -61,32 +60,16 @@ export function getWordHskLevel(word: Word): WritingLevel {
   return level === undefined || level > MAX_HSK_SECTION ? NO_HSK_LEVEL : level;
 }
 
-/**
- * Слова HSK из scripts/build-hsk-words.mjs в формате Word. Перевод у них английский
- * и лежит прямо в translation (не ключ i18n): t() вернёт его как есть.
- */
-const generatedWords: Word[] = hskWords.map((word) => ({
-  vocabularyId: word.id,
-  id: word.id,
-  hanzi: word.hanzi,
-  pinyin: word.pinyin,
-  translation: `hsk:${word.id}`,
-}));
-
 let writingPool: Word[] | null = null;
 
 /**
- * Все слова, которые можно писать: твои слова из базы и слова HSK.
- * Если иероглифы совпадают, остаётся твоё слово (с ним связан прогресс и русский перевод).
+ * Все слова, которые можно писать: вся база (src/content/words/data/words.ts).
  * Считается один раз, при первом обращении.
  */
 export function getWritingPool(): Word[] {
   if (writingPool) return writingPool;
 
-  const ownHanzi = new Set(allWords.map((word) => word.hanzi));
-  const extra = generatedWords.filter((word) => !ownHanzi.has(word.hanzi));
-
-  writingPool = getWritableWords([...allWords, ...extra]);
+  writingPool = getWritableWords(allWords);
   return writingPool;
 }
 
@@ -122,7 +105,7 @@ function getWritingDots(word: Word, map: ProgressMap): number {
 
 // ── Ступени ──────────────────────────────────────────────────────────────────
 
-/** Слова без частоты (редкие твои слова) идут в конце раздела. */
+/** Слова без частоты (редкие слова не из HSK) идут в конце раздела. */
 function wordFrequency(word: Word): number {
   return getWordFrequency(word.vocabularyId) ?? Number.MAX_SAFE_INTEGER;
 }
@@ -483,7 +466,7 @@ export const SEARCH_LIMIT = 40;
 
 /**
  * Поиск по базе письма: по иероглифам, по пиньиню без тонов («nihao») и по переводу.
- * translate — функция перевода (t из i18next): у своих слов перевод — ключ.
+ * translate — функция перевода (t из i18next): перевод у слов — ключ "words:<id>".
  * Сначала точные совпадения иероглифов, затем пиньинь с начала, затем остальное.
  */
 export function searchWritingWords(
