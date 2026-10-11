@@ -28,7 +28,7 @@ const PandaScreen = () => {
             УРОВЕНЬ {level}
           </Text>
 
-          <View className="w-full h-2.5 rounded-full overflow-hidden bg-surface/80 ">
+          <View className="w-full h-2.5 rounded-full overflow-hidden bg-surface border border-primary/30">
             <View
               className="h-full rounded-full bg-primary opacity-100"
               style={{ width: `${progressPercent}%` }}
