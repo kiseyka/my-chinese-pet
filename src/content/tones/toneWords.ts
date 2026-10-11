@@ -1,4 +1,4 @@
-import { allWords } from "@/content/flashcards/data";
+import { allWords } from "@/content/words/vocabulary";
 import { getSyllableCount } from "@/utils/pinyinTones";
 
 export const toneTrainingWords = allWords.filter(

@@ -1,7 +1,12 @@
 // content/shop/types.ts
 import { ImageSourcePropType } from "react-native";
 
-export type RoomField = "cabinetType" | "posterType";
+export type RoomField =
+  | "cabinetType"
+  | "posterType"
+  | "wallType"
+  | "floorType"
+  | "carpetType";
 
 export type ProductBlueprint = {
   id: string;

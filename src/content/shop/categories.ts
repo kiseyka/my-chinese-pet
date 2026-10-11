@@ -23,7 +23,7 @@ export const CATEGORIES_BY_DOMAIN: Record<Domain, Category[]> = {
   interior: [
     { id: "cabinets", label: "Шкафы", icon: CabinetsIcon },
     { id: "walls", label: "Стены", icon: WallsIcon },
-    { id: "floor", label: "Полы", icon: FloorsIcon },
+    { id: "floors", label: "Полы", icon: FloorsIcon },
     { id: "carpets", label: "Ковры", icon: CarpetsIcon },
     { id: "cupboards", label: "Тумбы", icon: TablesIcon },
     { id: "windows", label: "Окна", icon: WindowsIcon },

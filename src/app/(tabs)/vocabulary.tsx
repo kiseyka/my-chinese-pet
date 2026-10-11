@@ -2,7 +2,7 @@ import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { Title } from "@/components/ui/Title";
 import { VocabularyWordItem } from "@/components/VocabularyWordItem";
-import { allWords } from "@/content/flashcards/data";
+import { allWords } from "@/content/words/vocabulary";
 import {
   getMasteryBucket,
   getWordLevel,

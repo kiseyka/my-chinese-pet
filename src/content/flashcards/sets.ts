@@ -1,132 +1,41 @@
-import { animals } from "./data/animals";
-import { body } from "./data/body";
-import { clothing } from "./data/clothing";
-import { colors } from "./data/colors";
-import { directions } from "./data/directions";
-import { family } from "./data/family";
-import { food } from "./data/food";
-import { greetings } from "./data/greetings";
-import { hobbies } from "./data/hobbies";
-import { house } from "./data/house";
-import { numbers } from "./data/numbers";
-import { places } from "./data/places";
-import { professions } from "./data/professions";
-import { time } from "./data/time";
-import { transportation } from "./data/transportation";
-import { weather } from "./data/weather";
-import { PracticeSet } from "./types";
+// src/content/flashcards/sets.ts
+//
+// Наборы для тренировок. Слова живут в общей базе (src/content/words/data/words.ts),
+// а набор хранит только список id. Здесь они собираются в привычный вид PracticeSet.
 
-export const practiceSets: PracticeSet[] = [
-  {
-    id: "greetings",
-    title: "title.greetings",
-    description: "description.greetings",
-    xpReward: 10,
-    words: greetings,
-  },
-  {
-    id: "numbers",
-    title: "title.numbers",
-    description: "description.numbers",
-    xpReward: 10,
-    words: numbers,
-  },
-  {
-    id: "family",
-    title: "title.family",
-    description: "description.family",
-    xpReward: 10,
-    words: family,
-  },
-  {
-    id: "animals",
-    title: "title.animals",
-    description: "description.animals",
-    xpReward: 10,
-    words: animals,
-  },
-  {
-    id: "food",
-    title: "title.food",
-    description: "description.food",
-    xpReward: 10,
-    words: food,
-  },
-  {
-    id: "clothing",
-    title: "title.clothing",
-    description: "description.clothing",
-    xpReward: 10,
-    words: clothing,
-  },
-  {
-    id: "weather",
-    title: "title.weather",
-    description: "description.weather",
-    xpReward: 10,
-    words: weather,
-  },
-  {
-    id: "colors",
-    title: "title.colors",
-    description: "description.colors",
-    xpReward: 10,
-    words: colors,
-  },
-  {
-    id: "transportation",
-    title: "title.transportation",
-    description: "description.transportation",
-    xpReward: 10,
-    words: transportation,
-  },
-  {
-    id: "house",
-    title: "title.house",
-    description: "description.house",
-    xpReward: 10,
-    words: house,
-  },
-  {
-    id: "body",
-    title: "title.body",
-    description: "description.body",
-    xpReward: 10,
-    words: body,
-  },
-  {
-    id: "hobbies",
-    title: "title.hobbies",
-    description: "description.hobbies",
-    xpReward: 10,
-    words: hobbies,
-  },
-  {
-    id: "time",
-    title: "title.time",
-    description: "description.time",
-    xpReward: 10,
-    words: time,
-  },
-  {
-    id: "professions",
-    title: "title.professions",
-    description: "description.professions",
-    xpReward: 10,
-    words: professions,
-  },
-  {
-    id: "places",
-    title: "title.places",
-    description: "description.places",
-    xpReward: 10,
-    words: places,
-  },
-  {
-    id: "directions",
-    title: "title.directions",
-    description: "description.directions",
-    xpReward: 10,
-    words: directions,
-  },
-];
+import { setDefinitions } from "../sets/definitions";
+import { findWordEntry } from "../words";
+import type { WordEntry } from "../words/types";
+import type { PracticeSet, Word } from "./types";
+
+/**
+ * Слово из базы в формате, которого ждут тренировки: id и vocabularyId совпадают.
+ * Перевод — ключ i18n "words:<id>": i18next возьмёт ru или en из words.ts
+ * (см. src/i18n/index.ts).
+ */
+export function toWord(entry: WordEntry): Word {
+  return {
+    id: entry.id,
+    vocabularyId: entry.id,
+    hanzi: entry.hanzi,
+    pinyin: entry.pinyin,
+    translation: `words:${entry.id}`,
+    ...(entry.colloquial && { colloquial: entry.colloquial }),
+  };
+}
+
+export const practiceSets: PracticeSet[] = setDefinitions.map(
+  ({ wordIds, ...rest }) => ({
+    ...rest,
+    words: wordIds
+      .map((id) => {
+        const entry = findWordEntry(id);
+        if (!entry && __DEV__) {
+          console.warn(`Набор «${rest.id}»: нет слова с id ${id}`);
+        }
+        return entry;
+      })
+      .filter((entry): entry is WordEntry => !!entry)
+      .map(toWord),
+  }),
+);

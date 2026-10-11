@@ -20,6 +20,9 @@ const ShopScreen = () => {
     selectedProductId,
     previewCabinetType,
     previewPosterType,
+    previewWallType,
+    previewFloorType,
+    previewCarpetType,
     handleDomainChange,
     handleCategoryChange,
     handleCancel,
@@ -49,6 +52,9 @@ const ShopScreen = () => {
           <PandaScenePreview
             previewCabinetType={previewCabinetType}
             previewPosterType={previewPosterType}
+            previewWallType={previewWallType}
+            previewFloorType={previewFloorType}
+            previewCarpetType={previewCarpetType}
           />
         </View>
 

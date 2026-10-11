@@ -1,41 +1,27 @@
 // src/screens/PandaScreen.tsx
 
+import practiceImg from "@/assets/images/practice.png";
+import shopImg from "@/assets/images/shop.png";
 import { CoinBalance } from "@/components/CoinBalance";
 import { Screen } from "@/components/layout/Screen";
+import { PandaDialogBubble } from "@/components/panda/PandaDialogBubble";
 import { PandaScene } from "@/components/panda/PandaScene";
 import { NavIconButton } from "@/components/ui/NavIconButton";
-import { usePandaStore } from "@/store/pandaStore";
+import { usePandaDialog } from "@/hooks/panda/usePandaDialog";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 const PandaScreen = () => {
-  const { t } = useTranslation(["panda"]);
   const router = useRouter();
-  const pendingResult = usePandaStore((s) => s.pendingTrainingResult);
-  const clearPendingResult = usePandaStore((s) => s.clearPendingTrainingResult);
-  const increaseBond = usePandaStore((s) => s.increaseBond);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const insets = useSafeAreaInsets();
+  const { step, selectReply, close, speakPhrase } = usePandaDialog();
   const xp = useProgressStore((s) => s.xp);
-  const coins = useProgressStore((s) => s.coins);
   const { level, xpIntoLevel, xpForNextLevel } = getLevelInfo(xp);
   const progressPercent = Math.min(100, (xpIntoLevel / xpForNextLevel) * 100);
 
-  const handleCloseDialog = () => {
-    if (pendingResult) {
-      increaseBond(1);
-    }
-
-    setIsDialogOpen(false);
-    clearPendingResult();
-  };
-
   return (
-    <Screen>
+    <Screen className="bg-[#EDE0CE]">
       <View className="flex-row justify-between items-center px-2 z-10">
         <View className="flex-col gap-1" style={{ width: "50%" }}>
           <Text className="font-nunito text-lg tracking-wide text-text">
@@ -63,9 +49,7 @@ const PandaScreen = () => {
         <CoinBalance />
       </View>
 
-      {/* Сцена с пандой — на весь экран под шапкой. Раньше тут была
-          анимация сжатия снизу под панель магазина — панели больше нет,
-          сцена больше ничем не ужимается. */}
+      {/* Сцена с пандой — на весь экран под шапкой. */}
       <View
         style={{
           position: "absolute",
@@ -91,29 +75,33 @@ const PandaScreen = () => {
 
       <View className="flex-1" />
 
+      {/* Диалог панды: появляется после тренировки, если есть что сказать */}
       <View className="flex-1 relative">
-        {isDialogOpen && (
-          <Pressable
-            onPress={handleCloseDialog}
-            className="absolute bottom-24 self-center"
-          >
-            <View className="rounded-full px-4 py-2">
-              <Text className="text-white">Понятно!</Text>
-            </View>
-          </Pressable>
+        {step && (
+          <View className="absolute bottom-4 left-4 right-4">
+            <PandaDialogBubble
+              text={step.text}
+              phrase={step.phrase}
+              replies={step.replies}
+              onReply={selectReply}
+              onSpeakPhrase={speakPhrase}
+              onClose={close}
+            />
+          </View>
         )}
       </View>
 
       {/* Ряд навигационных иконок — обе просто переводят на отдельный
           экран, никакого локального state/анимации тут больше нет. */}
-      <View className="flex-row justify-center items-start gap-8 pb-2">
+      <View className="flex-row justify-between pb-2">
         <NavIconButton
-          icon={<Text style={{ fontSize: 24 }}>🎓</Text>}
-          label="Тренировки"
+          image={practiceImg}
+          label="Практика"
           onPress={() => router.push("/games")}
         />
+
         <NavIconButton
-          icon={<Text style={{ fontSize: 24 }}>🛍️</Text>}
+          image={shopImg}
           label="Магазин"
           onPress={() => router.push("/shop")}
         />

@@ -1,0 +1,2468 @@
+[
+  {
+    "id": "greetings",
+    "title": "title.greetings",
+    "description": "description.greetings",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "hello",
+        "hanzi": "你好",
+        "pinyin": "nǐ hǎo",
+        "translation": "greetings.hello",
+        "vocabularyId": "greetings_hello"
+      },
+      {
+        "id": "hello_polite",
+        "hanzi": "您好",
+        "pinyin": "nín hǎo",
+        "translation": "greetings.hello_polite",
+        "vocabularyId": "greetings_hello_polite"
+      },
+      {
+        "id": "thanks",
+        "hanzi": "谢谢",
+        "pinyin": "xièxie",
+        "translation": "greetings.thanks",
+        "vocabularyId": "greetings_thanks"
+      },
+      {
+        "id": "goodbye",
+        "hanzi": "再见",
+        "pinyin": "zàijiàn",
+        "translation": "greetings.goodbye",
+        "vocabularyId": "greetings_goodbye"
+      },
+      {
+        "id": "sorry",
+        "hanzi": "对不起",
+        "pinyin": "duìbuqǐ",
+        "translation": "greetings.sorry",
+        "vocabularyId": "greetings_sorry"
+      },
+      {
+        "id": "good_morning",
+        "hanzi": "早上好",
+        "pinyin": "zǎoshang hǎo",
+        "translation": "greetings.good_morning",
+        "vocabularyId": "greetings_good_morning"
+      },
+      {
+        "id": "good_night",
+        "hanzi": "晚安",
+        "pinyin": "wǎn'ān",
+        "translation": "greetings.good_night",
+        "vocabularyId": "greetings_good_night"
+      },
+      {
+        "id": "you_are_welcome",
+        "hanzi": "不客气",
+        "pinyin": "bú kèqi",
+        "translation": "greetings.you_are_welcome",
+        "vocabularyId": "greetings_you_are_welcome"
+      },
+      {
+        "id": "it_does_not_matter",
+        "hanzi": "没关系",
+        "pinyin": "méi guānxi",
+        "translation": "greetings.it_does_not_matter",
+        "vocabularyId": "greetings_it_does_not_matter"
+      },
+      {
+        "id": "please",
+        "hanzi": "请",
+        "pinyin": "qǐng",
+        "translation": "greetings.please",
+        "vocabularyId": "greetings_please"
+      },
+      {
+        "id": "see_you_tomorrow",
+        "hanzi": "明天见",
+        "pinyin": "míngtiān jiàn",
+        "translation": "greetings.see_you_tomorrow",
+        "vocabularyId": "greetings_see_you_tomorrow"
+      },
+      {
+        "id": "how_are_you",
+        "hanzi": "你好吗",
+        "pinyin": "nǐ hǎo ma",
+        "translation": "greetings.how_are_you",
+        "vocabularyId": "greetings_how_are_you"
+      },
+      {
+        "id": "im_fine",
+        "hanzi": "我很好",
+        "pinyin": "wǒ hěn hǎo",
+        "translation": "greetings.im_fine",
+        "vocabularyId": "greetings_im_fine"
+      },
+      {
+        "id": "have_you_eaten",
+        "hanzi": "吃了吗",
+        "pinyin": "chī le ma",
+        "translation": "greetings.have_you_eaten",
+        "vocabularyId": "greetings_have_you_eaten"
+      },
+      {
+        "id": "bye_bye",
+        "hanzi": "拜拜",
+        "pinyin": "bàibài",
+        "translation": "greetings.bye_bye",
+        "vocabularyId": "greetings_bye_bye"
+      },
+      {
+        "id": "see_you_later",
+        "hanzi": "回头见",
+        "pinyin": "huítóu jiàn",
+        "translation": "greetings.see_you_later",
+        "vocabularyId": "greetings_see_you_later"
+      },
+      {
+        "id": "excuse_me",
+        "hanzi": "打扰一下",
+        "pinyin": "dǎrǎo yíxià",
+        "translation": "greetings.excuse_me",
+        "vocabularyId": "greetings_excuse_me"
+      },
+      {
+        "id": "thank_you_for_hard_work",
+        "hanzi": "辛苦了",
+        "pinyin": "xīnkǔ le",
+        "translation": "greetings.thank_you_for_hard_work",
+        "vocabularyId": "greetings_thank_you_for_hard_work"
+      },
+      {
+        "id": "nice_to_meet_you",
+        "hanzi": "很高兴认识你",
+        "pinyin": "hěn gāoxìng rènshi nǐ",
+        "translation": "greetings.nice_to_meet_you",
+        "vocabularyId": "greetings_nice_to_meet_you"
+      },
+      {
+        "id": "long_time_no_see",
+        "hanzi": "好久不见",
+        "pinyin": "hǎojiǔ bú jiàn",
+        "translation": "greetings.long_time_no_see",
+        "vocabularyId": "greetings_long_time_no_see"
+      },
+      {
+        "id": "measure_phrase",
+        "hanzi": "句",
+        "pinyin": "jù",
+        "translation": "greetings.measure_ju",
+        "vocabularyId": "greetings_measure_phrase"
+      }
+    ]
+  },
+  {
+    "id": "numbers",
+    "title": "title.numbers",
+    "description": "description.numbers",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "zero",
+        "hanzi": "零",
+        "pinyin": "líng",
+        "translation": "numbers.zero",
+        "vocabularyId": "numbers_zero"
+      },
+      {
+        "id": "one",
+        "hanzi": "一",
+        "pinyin": "yī",
+        "translation": "numbers.one",
+        "vocabularyId": "numbers_one"
+      },
+      {
+        "id": "two",
+        "hanzi": "二",
+        "pinyin": "èr",
+        "translation": "numbers.two",
+        "vocabularyId": "numbers_two"
+      },
+      {
+        "id": "three",
+        "hanzi": "三",
+        "pinyin": "sān",
+        "translation": "numbers.three",
+        "vocabularyId": "numbers_three"
+      },
+      {
+        "id": "four",
+        "hanzi": "四",
+        "pinyin": "sì",
+        "translation": "numbers.four",
+        "vocabularyId": "numbers_four"
+      },
+      {
+        "id": "five",
+        "hanzi": "五",
+        "pinyin": "wǔ",
+        "translation": "numbers.five",
+        "vocabularyId": "numbers_five"
+      },
+      {
+        "id": "six",
+        "hanzi": "六",
+        "pinyin": "liù",
+        "translation": "numbers.six",
+        "vocabularyId": "numbers_six"
+      },
+      {
+        "id": "seven",
+        "hanzi": "七",
+        "pinyin": "qī",
+        "translation": "numbers.seven",
+        "vocabularyId": "numbers_seven"
+      },
+      {
+        "id": "eight",
+        "hanzi": "八",
+        "pinyin": "bā",
+        "translation": "numbers.eight",
+        "vocabularyId": "numbers_eight"
+      },
+      {
+        "id": "nine",
+        "hanzi": "九",
+        "pinyin": "jiǔ",
+        "translation": "numbers.nine",
+        "vocabularyId": "numbers_nine"
+      },
+      {
+        "id": "ten",
+        "hanzi": "十",
+        "pinyin": "shí",
+        "translation": "numbers.ten",
+        "vocabularyId": "numbers_ten"
+      },
+      {
+        "id": "two_quantity",
+        "hanzi": "两",
+        "pinyin": "liǎng",
+        "translation": "numbers.two_quantity",
+        "vocabularyId": "numbers_two_quantity"
+      },
+      {
+        "id": "hundred",
+        "hanzi": "百",
+        "pinyin": "bǎi",
+        "translation": "numbers.hundred",
+        "vocabularyId": "numbers_hundred"
+      },
+      {
+        "id": "thousand",
+        "hanzi": "千",
+        "pinyin": "qiān",
+        "translation": "numbers.thousand",
+        "vocabularyId": "numbers_thousand"
+      },
+      {
+        "id": "ten_thousand",
+        "hanzi": "万",
+        "pinyin": "wàn",
+        "translation": "numbers.ten_thousand",
+        "vocabularyId": "numbers_ten_thousand"
+      },
+      {
+        "id": "half",
+        "hanzi": "半",
+        "pinyin": "bàn",
+        "translation": "numbers.half",
+        "vocabularyId": "numbers_half"
+      },
+      {
+        "id": "several",
+        "hanzi": "几",
+        "pinyin": "jǐ",
+        "translation": "numbers.several",
+        "vocabularyId": "numbers_several"
+      },
+      {
+        "id": "how_many",
+        "hanzi": "多少",
+        "pinyin": "duōshao",
+        "translation": "numbers.how_many",
+        "vocabularyId": "numbers_how_many"
+      },
+      {
+        "id": "number",
+        "hanzi": "号码",
+        "pinyin": "hàomǎ",
+        "translation": "numbers.number",
+        "vocabularyId": "numbers_number"
+      },
+      {
+        "id": "first",
+        "hanzi": "第一",
+        "pinyin": "dì-yī",
+        "translation": "numbers.first",
+        "vocabularyId": "numbers_first"
+      },
+      {
+        "id": "second",
+        "hanzi": "第二",
+        "pinyin": "dì-èr",
+        "translation": "numbers.second",
+        "vocabularyId": "numbers_second"
+      },
+      {
+        "id": "third",
+        "hanzi": "第三",
+        "pinyin": "dì-sān",
+        "translation": "numbers.third",
+        "vocabularyId": "numbers_third"
+      },
+      {
+        "id": "measure_general",
+        "hanzi": "个",
+        "pinyin": "gè",
+        "translation": "numbers.measure_ge",
+        "vocabularyId": "numbers_measure_general"
+      }
+    ]
+  },
+  {
+    "id": "family",
+    "title": "title.family",
+    "description": "description.family",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "mother",
+        "hanzi": "妈妈",
+        "pinyin": "māma",
+        "translation": "family.mother",
+        "vocabularyId": "family_mother"
+      },
+      {
+        "id": "father",
+        "hanzi": "爸爸",
+        "pinyin": "bàba",
+        "translation": "family.father",
+        "vocabularyId": "family_father"
+      },
+      {
+        "id": "older_brother",
+        "hanzi": "哥哥",
+        "pinyin": "gēge",
+        "translation": "family.older_brother",
+        "vocabularyId": "family_older_brother"
+      },
+      {
+        "id": "younger_brother",
+        "hanzi": "弟弟",
+        "pinyin": "dìdi",
+        "translation": "family.younger_brother",
+        "vocabularyId": "family_younger_brother"
+      },
+      {
+        "id": "older_sister",
+        "hanzi": "姐姐",
+        "pinyin": "jiějie",
+        "translation": "family.older_sister",
+        "vocabularyId": "family_older_sister"
+      },
+      {
+        "id": "younger_sister",
+        "hanzi": "妹妹",
+        "pinyin": "mèimei",
+        "translation": "family.younger_sister",
+        "vocabularyId": "family_younger_sister"
+      },
+      {
+        "id": "grandfather_paternal",
+        "hanzi": "爷爷",
+        "pinyin": "yéye",
+        "translation": "family.grandfather_paternal",
+        "vocabularyId": "family_grandfather_paternal"
+      },
+      {
+        "id": "grandmother_paternal",
+        "hanzi": "奶奶",
+        "pinyin": "nǎinai",
+        "translation": "family.grandmother_paternal",
+        "vocabularyId": "family_grandmother_paternal"
+      },
+      {
+        "id": "grandfather_maternal",
+        "hanzi": "外公",
+        "pinyin": "wàigōng",
+        "translation": "family.grandfather_maternal",
+        "vocabularyId": "family_grandfather_maternal"
+      },
+      {
+        "id": "grandmother_maternal",
+        "hanzi": "外婆",
+        "pinyin": "wàipó",
+        "translation": "family.grandmother_maternal",
+        "vocabularyId": "family_grandmother_maternal"
+      },
+      {
+        "id": "son",
+        "hanzi": "儿子",
+        "pinyin": "érzi",
+        "translation": "family.son",
+        "vocabularyId": "family_son"
+      },
+      {
+        "id": "daughter",
+        "hanzi": "女儿",
+        "pinyin": "nǚ'ér",
+        "translation": "family.daughter",
+        "vocabularyId": "family_daughter"
+      },
+      {
+        "id": "child",
+        "hanzi": "孩子",
+        "pinyin": "háizi",
+        "translation": "family.child",
+        "vocabularyId": "family_child"
+      },
+      {
+        "id": "husband",
+        "hanzi": "老公",
+        "pinyin": "lǎogōng",
+        "translation": "family.husband",
+        "vocabularyId": "family_husband"
+      },
+      {
+        "id": "wife",
+        "hanzi": "老婆",
+        "pinyin": "lǎopo",
+        "translation": "family.wife",
+        "vocabularyId": "family_wife"
+      },
+      {
+        "id": "aunt",
+        "hanzi": "阿姨",
+        "pinyin": "āyí",
+        "translation": "family.aunt",
+        "vocabularyId": "family_aunt"
+      },
+      {
+        "id": "uncle",
+        "hanzi": "叔叔",
+        "pinyin": "shūshu",
+        "translation": "family.uncle",
+        "vocabularyId": "family_uncle"
+      },
+      {
+        "id": "measure_family_members",
+        "hanzi": "口",
+        "pinyin": "kǒu",
+        "translation": "family.measure_kou",
+        "vocabularyId": "family_measure_family_members"
+      }
+    ]
+  },
+  {
+    "id": "animals",
+    "title": "title.animals",
+    "description": "description.animals",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "cat",
+        "hanzi": "猫",
+        "pinyin": "māo",
+        "translation": "animals.cat",
+        "vocabularyId": "animals_cat"
+      },
+      {
+        "id": "dog",
+        "hanzi": "狗",
+        "pinyin": "gǒu",
+        "translation": "animals.dog",
+        "vocabularyId": "animals_dog"
+      },
+      {
+        "id": "bird",
+        "hanzi": "鸟",
+        "pinyin": "niǎo",
+        "translation": "animals.bird",
+        "vocabularyId": "animals_bird"
+      },
+      {
+        "id": "fish",
+        "hanzi": "鱼",
+        "pinyin": "yú",
+        "translation": "animals.fish",
+        "vocabularyId": "animals_fish"
+      },
+      {
+        "id": "cow",
+        "hanzi": "牛",
+        "pinyin": "niú",
+        "translation": "animals.cow",
+        "vocabularyId": "animals_cow"
+      },
+      {
+        "id": "sheep",
+        "hanzi": "羊",
+        "pinyin": "yáng",
+        "translation": "animals.sheep",
+        "vocabularyId": "animals_sheep"
+      },
+      {
+        "id": "panda",
+        "hanzi": "熊猫",
+        "pinyin": "xióngmāo",
+        "translation": "animals.panda",
+        "vocabularyId": "animals_panda"
+      },
+      {
+        "id": "tiger",
+        "hanzi": "老虎",
+        "pinyin": "lǎohǔ",
+        "translation": "animals.tiger",
+        "vocabularyId": "animals_tiger"
+      },
+      {
+        "id": "monkey",
+        "hanzi": "猴子",
+        "pinyin": "hóuzi",
+        "translation": "animals.monkey",
+        "vocabularyId": "animals_monkey"
+      },
+      {
+        "id": "rabbit",
+        "hanzi": "兔子",
+        "pinyin": "tùzi",
+        "translation": "animals.rabbit",
+        "vocabularyId": "animals_rabbit"
+      },
+      {
+        "id": "horse",
+        "hanzi": "马",
+        "pinyin": "mǎ",
+        "translation": "animals.horse",
+        "vocabularyId": "animals_horse"
+      },
+      {
+        "id": "pig",
+        "hanzi": "猪",
+        "pinyin": "zhū",
+        "translation": "animals.pig",
+        "vocabularyId": "animals_pig"
+      },
+      {
+        "id": "duck",
+        "hanzi": "鸭子",
+        "pinyin": "yāzi",
+        "translation": "animals.duck",
+        "vocabularyId": "animals_duck"
+      },
+      {
+        "id": "chicken",
+        "hanzi": "鸡",
+        "pinyin": "jī",
+        "translation": "animals.chicken",
+        "vocabularyId": "animals_chicken"
+      },
+      {
+        "id": "snake",
+        "hanzi": "蛇",
+        "pinyin": "shé",
+        "translation": "animals.snake",
+        "vocabularyId": "animals_snake"
+      },
+      {
+        "id": "mouse",
+        "hanzi": "老鼠",
+        "pinyin": "lǎoshǔ",
+        "translation": "animals.mouse",
+        "vocabularyId": "animals_mouse"
+      },
+      {
+        "id": "measure_animal_zhi",
+        "hanzi": "只",
+        "pinyin": "zhī",
+        "translation": "animals.measure_zhi",
+        "vocabularyId": "animals_measure_animal_zhi"
+      },
+      {
+        "id": "measure_long_tiao",
+        "hanzi": "条",
+        "pinyin": "tiáo",
+        "translation": "animals.measure_tiao",
+        "vocabularyId": "animals_measure_long_tiao"
+      }
+    ]
+  },
+  {
+    "id": "food",
+    "title": "title.food",
+    "description": "description.food",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "rice",
+        "hanzi": "米饭",
+        "pinyin": "mǐfàn",
+        "translation": "food.rice",
+        "vocabularyId": "food_rice"
+      },
+      {
+        "id": "noodle",
+        "hanzi": "面条",
+        "pinyin": "miàntiáo",
+        "translation": "food.noodle",
+        "vocabularyId": "food_noodle"
+      },
+      {
+        "id": "apple",
+        "hanzi": "苹果",
+        "pinyin": "píngguǒ",
+        "translation": "food.apple",
+        "vocabularyId": "food_apple"
+      },
+      {
+        "id": "tea",
+        "hanzi": "茶",
+        "pinyin": "chá",
+        "translation": "food.tea",
+        "vocabularyId": "food_tea"
+      },
+      {
+        "id": "water",
+        "hanzi": "水",
+        "pinyin": "shuǐ",
+        "translation": "food.water",
+        "vocabularyId": "food_water"
+      },
+      {
+        "id": "milk",
+        "hanzi": "牛奶",
+        "pinyin": "niúnǎi",
+        "translation": "food.milk",
+        "vocabularyId": "food_milk"
+      },
+      {
+        "id": "vegetables",
+        "hanzi": "菜",
+        "pinyin": "cài",
+        "translation": "food.vegetables",
+        "vocabularyId": "food_vegetables"
+      },
+      {
+        "id": "fruit",
+        "hanzi": "水果",
+        "pinyin": "shuǐguǒ",
+        "translation": "food.fruit",
+        "vocabularyId": "food_fruit"
+      },
+      {
+        "id": "egg",
+        "hanzi": "鸡蛋",
+        "pinyin": "jīdàn",
+        "translation": "food.egg",
+        "vocabularyId": "food_egg"
+      },
+      {
+        "id": "bread",
+        "hanzi": "面包",
+        "pinyin": "miànbāo",
+        "translation": "food.bread",
+        "vocabularyId": "food_bread"
+      },
+      {
+        "id": "coffee",
+        "hanzi": "咖啡",
+        "pinyin": "kāfēi",
+        "translation": "food.coffee",
+        "vocabularyId": "food_coffee"
+      },
+      {
+        "id": "fish_food",
+        "hanzi": "鱼",
+        "pinyin": "yú",
+        "translation": "food.fish_food",
+        "vocabularyId": "food_fish_food"
+      },
+      {
+        "id": "meat",
+        "hanzi": "肉",
+        "pinyin": "ròu",
+        "translation": "food.meat",
+        "vocabularyId": "food_meat"
+      },
+      {
+        "id": "orange",
+        "hanzi": "橙子",
+        "pinyin": "chéngzi",
+        "translation": "food.orange",
+        "vocabularyId": "food_orange"
+      },
+      {
+        "id": "grape",
+        "hanzi": "葡萄",
+        "pinyin": "pútáo",
+        "translation": "food.grape",
+        "vocabularyId": "food_grape"
+      },
+      {
+        "id": "strawberry",
+        "hanzi": "草莓",
+        "pinyin": "cǎoméi",
+        "translation": "food.strawberry",
+        "vocabularyId": "food_strawberry"
+      },
+      {
+        "id": "hamburger",
+        "hanzi": "汉堡包",
+        "pinyin": "hànbǎobāo",
+        "translation": "food.hamburger",
+        "vocabularyId": "food_hamburger"
+      },
+      {
+        "id": "fried_chicken",
+        "hanzi": "炸鸡",
+        "pinyin": "zhàjī",
+        "translation": "food.fried_chicken",
+        "vocabularyId": "food_fried_chicken"
+      },
+      {
+        "id": "salad",
+        "hanzi": "沙拉",
+        "pinyin": "shālā",
+        "translation": "food.salad",
+        "vocabularyId": "food_salad"
+      },
+      {
+        "id": "pizza",
+        "hanzi": "披萨",
+        "pinyin": "pīsà",
+        "translation": "food.pizza",
+        "vocabularyId": "food_pizza"
+      },
+      {
+        "id": "cola",
+        "hanzi": "可乐",
+        "pinyin": "kělè",
+        "translation": "food.cola",
+        "vocabularyId": "food_cola"
+      },
+      {
+        "id": "porridge",
+        "hanzi": "粥",
+        "pinyin": "zhōu",
+        "translation": "food.porridge",
+        "vocabularyId": "food_porridge"
+      },
+      {
+        "id": "fried_dough_sticks",
+        "hanzi": "油条",
+        "pinyin": "yóutiáo",
+        "translation": "food.fried_dough_sticks",
+        "vocabularyId": "food_fried_dough_sticks"
+      },
+      {
+        "id": "measure_bowl",
+        "hanzi": "碗",
+        "pinyin": "wǎn",
+        "translation": "food.measure_wan",
+        "vocabularyId": "food_measure_bowl"
+      },
+      {
+        "id": "measure_cup",
+        "hanzi": "杯",
+        "pinyin": "bēi",
+        "translation": "food.measure_bei",
+        "vocabularyId": "food_measure_cup"
+      }
+    ]
+  },
+  {
+    "id": "clothing",
+    "title": "title.clothing",
+    "description": "description.clothing",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "clothes",
+        "hanzi": "衣服",
+        "pinyin": "yīfu",
+        "translation": "clothing.clothes",
+        "vocabularyId": "clothing_clothes"
+      },
+      {
+        "id": "skirt",
+        "hanzi": "裙子",
+        "pinyin": "qúnzi",
+        "translation": "clothing.skirt",
+        "vocabularyId": "clothing_skirt"
+      },
+      {
+        "id": "pants",
+        "hanzi": "裤子",
+        "pinyin": "kùzi",
+        "translation": "clothing.pants",
+        "vocabularyId": "clothing_pants"
+      },
+      {
+        "id": "shirt",
+        "hanzi": "衬衫",
+        "pinyin": "chènshān",
+        "translation": "clothing.shirt",
+        "vocabularyId": "clothing_shirt"
+      },
+      {
+        "id": "shoes",
+        "hanzi": "鞋子",
+        "pinyin": "xiézi",
+        "translation": "clothing.shoes",
+        "vocabularyId": "clothing_shoes"
+      },
+      {
+        "id": "hat",
+        "hanzi": "帽子",
+        "pinyin": "màozi",
+        "translation": "clothing.hat",
+        "vocabularyId": "clothing_hat"
+      },
+      {
+        "id": "eye_glasses",
+        "hanzi": "眼镜",
+        "pinyin": "yǎnjìng",
+        "translation": "clothing.eye_glasses",
+        "vocabularyId": "clothing_eye_glasses"
+      },
+      {
+        "id": "coat",
+        "hanzi": "外套",
+        "pinyin": "wàitào",
+        "translation": "clothing.coat",
+        "vocabularyId": "clothing_coat"
+      },
+      {
+        "id": "socks",
+        "hanzi": "袜子",
+        "pinyin": "wàzi",
+        "translation": "clothing.socks",
+        "vocabularyId": "clothing_socks"
+      },
+      {
+        "id": "sweater",
+        "hanzi": "毛衣",
+        "pinyin": "máoyī",
+        "translation": "clothing.sweater",
+        "vocabularyId": "clothing_sweater"
+      },
+      {
+        "id": "down_jacket",
+        "hanzi": "羽绒服",
+        "pinyin": "yǔróngfú",
+        "translation": "clothing.down_jacket",
+        "vocabularyId": "clothing_down_jacket"
+      },
+      {
+        "id": "shorts",
+        "hanzi": "短裤",
+        "pinyin": "duǎnkù",
+        "translation": "clothing.shorts",
+        "vocabularyId": "clothing_shorts"
+      },
+      {
+        "id": "sandals",
+        "hanzi": "凉鞋",
+        "pinyin": "liángxié",
+        "translation": "clothing.sandals",
+        "vocabularyId": "clothing_sandals"
+      },
+      {
+        "id": "measure_clothing",
+        "hanzi": "件",
+        "pinyin": "jiàn",
+        "translation": "clothing.measure_jian",
+        "vocabularyId": "clothing_measure_clothing"
+      }
+    ]
+  },
+  {
+    "id": "weather",
+    "title": "title.weather",
+    "description": "description.weather",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "weather",
+        "hanzi": "天气",
+        "pinyin": "tiānqì",
+        "translation": "weather.weather",
+        "vocabularyId": "weather_weather"
+      },
+      {
+        "id": "hot",
+        "hanzi": "热",
+        "pinyin": "rè",
+        "translation": "weather.hot",
+        "vocabularyId": "weather_hot"
+      },
+      {
+        "id": "cold",
+        "hanzi": "冷",
+        "pinyin": "lěng",
+        "translation": "weather.cold",
+        "vocabularyId": "weather_cold"
+      },
+      {
+        "id": "rain",
+        "hanzi": "下雨",
+        "pinyin": "xiàyǔ",
+        "translation": "weather.rain",
+        "vocabularyId": "weather_rain"
+      },
+      {
+        "id": "sunny",
+        "hanzi": "晴天",
+        "pinyin": "qíngtiān",
+        "translation": "weather.sunny",
+        "vocabularyId": "weather_sunny"
+      },
+      {
+        "id": "cloudy",
+        "hanzi": "阴天",
+        "pinyin": "yīntiān",
+        "translation": "weather.cloudy",
+        "vocabularyId": "weather_cloudy"
+      },
+      {
+        "id": "snow",
+        "hanzi": "下雪",
+        "pinyin": "xiàxuě",
+        "translation": "weather.snow",
+        "vocabularyId": "weather_snow"
+      },
+      {
+        "id": "wind",
+        "hanzi": "刮风",
+        "pinyin": "guāfēng",
+        "translation": "weather.wind",
+        "vocabularyId": "weather_wind"
+      },
+      {
+        "id": "season",
+        "hanzi": "季节",
+        "pinyin": "jìjié",
+        "translation": "weather.season",
+        "vocabularyId": "weather_season"
+      },
+      {
+        "id": "spring",
+        "hanzi": "春天",
+        "pinyin": "chūntiān",
+        "translation": "weather.spring",
+        "vocabularyId": "weather_spring"
+      },
+      {
+        "id": "summer",
+        "hanzi": "夏天",
+        "pinyin": "xiàtiān",
+        "translation": "weather.summer",
+        "vocabularyId": "weather_summer"
+      },
+      {
+        "id": "autumn",
+        "hanzi": "秋天",
+        "pinyin": "qiūtiān",
+        "translation": "weather.autumn",
+        "vocabularyId": "weather_autumn"
+      },
+      {
+        "id": "winter",
+        "hanzi": "冬天",
+        "pinyin": "dōngtiān",
+        "translation": "weather.winter",
+        "vocabularyId": "weather_winter"
+      },
+      {
+        "id": "sun",
+        "hanzi": "太阳",
+        "pinyin": "tàiyáng",
+        "translation": "weather.sun",
+        "vocabularyId": "weather_sun"
+      },
+      {
+        "id": "warm",
+        "hanzi": "暖和",
+        "pinyin": "nuǎnhuo",
+        "translation": "weather.warm",
+        "vocabularyId": "weather_warm"
+      },
+      {
+        "id": "cool",
+        "hanzi": "凉快",
+        "pinyin": "liángkuai",
+        "translation": "weather.cool",
+        "vocabularyId": "weather_cool"
+      }
+    ]
+  },
+  {
+    "id": "colors",
+    "title": "title.colors",
+    "description": "description.colors",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "red",
+        "hanzi": "红色",
+        "pinyin": "hóngsè",
+        "translation": "colors.red",
+        "vocabularyId": "colors_red"
+      },
+      {
+        "id": "blue",
+        "hanzi": "蓝色",
+        "pinyin": "lánsè",
+        "translation": "colors.blue",
+        "vocabularyId": "colors_blue"
+      },
+      {
+        "id": "green",
+        "hanzi": "绿色",
+        "pinyin": "lǜsè",
+        "translation": "colors.green",
+        "vocabularyId": "colors_green"
+      },
+      {
+        "id": "yellow",
+        "hanzi": "黄色",
+        "pinyin": "huángsè",
+        "translation": "colors.yellow",
+        "vocabularyId": "colors_yellow"
+      },
+      {
+        "id": "white",
+        "hanzi": "白色",
+        "pinyin": "báisè",
+        "translation": "colors.white",
+        "vocabularyId": "colors_white"
+      },
+      {
+        "id": "black",
+        "hanzi": "黑色",
+        "pinyin": "hēisè",
+        "translation": "colors.black",
+        "vocabularyId": "colors_black"
+      },
+      {
+        "id": "pink",
+        "hanzi": "粉色",
+        "pinyin": "fěnsè",
+        "translation": "colors.pink",
+        "vocabularyId": "colors_pink"
+      },
+      {
+        "id": "purple",
+        "hanzi": "紫色",
+        "pinyin": "zǐsè",
+        "translation": "colors.purple",
+        "vocabularyId": "colors_purple"
+      },
+      {
+        "id": "orange",
+        "hanzi": "橙色",
+        "pinyin": "chéngsè",
+        "translation": "colors.orange",
+        "vocabularyId": "colors_orange"
+      },
+      {
+        "id": "grey",
+        "hanzi": "灰色",
+        "pinyin": "huīsè",
+        "translation": "colors.grey",
+        "vocabularyId": "colors_grey"
+      },
+      {
+        "id": "brown",
+        "hanzi": "棕色",
+        "pinyin": "zōngsè",
+        "translation": "colors.brown",
+        "vocabularyId": "colors_brown"
+      },
+      {
+        "id": "color",
+        "hanzi": "颜色",
+        "pinyin": "yánsè",
+        "translation": "colors.color",
+        "vocabularyId": "colors_color"
+      },
+      {
+        "id": "bright",
+        "hanzi": "亮",
+        "pinyin": "liàng",
+        "translation": "colors.bright",
+        "vocabularyId": "colors_bright"
+      },
+      {
+        "id": "dark",
+        "hanzi": "暗",
+        "pinyin": "àn",
+        "translation": "colors.dark",
+        "vocabularyId": "colors_dark"
+      },
+      {
+        "id": "light_color",
+        "hanzi": "浅色",
+        "pinyin": "qiǎnsè",
+        "translation": "colors.light_color",
+        "vocabularyId": "colors_light_color"
+      },
+      {
+        "id": "dark_color",
+        "hanzi": "深色",
+        "pinyin": "shēnsè",
+        "translation": "colors.dark_color",
+        "vocabularyId": "colors_dark_color"
+      },
+      {
+        "id": "measure_zhong",
+        "hanzi": "种",
+        "pinyin": "zhǒng",
+        "translation": "colors.measure_zhong",
+        "vocabularyId": "colors_measure_zhong"
+      }
+    ]
+  },
+  {
+    "id": "transportation",
+    "title": "title.transportation",
+    "description": "description.transportation",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "car",
+        "hanzi": "汽车",
+        "pinyin": "qìchē",
+        "translation": "transportation.car",
+        "vocabularyId": "transportation_car"
+      },
+      {
+        "id": "train",
+        "hanzi": "火车",
+        "pinyin": "huǒchē",
+        "translation": "transportation.train",
+        "vocabularyId": "transportation_train"
+      },
+      {
+        "id": "airplane",
+        "hanzi": "飞机",
+        "pinyin": "fēijī",
+        "translation": "transportation.airplane",
+        "vocabularyId": "transportation_airplane"
+      },
+      {
+        "id": "subway",
+        "hanzi": "地铁",
+        "pinyin": "dìtiě",
+        "translation": "transportation.subway",
+        "vocabularyId": "transportation_subway"
+      },
+      {
+        "id": "bus",
+        "hanzi": "公交车",
+        "pinyin": "gōngjiāochē",
+        "translation": "transportation.bus",
+        "vocabularyId": "transportation_bus"
+      },
+      {
+        "id": "taxi",
+        "hanzi": "出租车",
+        "pinyin": "chūzūchē",
+        "translation": "transportation.taxi",
+        "vocabularyId": "transportation_taxi"
+      },
+      {
+        "id": "bicycle",
+        "hanzi": "自行车",
+        "pinyin": "zìxíngchē",
+        "translation": "transportation.bicycle",
+        "vocabularyId": "transportation_bicycle"
+      },
+      {
+        "id": "boat",
+        "hanzi": "船",
+        "pinyin": "chuán",
+        "translation": "transportation.boat",
+        "vocabularyId": "transportation_boat"
+      },
+      {
+        "id": "truck",
+        "hanzi": "卡车",
+        "pinyin": "kǎchē",
+        "translation": "transportation.truck",
+        "vocabularyId": "transportation_truck"
+      },
+      {
+        "id": "motorcycle",
+        "hanzi": "摩托车",
+        "pinyin": "mótuōchē",
+        "translation": "transportation.motorcycle",
+        "vocabularyId": "transportation_motorcycle"
+      },
+      {
+        "id": "traffic",
+        "hanzi": "交通",
+        "pinyin": "jiāotōng",
+        "translation": "transportation.traffic",
+        "vocabularyId": "transportation_traffic"
+      },
+      {
+        "id": "traffic_light",
+        "hanzi": "红绿灯",
+        "pinyin": "hónglǜdēng",
+        "translation": "transportation.traffic_light",
+        "vocabularyId": "transportation_traffic_light"
+      },
+      {
+        "id": "station",
+        "hanzi": "站",
+        "pinyin": "zhàn",
+        "translation": "transportation.station",
+        "vocabularyId": "transportation_station"
+      },
+      {
+        "id": "ticket",
+        "hanzi": "票",
+        "pinyin": "piào",
+        "translation": "transportation.ticket",
+        "vocabularyId": "transportation_ticket"
+      },
+      {
+        "id": "drive",
+        "hanzi": "开车",
+        "pinyin": "kāichē",
+        "translation": "transportation.drive",
+        "vocabularyId": "transportation_drive"
+      },
+      {
+        "id": "take_vehicle",
+        "hanzi": "坐车",
+        "pinyin": "zuòchē",
+        "translation": "transportation.take_vehicle",
+        "vocabularyId": "transportation_take_vehicle"
+      },
+      {
+        "id": "walk",
+        "hanzi": "走路",
+        "pinyin": "zǒulù",
+        "translation": "transportation.walk",
+        "vocabularyId": "transportation_walk"
+      },
+      {
+        "id": "road",
+        "hanzi": "路",
+        "pinyin": "lù",
+        "translation": "transportation.road",
+        "vocabularyId": "transportation_road"
+      },
+      {
+        "id": "street",
+        "hanzi": "街",
+        "pinyin": "jiē",
+        "translation": "transportation.street",
+        "vocabularyId": "transportation_street"
+      },
+      {
+        "id": "bridge",
+        "hanzi": "桥",
+        "pinyin": "qiáo",
+        "translation": "transportation.bridge",
+        "vocabularyId": "transportation_bridge"
+      },
+      {
+        "id": "measure_liang",
+        "hanzi": "辆",
+        "pinyin": "liàng",
+        "translation": "transportation.measure_liang",
+        "vocabularyId": "transportation_measure_liang"
+      },
+      {
+        "id": "measure_ci",
+        "hanzi": "次",
+        "pinyin": "cì",
+        "translation": "transportation.measure_ci",
+        "vocabularyId": "transportation_measure_ci"
+      }
+    ]
+  },
+  {
+    "id": "house",
+    "title": "title.house",
+    "description": "description.house",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "house",
+        "hanzi": "房子",
+        "pinyin": "fángzi",
+        "translation": "house.house",
+        "vocabularyId": "house_house"
+      },
+      {
+        "id": "room",
+        "hanzi": "房间",
+        "pinyin": "fángjiān",
+        "translation": "house.room",
+        "vocabularyId": "house_room"
+      },
+      {
+        "id": "door",
+        "hanzi": "门",
+        "pinyin": "mén",
+        "translation": "house.door",
+        "vocabularyId": "house_door"
+      },
+      {
+        "id": "window",
+        "hanzi": "窗户",
+        "pinyin": "chuānghu",
+        "translation": "house.window",
+        "vocabularyId": "house_window"
+      },
+      {
+        "id": "kitchen",
+        "hanzi": "厨房",
+        "pinyin": "chúfáng",
+        "translation": "house.kitchen",
+        "vocabularyId": "house_kitchen"
+      },
+      {
+        "id": "bathroom",
+        "hanzi": "厕所",
+        "pinyin": "cèsuǒ",
+        "translation": "house.bathroom",
+        "vocabularyId": "house_bathroom"
+      },
+      {
+        "id": "living_room",
+        "hanzi": "客厅",
+        "pinyin": "kètīng",
+        "translation": "house.living_room",
+        "vocabularyId": "house_living_room"
+      },
+      {
+        "id": "bedroom",
+        "hanzi": "卧室",
+        "pinyin": "wòshì",
+        "translation": "house.bedroom",
+        "vocabularyId": "house_bedroom"
+      },
+      {
+        "id": "table",
+        "hanzi": "桌子",
+        "pinyin": "zhuōzi",
+        "translation": "house.table",
+        "vocabularyId": "house_table"
+      },
+      {
+        "id": "chair",
+        "hanzi": "椅子",
+        "pinyin": "yǐzi",
+        "translation": "house.chair",
+        "vocabularyId": "house_chair"
+      },
+      {
+        "id": "bed",
+        "hanzi": "床",
+        "pinyin": "chuáng",
+        "translation": "house.bed",
+        "vocabularyId": "house_bed"
+      },
+      {
+        "id": "sofa",
+        "hanzi": "沙发",
+        "pinyin": "shāfā",
+        "translation": "house.sofa",
+        "vocabularyId": "house_sofa"
+      },
+      {
+        "id": "television",
+        "hanzi": "电视",
+        "pinyin": "diànshì",
+        "translation": "house.television",
+        "vocabularyId": "house_television"
+      },
+      {
+        "id": "refrigerator",
+        "hanzi": "冰箱",
+        "pinyin": "bīngxiāng",
+        "translation": "house.refrigerator",
+        "vocabularyId": "house_refrigerator"
+      },
+      {
+        "id": "air_conditioner",
+        "hanzi": "空调",
+        "pinyin": "kōngtiáo",
+        "translation": "house.air_conditioner",
+        "vocabularyId": "house_air_conditioner"
+      },
+      {
+        "id": "lamp",
+        "hanzi": "灯",
+        "pinyin": "dēng",
+        "translation": "house.lamp",
+        "vocabularyId": "house_lamp"
+      },
+      {
+        "id": "computer",
+        "hanzi": "电脑",
+        "pinyin": "diànnǎo",
+        "translation": "house.computer",
+        "vocabularyId": "house_computer"
+      },
+      {
+        "id": "telephone",
+        "hanzi": "电话",
+        "pinyin": "diànhuà",
+        "translation": "house.telephone",
+        "vocabularyId": "house_telephone"
+      },
+      {
+        "id": "key",
+        "hanzi": "钥匙",
+        "pinyin": "yàoshi",
+        "translation": "house.key",
+        "vocabularyId": "house_key"
+      },
+      {
+        "id": "book",
+        "hanzi": "书",
+        "pinyin": "shū",
+        "translation": "house.book",
+        "vocabularyId": "house_book"
+      },
+      {
+        "id": "measure_ba",
+        "hanzi": "把",
+        "pinyin": "bǎ",
+        "translation": "house.measure_ba",
+        "vocabularyId": "house_measure_ba"
+      }
+    ]
+  },
+  {
+    "id": "body",
+    "title": "title.body",
+    "description": "description.body",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "body",
+        "hanzi": "身体",
+        "pinyin": "shēntǐ",
+        "translation": "body.body",
+        "vocabularyId": "body_body"
+      },
+      {
+        "id": "head",
+        "hanzi": "头",
+        "pinyin": "tóu",
+        "translation": "body.head",
+        "vocabularyId": "body_head"
+      },
+      {
+        "id": "face",
+        "hanzi": "脸",
+        "pinyin": "liǎn",
+        "translation": "body.face",
+        "vocabularyId": "body_face"
+      },
+      {
+        "id": "eye",
+        "hanzi": "眼睛",
+        "pinyin": "yǎnjīng",
+        "translation": "body.eye",
+        "vocabularyId": "body_eye"
+      },
+      {
+        "id": "nose",
+        "hanzi": "鼻子",
+        "pinyin": "bízi",
+        "translation": "body.nose",
+        "vocabularyId": "body_nose"
+      },
+      {
+        "id": "mouth",
+        "hanzi": "嘴巴",
+        "pinyin": "zuǐba",
+        "translation": "body.mouth",
+        "vocabularyId": "body_mouth"
+      },
+      {
+        "id": "ear",
+        "hanzi": "耳朵",
+        "pinyin": "ěrduo",
+        "translation": "body.ear",
+        "vocabularyId": "body_ear"
+      },
+      {
+        "id": "hair",
+        "hanzi": "头发",
+        "pinyin": "tóufa",
+        "translation": "body.hair",
+        "vocabularyId": "body_hair"
+      },
+      {
+        "id": "hand",
+        "hanzi": "手",
+        "pinyin": "shǒu",
+        "translation": "body.hand",
+        "vocabularyId": "body_hand"
+      },
+      {
+        "id": "arm",
+        "hanzi": "手臂",
+        "pinyin": "shǒubì",
+        "translation": "body.arm",
+        "vocabularyId": "body_arm"
+      },
+      {
+        "id": "leg",
+        "hanzi": "腿",
+        "pinyin": "tuǐ",
+        "translation": "body.leg",
+        "vocabularyId": "body_leg"
+      },
+      {
+        "id": "foot",
+        "hanzi": "脚",
+        "pinyin": "jiǎo",
+        "translation": "body.foot",
+        "vocabularyId": "body_foot"
+      },
+      {
+        "id": "stomach",
+        "hanzi": "肚子",
+        "pinyin": "dùzi",
+        "translation": "body.stomach",
+        "vocabularyId": "body_stomach"
+      },
+      {
+        "id": "shoulder",
+        "hanzi": "肩膀",
+        "pinyin": "jiānbǎng",
+        "translation": "body.shoulder",
+        "vocabularyId": "body_shoulder"
+      },
+      {
+        "id": "back",
+        "hanzi": "背",
+        "pinyin": "bèi",
+        "translation": "body.back",
+        "vocabularyId": "body_back"
+      },
+      {
+        "id": "neck",
+        "hanzi": "脖子",
+        "pinyin": "bózi",
+        "translation": "body.neck",
+        "vocabularyId": "body_neck"
+      },
+      {
+        "id": "tooth",
+        "hanzi": "牙齿",
+        "pinyin": "yáchǐ",
+        "translation": "body.tooth",
+        "vocabularyId": "body_tooth"
+      },
+      {
+        "id": "finger",
+        "hanzi": "手指",
+        "pinyin": "shǒuzhǐ",
+        "translation": "body.finger",
+        "vocabularyId": "body_finger"
+      },
+      {
+        "id": "hospital",
+        "hanzi": "医院",
+        "pinyin": "yīyuàn",
+        "translation": "body.hospital",
+        "vocabularyId": "body_hospital"
+      },
+      {
+        "id": "doctor",
+        "hanzi": "医生",
+        "pinyin": "yīshēng",
+        "translation": "body.doctor",
+        "vocabularyId": "body_doctor"
+      },
+      {
+        "id": "medicine",
+        "hanzi": "药",
+        "pinyin": "yào",
+        "translation": "body.medicine",
+        "vocabularyId": "body_medicine"
+      },
+      {
+        "id": "measure_zhang",
+        "hanzi": "张",
+        "pinyin": "zhāng",
+        "translation": "body.measure_zhang",
+        "vocabularyId": "body_measure_zhang"
+      }
+    ]
+  },
+  {
+    "id": "hobbies",
+    "title": "title.hobbies",
+    "description": "description.hobbies",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "music",
+        "hanzi": "音乐",
+        "pinyin": "yīnyuè",
+        "translation": "hobbies.music",
+        "vocabularyId": "hobbies_music"
+      },
+      {
+        "id": "sing",
+        "hanzi": "唱歌",
+        "pinyin": "chànggē",
+        "translation": "hobbies.sing",
+        "vocabularyId": "hobbies_sing"
+      },
+      {
+        "id": "draw",
+        "hanzi": "画画",
+        "pinyin": "huàhuà",
+        "translation": "hobbies.draw",
+        "vocabularyId": "hobbies_draw"
+      },
+      {
+        "id": "dance",
+        "hanzi": "跳舞",
+        "pinyin": "tiàowǔ",
+        "translation": "hobbies.dance",
+        "vocabularyId": "hobbies_dance"
+      },
+      {
+        "id": "sports",
+        "hanzi": "运动",
+        "pinyin": "yùndòng",
+        "translation": "hobbies.sports",
+        "vocabularyId": "hobbies_sports"
+      },
+      {
+        "id": "run",
+        "hanzi": "跑步",
+        "pinyin": "pǎobù",
+        "translation": "hobbies.run",
+        "vocabularyId": "hobbies_run"
+      },
+      {
+        "id": "swim",
+        "hanzi": "游泳",
+        "pinyin": "yóuyǒng",
+        "translation": "hobbies.swim",
+        "vocabularyId": "hobbies_swim"
+      },
+      {
+        "id": "play_ball",
+        "hanzi": "打球",
+        "pinyin": "dǎqiú",
+        "translation": "hobbies.play_ball",
+        "vocabularyId": "hobbies_play_ball"
+      },
+      {
+        "id": "basketball",
+        "hanzi": "篮球",
+        "pinyin": "lánqiú",
+        "translation": "hobbies.basketball",
+        "vocabularyId": "hobbies_basketball"
+      },
+      {
+        "id": "football",
+        "hanzi": "足球",
+        "pinyin": "zúqiú",
+        "translation": "hobbies.football",
+        "vocabularyId": "hobbies_football"
+      },
+      {
+        "id": "ping_pong",
+        "hanzi": "乒乓球",
+        "pinyin": "pīngpāngqiú",
+        "translation": "hobbies.ping_pong",
+        "vocabularyId": "hobbies_ping_pong"
+      },
+      {
+        "id": "movie",
+        "hanzi": "电影",
+        "pinyin": "diànyǐng",
+        "translation": "hobbies.movie",
+        "vocabularyId": "hobbies_movie"
+      },
+      {
+        "id": "watch_movie",
+        "hanzi": "看电影",
+        "pinyin": "kàn diànyǐng",
+        "translation": "hobbies.watch_movie",
+        "vocabularyId": "hobbies_watch_movie"
+      },
+      {
+        "id": "book",
+        "hanzi": "书",
+        "pinyin": "shū",
+        "translation": "hobbies.book",
+        "vocabularyId": "hobbies_book"
+      },
+      {
+        "id": "read",
+        "hanzi": "看书",
+        "pinyin": "kànshū",
+        "translation": "hobbies.read",
+        "vocabularyId": "hobbies_read"
+      },
+      {
+        "id": "television",
+        "hanzi": "电视",
+        "pinyin": "diànshì",
+        "translation": "hobbies.television",
+        "vocabularyId": "hobbies_television"
+      },
+      {
+        "id": "watch_tv",
+        "hanzi": "看电视",
+        "pinyin": "kàn diànshì",
+        "translation": "hobbies.watch_tv",
+        "vocabularyId": "hobbies_watch_tv"
+      },
+      {
+        "id": "computer",
+        "hanzi": "电脑",
+        "pinyin": "diànnǎo",
+        "translation": "hobbies.computer",
+        "vocabularyId": "hobbies_computer"
+      },
+      {
+        "id": "phone",
+        "hanzi": "手机",
+        "pinyin": "shǒujī",
+        "translation": "hobbies.phone",
+        "vocabularyId": "hobbies_phone"
+      },
+      {
+        "id": "internet",
+        "hanzi": "上网",
+        "pinyin": "shàngwǎng",
+        "translation": "hobbies.internet",
+        "vocabularyId": "hobbies_internet"
+      },
+      {
+        "id": "play_game",
+        "hanzi": "打游戏",
+        "pinyin": "dǎ yóuxì",
+        "translation": "hobbies.play_game",
+        "vocabularyId": "hobbies_play_game"
+      },
+      {
+        "id": "travel",
+        "hanzi": "旅行",
+        "pinyin": "lǚxíng",
+        "translation": "hobbies.travel",
+        "vocabularyId": "hobbies_travel"
+      },
+      {
+        "id": "photo",
+        "hanzi": "照片",
+        "pinyin": "zhàopiàn",
+        "translation": "hobbies.photo",
+        "vocabularyId": "hobbies_photo"
+      },
+      {
+        "id": "take_photo",
+        "hanzi": "拍照",
+        "pinyin": "pāizhào",
+        "translation": "hobbies.take_photo",
+        "vocabularyId": "hobbies_take_photo"
+      },
+      {
+        "id": "measure_ben",
+        "hanzi": "本",
+        "pinyin": "běn",
+        "translation": "hobbies.measure_ben",
+        "vocabularyId": "hobbies_measure_ben"
+      }
+    ]
+  },
+  {
+    "id": "time",
+    "title": "title.time",
+    "description": "description.time",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "today",
+        "hanzi": "今天",
+        "pinyin": "jīntiān",
+        "translation": "time.today",
+        "vocabularyId": "time_today"
+      },
+      {
+        "id": "tomorrow",
+        "hanzi": "明天",
+        "pinyin": "míngtiān",
+        "translation": "time.tomorrow",
+        "vocabularyId": "time_tomorrow"
+      },
+      {
+        "id": "yesterday",
+        "hanzi": "昨天",
+        "pinyin": "zuótiān",
+        "translation": "time.yesterday",
+        "vocabularyId": "time_yesterday"
+      },
+      {
+        "id": "now",
+        "hanzi": "现在",
+        "pinyin": "xiànzài",
+        "translation": "time.now",
+        "vocabularyId": "time_now"
+      },
+      {
+        "id": "morning",
+        "hanzi": "早上",
+        "pinyin": "zǎoshang",
+        "translation": "time.morning",
+        "vocabularyId": "time_morning"
+      },
+      {
+        "id": "afternoon",
+        "hanzi": "下午",
+        "pinyin": "xiàwǔ",
+        "translation": "time.afternoon",
+        "vocabularyId": "time_afternoon"
+      },
+      {
+        "id": "evening",
+        "hanzi": "晚上",
+        "pinyin": "wǎnshang",
+        "translation": "time.evening",
+        "vocabularyId": "time_evening"
+      },
+      {
+        "id": "night",
+        "hanzi": "夜里",
+        "pinyin": "yèlǐ",
+        "translation": "time.night",
+        "vocabularyId": "time_night"
+      },
+      {
+        "id": "hour",
+        "hanzi": "小时",
+        "pinyin": "xiǎoshí",
+        "translation": "time.hour",
+        "vocabularyId": "time_hour"
+      },
+      {
+        "id": "minute",
+        "hanzi": "分钟",
+        "pinyin": "fēnzhōng",
+        "translation": "time.minute",
+        "vocabularyId": "time_minute"
+      },
+      {
+        "id": "second",
+        "hanzi": "秒",
+        "pinyin": "miǎo",
+        "translation": "time.second",
+        "vocabularyId": "time_second"
+      },
+      {
+        "id": "week",
+        "hanzi": "星期",
+        "pinyin": "xīngqī",
+        "translation": "time.week",
+        "vocabularyId": "time_week"
+      },
+      {
+        "id": "month",
+        "hanzi": "月",
+        "pinyin": "yuè",
+        "translation": "time.month",
+        "vocabularyId": "time_month"
+      },
+      {
+        "id": "year",
+        "hanzi": "年",
+        "pinyin": "nián",
+        "translation": "time.year",
+        "vocabularyId": "time_year"
+      },
+      {
+        "id": "monday",
+        "hanzi": "星期一",
+        "pinyin": "xīngqīyī",
+        "translation": "time.monday",
+        "vocabularyId": "time_monday"
+      },
+      {
+        "id": "tuesday",
+        "hanzi": "星期二",
+        "pinyin": "xīngqīèr",
+        "translation": "time.tuesday",
+        "vocabularyId": "time_tuesday"
+      },
+      {
+        "id": "wednesday",
+        "hanzi": "星期三",
+        "pinyin": "xīngqīsān",
+        "translation": "time.wednesday",
+        "vocabularyId": "time_wednesday"
+      },
+      {
+        "id": "thursday",
+        "hanzi": "星期四",
+        "pinyin": "xīngqīsì",
+        "translation": "time.thursday",
+        "vocabularyId": "time_thursday"
+      },
+      {
+        "id": "friday",
+        "hanzi": "星期五",
+        "pinyin": "xīngqīwǔ",
+        "translation": "time.friday",
+        "vocabularyId": "time_friday"
+      },
+      {
+        "id": "saturday",
+        "hanzi": "星期六",
+        "pinyin": "xīngqīliù",
+        "translation": "time.saturday",
+        "vocabularyId": "time_saturday"
+      },
+      {
+        "id": "sunday",
+        "hanzi": "星期日",
+        "pinyin": "xīngqīrì",
+        "translation": "time.sunday",
+        "vocabularyId": "time_sunday"
+      },
+      {
+        "id": "time",
+        "hanzi": "时间",
+        "pinyin": "shíjiān",
+        "translation": "time.time",
+        "vocabularyId": "time_time"
+      },
+      {
+        "id": "weekend",
+        "hanzi": "周末",
+        "pinyin": "zhōumò",
+        "translation": "time.weekend",
+        "vocabularyId": "time_weekend"
+      },
+      {
+        "id": "birthday",
+        "hanzi": "生日",
+        "pinyin": "shēngrì",
+        "translation": "time.birthday",
+        "vocabularyId": "time_birthday"
+      },
+      {
+        "id": "measure_ci",
+        "hanzi": "次",
+        "pinyin": "cì",
+        "translation": "time.measure_ci",
+        "vocabularyId": "time_measure_ci"
+      }
+    ]
+  },
+  {
+    "id": "professions",
+    "title": "title.professions",
+    "description": "description.professions",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "teacher",
+        "hanzi": "老师",
+        "pinyin": "lǎoshī",
+        "translation": "professions.teacher",
+        "vocabularyId": "professions_teacher"
+      },
+      {
+        "id": "student",
+        "hanzi": "学生",
+        "pinyin": "xuésheng",
+        "translation": "professions.student",
+        "vocabularyId": "professions_student"
+      },
+      {
+        "id": "doctor",
+        "hanzi": "医生",
+        "pinyin": "yīshēng",
+        "translation": "professions.doctor",
+        "vocabularyId": "professions_doctor"
+      },
+      {
+        "id": "worker",
+        "hanzi": "工人",
+        "pinyin": "gōngrén",
+        "translation": "professions.worker",
+        "vocabularyId": "professions_worker"
+      },
+      {
+        "id": "driver",
+        "hanzi": "司机",
+        "pinyin": "sījī",
+        "translation": "professions.driver",
+        "vocabularyId": "professions_driver"
+      },
+      {
+        "id": "police",
+        "hanzi": "警察",
+        "pinyin": "jǐngchá",
+        "translation": "professions.police",
+        "vocabularyId": "professions_police"
+      },
+      {
+        "id": "cook",
+        "hanzi": "厨师",
+        "pinyin": "chúshī",
+        "translation": "professions.cook",
+        "vocabularyId": "professions_cook"
+      },
+      {
+        "id": "salesperson",
+        "hanzi": "售货员",
+        "pinyin": "shòuhuòyuán",
+        "translation": "professions.salesperson",
+        "vocabularyId": "professions_salesperson"
+      },
+      {
+        "id": "manager",
+        "hanzi": "经理",
+        "pinyin": "jīnglǐ",
+        "translation": "professions.manager",
+        "vocabularyId": "professions_manager"
+      },
+      {
+        "id": "nurse",
+        "hanzi": "护士",
+        "pinyin": "hùshi",
+        "translation": "professions.nurse",
+        "vocabularyId": "professions_nurse"
+      },
+      {
+        "id": "reporter",
+        "hanzi": "记者",
+        "pinyin": "jìzhě",
+        "translation": "professions.reporter",
+        "vocabularyId": "professions_reporter"
+      },
+      {
+        "id": "lawyer",
+        "hanzi": "律师",
+        "pinyin": "lǜshī",
+        "translation": "professions.lawyer",
+        "vocabularyId": "professions_lawyer"
+      },
+      {
+        "id": "engineer",
+        "hanzi": "工程师",
+        "pinyin": "gōngchéngshī",
+        "translation": "professions.engineer",
+        "vocabularyId": "professions_engineer"
+      },
+      {
+        "id": "work",
+        "hanzi": "工作",
+        "pinyin": "gōngzuò",
+        "translation": "professions.work",
+        "vocabularyId": "professions_work"
+      },
+      {
+        "id": "company",
+        "hanzi": "公司",
+        "pinyin": "gōngsī",
+        "translation": "professions.company",
+        "vocabularyId": "professions_company"
+      },
+      {
+        "id": "office",
+        "hanzi": "办公室",
+        "pinyin": "bàngōngshì",
+        "translation": "professions.office",
+        "vocabularyId": "professions_office"
+      },
+      {
+        "id": "colleague",
+        "hanzi": "同事",
+        "pinyin": "tóngshì",
+        "translation": "professions.colleague",
+        "vocabularyId": "professions_colleague"
+      },
+      {
+        "id": "boss",
+        "hanzi": "老板",
+        "pinyin": "lǎobǎn",
+        "translation": "professions.boss",
+        "vocabularyId": "professions_boss"
+      },
+      {
+        "id": "measure_wei",
+        "hanzi": "位",
+        "pinyin": "wèi",
+        "translation": "professions.measure_wei",
+        "vocabularyId": "professions_measure_wei"
+      }
+    ]
+  },
+  {
+    "id": "places",
+    "title": "title.places",
+    "description": "description.places",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "school",
+        "hanzi": "学校",
+        "pinyin": "xuéxiào",
+        "translation": "places.school",
+        "vocabularyId": "places_school"
+      },
+      {
+        "id": "hospital",
+        "hanzi": "医院",
+        "pinyin": "yīyuàn",
+        "translation": "places.hospital",
+        "vocabularyId": "places_hospital"
+      },
+      {
+        "id": "shop",
+        "hanzi": "商店",
+        "pinyin": "shāngdiàn",
+        "translation": "places.shop",
+        "vocabularyId": "places_shop"
+      },
+      {
+        "id": "bank",
+        "hanzi": "银行",
+        "pinyin": "yínháng",
+        "translation": "places.bank",
+        "vocabularyId": "places_bank"
+      },
+      {
+        "id": "restaurant",
+        "hanzi": "饭店",
+        "pinyin": "fàndiàn",
+        "translation": "places.restaurant",
+        "vocabularyId": "places_restaurant"
+      },
+      {
+        "id": "supermarket",
+        "hanzi": "超市",
+        "pinyin": "chāoshì",
+        "translation": "places.supermarket",
+        "vocabularyId": "places_supermarket"
+      },
+      {
+        "id": "park",
+        "hanzi": "公园",
+        "pinyin": "gōngyuán",
+        "translation": "places.park",
+        "vocabularyId": "places_park"
+      },
+      {
+        "id": "library",
+        "hanzi": "图书馆",
+        "pinyin": "túshūguǎn",
+        "translation": "places.library",
+        "vocabularyId": "places_library"
+      },
+      {
+        "id": "post_office",
+        "hanzi": "邮局",
+        "pinyin": "yóujú",
+        "translation": "places.post_office",
+        "vocabularyId": "places_post_office"
+      },
+      {
+        "id": "hotel",
+        "hanzi": "宾馆",
+        "pinyin": "bīnguǎn",
+        "translation": "places.hotel",
+        "vocabularyId": "places_hotel"
+      },
+      {
+        "id": "cinema",
+        "hanzi": "电影院",
+        "pinyin": "diànyǐngyuàn",
+        "translation": "places.cinema",
+        "vocabularyId": "places_cinema"
+      },
+      {
+        "id": "railway_station",
+        "hanzi": "火车站",
+        "pinyin": "huǒchēzhàn",
+        "translation": "places.railway_station",
+        "vocabularyId": "places_railway_station"
+      },
+      {
+        "id": "airport",
+        "hanzi": "机场",
+        "pinyin": "jīchǎng",
+        "translation": "places.airport",
+        "vocabularyId": "places_airport"
+      },
+      {
+        "id": "restaurant_chinese",
+        "hanzi": "中餐馆",
+        "pinyin": "zhōngcānguǎn",
+        "translation": "places.restaurant_chinese",
+        "vocabularyId": "places_restaurant_chinese"
+      },
+      {
+        "id": "museum",
+        "hanzi": "博物馆",
+        "pinyin": "bówùguǎn",
+        "translation": "places.museum",
+        "vocabularyId": "places_museum"
+      },
+      {
+        "id": "city",
+        "hanzi": "城市",
+        "pinyin": "chéngshì",
+        "translation": "places.city",
+        "vocabularyId": "places_city"
+      },
+      {
+        "id": "countryside",
+        "hanzi": "农村",
+        "pinyin": "nóngcūn",
+        "translation": "places.countryside",
+        "vocabularyId": "places_countryside"
+      },
+      {
+        "id": "place",
+        "hanzi": "地方",
+        "pinyin": "dìfang",
+        "translation": "places.place",
+        "vocabularyId": "places_place"
+      },
+      {
+        "id": "measure_jia",
+        "hanzi": "家",
+        "pinyin": "jiā",
+        "translation": "places.measure_jia",
+        "vocabularyId": "places_measure_jia"
+      }
+    ]
+  },
+  {
+    "id": "directions",
+    "title": "title.directions",
+    "description": "description.directions",
+    "xpReward": 10,
+    "words": [
+      {
+        "id": "up",
+        "hanzi": "上",
+        "pinyin": "shàng",
+        "translation": "directions.up",
+        "vocabularyId": "directions_up"
+      },
+      {
+        "id": "down",
+        "hanzi": "下",
+        "pinyin": "xià",
+        "translation": "directions.down",
+        "vocabularyId": "directions_down"
+      },
+      {
+        "id": "left",
+        "hanzi": "左",
+        "pinyin": "zuǒ",
+        "translation": "directions.left",
+        "vocabularyId": "directions_left"
+      },
+      {
+        "id": "right",
+        "hanzi": "右",
+        "pinyin": "yòu",
+        "translation": "directions.right",
+        "vocabularyId": "directions_right"
+      },
+      {
+        "id": "front",
+        "hanzi": "前",
+        "pinyin": "qián",
+        "translation": "directions.front",
+        "vocabularyId": "directions_front"
+      },
+      {
+        "id": "back",
+        "hanzi": "后",
+        "pinyin": "hòu",
+        "translation": "directions.back",
+        "vocabularyId": "directions_back"
+      },
+      {
+        "id": "inside",
+        "hanzi": "里",
+        "pinyin": "lǐ",
+        "translation": "directions.inside",
+        "vocabularyId": "directions_inside"
+      },
+      {
+        "id": "outside",
+        "hanzi": "外",
+        "pinyin": "wài",
+        "translation": "directions.outside",
+        "vocabularyId": "directions_outside"
+      },
+      {
+        "id": "middle",
+        "hanzi": "中间",
+        "pinyin": "zhōngjiān",
+        "translation": "directions.middle",
+        "vocabularyId": "directions_middle"
+      },
+      {
+        "id": "side",
+        "hanzi": "旁边",
+        "pinyin": "pángbiān",
+        "translation": "directions.side",
+        "vocabularyId": "directions_side"
+      },
+      {
+        "id": "opposite",
+        "hanzi": "对面",
+        "pinyin": "duìmiàn",
+        "translation": "directions.opposite",
+        "vocabularyId": "directions_opposite"
+      },
+      {
+        "id": "near",
+        "hanzi": "近",
+        "pinyin": "jìn",
+        "translation": "directions.near",
+        "vocabularyId": "directions_near"
+      },
+      {
+        "id": "far",
+        "hanzi": "远",
+        "pinyin": "yuǎn",
+        "translation": "directions.far",
+        "vocabularyId": "directions_far"
+      },
+      {
+        "id": "east",
+        "hanzi": "东",
+        "pinyin": "dōng",
+        "translation": "directions.east",
+        "vocabularyId": "directions_east"
+      },
+      {
+        "id": "south",
+        "hanzi": "南",
+        "pinyin": "nán",
+        "translation": "directions.south",
+        "vocabularyId": "directions_south"
+      },
+      {
+        "id": "west",
+        "hanzi": "西",
+        "pinyin": "xī",
+        "translation": "directions.west",
+        "vocabularyId": "directions_west"
+      },
+      {
+        "id": "north",
+        "hanzi": "北",
+        "pinyin": "běi",
+        "translation": "directions.north",
+        "vocabularyId": "directions_north"
+      },
+      {
+        "id": "here",
+        "hanzi": "这里",
+        "pinyin": "zhèlǐ",
+        "translation": "directions.here",
+        "vocabularyId": "directions_here"
+      },
+      {
+        "id": "there",
+        "hanzi": "那里",
+        "pinyin": "nàlǐ",
+        "translation": "directions.there",
+        "vocabularyId": "directions_there"
+      },
+      {
+        "id": "where",
+        "hanzi": "哪里",
+        "pinyin": "nǎlǐ",
+        "translation": "directions.where",
+        "vocabularyId": "directions_where"
+      },
+      {
+        "id": "everywhere",
+        "hanzi": "到处",
+        "pinyin": "dàochù",
+        "translation": "directions.everywhere",
+        "vocabularyId": "directions_everywhere"
+      },
+      {
+        "id": "direction",
+        "hanzi": "方向",
+        "pinyin": "fāngxiàng",
+        "translation": "directions.direction",
+        "vocabularyId": "directions_direction"
+      },
+      {
+        "id": "above",
+        "hanzi": "上面",
+        "pinyin": "shàngmiàn",
+        "translation": "directions.above",
+        "vocabularyId": "directions_above"
+      },
+      {
+        "id": "below",
+        "hanzi": "下面",
+        "pinyin": "xiàmiàn",
+        "translation": "directions.below",
+        "vocabularyId": "directions_below"
+      },
+      {
+        "id": "front_side",
+        "hanzi": "前面",
+        "pinyin": "qiánmiàn",
+        "translation": "directions.front_side",
+        "vocabularyId": "directions_front_side"
+      },
+      {
+        "id": "back_side",
+        "hanzi": "后面",
+        "pinyin": "hòumiàn",
+        "translation": "directions.back_side",
+        "vocabularyId": "directions_back_side"
+      },
+      {
+        "id": "inside_side",
+        "hanzi": "里面",
+        "pinyin": "lǐmiàn",
+        "translation": "directions.inside_side",
+        "vocabularyId": "directions_inside_side"
+      },
+      {
+        "id": "outside_side",
+        "hanzi": "外面",
+        "pinyin": "wàimiàn",
+        "translation": "directions.outside_side",
+        "vocabularyId": "directions_outside_side"
+      },
+      {
+        "id": "measure_chu",
+        "hanzi": "处",
+        "pinyin": "chù",
+        "translation": "directions.measure_chu",
+        "vocabularyId": "directions_measure_chu"
+      }
+    ]
+  }
+]

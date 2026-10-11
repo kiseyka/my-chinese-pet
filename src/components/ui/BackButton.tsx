@@ -19,7 +19,7 @@ export const BackButton = ({ href }: BackButtonProps) => {
         }
       }}
     >
-      <BackIcon width={28} height={28} color="#2C241E" />
+      <BackIcon width={28} height={28} color="#4A4A4A" />
     </Pressable>
   );
 };

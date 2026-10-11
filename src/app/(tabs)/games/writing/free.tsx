@@ -1,0 +1,27 @@
+import WritingLessonScreen from "@/screens/WritingLessonScreen";
+import { createFreePlan, type FreeFormat } from "@/utils/writingLessons";
+import { useLocalSearchParams } from "expo-router";
+import { useCallback } from "react";
+
+export default function FreeWritingRoute() {
+  const { wordId, format } = useLocalSearchParams<{
+    wordId?: string;
+    format?: string;
+  }>();
+
+  const lessonFormat: FreeFormat = format === "quick" ? "quick" : "full";
+
+  const buildPlan = useCallback(
+    () => (wordId ? createFreePlan(wordId, lessonFormat) : []),
+    [wordId, lessonFormat],
+  );
+
+  return (
+    <WritingLessonScreen
+      title={
+        lessonFormat === "quick" ? "Быстрая тренировка" : "Полная тренировка"
+      }
+      buildPlan={buildPlan}
+    />
+  );
+}

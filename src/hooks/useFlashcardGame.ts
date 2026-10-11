@@ -4,8 +4,8 @@ import { generateQuiz } from "@/content/flashcards/generator";
 import { practiceSets } from "@/content/flashcards/sets";
 import { QuizQuestion } from "@/content/flashcards/types";
 import { useGameStore } from "@/store/gameStore";
-import { usePandaStore } from "@/store/pandaStore";
-import { useWordProgressStore } from "@/store/wordProgressStore";
+import { usePandaStore, type WordChange } from "@/store/pandaStore";
+import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -13,15 +13,19 @@ interface UseFlashcardGameProps {
   setId: string;
 }
 
+function readWordLevel(wordId: string) {
+  const { flashcardWords, vocabularyWords } = useWordProgressStore.getState();
+  return getWordLevel(
+    flashcardWords[wordId],
+    vocabularyWords[wordId]?.isKnown ?? false,
+  );
+}
+
 export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
   const router = useRouter();
   const practiceSet = practiceSets.find((set) => set.id === setId);
 
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-
-  const score = useGameStore((s) => s.score);
-  const startTime = useGameStore((s) => s.startTime);
-  const results = useGameStore((s) => s.results);
 
   const startGame = useGameStore((s) => s.startGame);
   const answerQuestion = useGameStore((s) => s.answerQuestion);
@@ -38,6 +42,9 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
 
   const isProcessingAnswer = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Что изменилось со словами за эту тренировку (ключ — vocabularyId)
+  const wordChangesRef = useRef<Record<string, WordChange>>({});
 
   const currentQuestion = questions[currentIndex];
 
@@ -57,6 +64,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       setSelected(null);
       setIsAnswered(false);
 
+      wordChangesRef.current = {};
       isProcessingAnswer.current = false;
     }, [setId, startGame]),
   );
@@ -73,6 +81,9 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
   const finishLevel = () => {
     if (!practiceSet) return;
 
+    // Берём актуальные значения из стора, а не из замыкания: таймер из
+    // handleSelect мог захватить score/results до последнего ответа.
+    const { score, startTime, results } = useGameStore.getState();
     const duration = Date.now() - startTime;
 
     setDuration(duration);
@@ -89,6 +100,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       score,
       total: questions.length,
       results,
+      wordChanges: Object.values(wordChangesRef.current),
     });
 
     router.replace({
@@ -128,20 +140,37 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
     setIsAnswered(true);
 
     const isCorrect = option === currentQuestion.correctAnswer;
+    const wordId = currentQuestion.vocabularyId;
 
     answerQuestion({
-      vocabularyId: currentQuestion.vocabularyId,
+      vocabularyId: wordId,
       hanzi: currentQuestion.hanzi,
       pinyin: currentQuestion.pinyin,
       translation: currentQuestion.correctAnswer,
       isCorrect,
     });
 
+    const levelBefore = readWordLevel(wordId);
+
     updateWordProgress({
-      wordId: currentQuestion.vocabularyId,
+      wordId,
       skill: "reading",
       isCorrect,
     });
+
+    const levelAfter = readWordLevel(wordId);
+
+    // Запоминаем «до» только при первом ответе на слово, «после» обновляем
+    const existing = wordChangesRef.current[wordId];
+    wordChangesRef.current[wordId] = {
+      vocabularyId: wordId,
+      hanzi: currentQuestion.hanzi,
+      pinyin: currentQuestion.pinyin,
+      translation: currentQuestion.correctAnswer,
+      levelBefore: existing ? existing.levelBefore : levelBefore,
+      levelAfter,
+      isCorrect,
+    };
 
     timeoutRef.current = setTimeout(() => {
       handleAnswer();
