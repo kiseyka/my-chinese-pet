@@ -9,6 +9,7 @@ import {
 import { useApplyRiveInputs } from "@/hooks/useApplyRiveInputs";
 import { useRoomStore } from "@/store/roomStore";
 import { View, ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Rive, { Fit } from "rive-react-native";
 
 interface PandaSceneProps {
@@ -16,6 +17,8 @@ interface PandaSceneProps {
 }
 
 export const PandaScene = ({ style }: PandaSceneProps) => {
+  const insets = useSafeAreaInsets();
+
   const cabinetType = useRoomStore((s) => s.cabinetType);
   const posterType = useRoomStore((s) => s.posterType);
   const wallType = useRoomStore((s) => s.wallType);
@@ -34,20 +37,35 @@ export const PandaScene = ({ style }: PandaSceneProps) => {
     <View
       style={[{ position: "absolute", inset: 0, overflow: "hidden" }, style]}
     >
+      {/* Фон: с отступом снизу под системную панель */}
       <Rive
         ref={riveRef}
-        source={require("@/assets/motion/bg_01.riv")}
+        source={require("@/assets/motion/bg_02.riv")}
         artboardName="background 3"
         stateMachineName="State Machine 1"
         fit={Fit.Fill}
-        style={{ position: "absolute", inset: 0 }}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
         onPlay={onPlay}
       />
+      {/* Панда: до самого низа экрана */}
       <Rive
-        source={require("@/assets/motion/panda.riv")}
+        source={require("@/assets/motion/panda_02.riv")}
         stateMachineName="State Machine 1"
         fit={Fit.Fill}
-        style={{ position: "absolute", inset: 0, zIndex: 100 }}
+        style={{
+          position: "absolute",
+          top: insets.bottom,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 100,
+        }}
       />
     </View>
   );

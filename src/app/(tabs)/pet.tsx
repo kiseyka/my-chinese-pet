@@ -66,7 +66,7 @@ const PandaScreen = () => {
             top: 0,
             left: 0,
             right: 0,
-            bottom: insets.bottom,
+            bottom: 0,
           }}
         >
           <PandaScene />
