@@ -14,7 +14,7 @@ export const CABINET_PRODUCTS: ProductBlueprint[] = [
   {
     id: "cabinet_01",
     name: "Цветочный шкаф",
-    price: 10,
+    price: 250,
     image: cabinet_01,
     roomEffect: { field: "cabinetType", value: "cabinet_01" },
   },

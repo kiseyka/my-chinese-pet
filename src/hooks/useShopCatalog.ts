@@ -1,3 +1,4 @@
+import { isDefaultProduct } from "@/content/shop/defaultProducts";
 import {
   CATEGORIES_BY_DOMAIN,
   Domain,
@@ -29,6 +30,11 @@ export function useShopCatalog() {
   const currentWallType = useRoomStore((s: any) => s.wallType);
   const currentFloorType = useRoomStore((s: any) => s.floorType);
   const currentCarpetType = useRoomStore((s: any) => s.carpetType);
+
+  // Куплен = есть в сторе ИЛИ это предмет по умолчанию.
+  // Цена тут ни при чём: price 0 не делает предмет купленным.
+  const isProductOwned = (productId: string, owned: string[]) =>
+    owned.includes(productId) || isDefaultProduct(productId);
 
   const [activeDomain, setActiveDomain] = useState<Domain>("interior");
   const [activeCategory, setActiveCategory] = useState<string | null>(
@@ -90,7 +96,7 @@ export function useShopCatalog() {
   };
   const products = blueprints.map((p) => ({
     ...p,
-    owned: ownedProductIds.includes(p.id),
+    owned: isProductOwned(p.id, ownedProductIds),
     equipped: isEquipped(p), // передаём объект целиком, не p.id
   }));
 
@@ -133,16 +139,22 @@ export function useShopCatalog() {
   // Некупленные просто не применяются: примерить можно, установить нельзя.
   const handleApply = () => {
     const owned = useShopStore.getState().ownedProductIds;
-    draftProducts.filter((p) => owned.includes(p.id)).forEach(applyEffect);
+    draftProducts
+      .filter((p) => isProductOwned(p.id, owned))
+      .forEach(applyEffect);
     router.back();
   };
 
   // Некупленные товары из примерки и их общая стоимость — для кнопки «Купить».
   const unownedDraftProducts = draftProducts.filter(
-    (p) => !ownedProductIds.includes(p.id),
+    (p) => !isProductOwned(p.id, ownedProductIds),
   );
   const totalPrice = unownedDraftProducts.reduce((sum, p) => sum + p.price, 0);
   const hasDrafts = draftProducts.length > 0;
+  // Нужна ли покупка — решаем по наличию некупленных, а не по сумме.
+  // Иначе предмет с забытой ценой 0 показывал бы «Применить»,
+  // но не применялся бы, потому что он не куплен.
+  const needsPurchase = unownedDraftProducts.length > 0;
 
   // Покупает сразу все некупленные товары из примерки одним списанием.
   const handleBuy = () => {
@@ -150,7 +162,7 @@ export function useShopCatalog() {
     // а не по тому, что сейчас нарисовано на экране. Даже если интерфейс
     // когда-нибудь снова отстанет, монеты второй раз не спишутся.
     const owned = useShopStore.getState().ownedProductIds;
-    const toBuy = draftProducts.filter((p) => !owned.includes(p.id));
+    const toBuy = draftProducts.filter((p) => !isProductOwned(p.id, owned));
     if (toBuy.length === 0) return;
 
     const total = toBuy.reduce((sum, p) => sum + p.price, 0);
@@ -180,6 +192,7 @@ export function useShopCatalog() {
     selectedProduct,
     selectedProductId,
     hasDrafts,
+    needsPurchase,
     totalPrice,
     previewCabinetType,
     previewPosterType,
