@@ -6,8 +6,9 @@ type ShopActionBarProps = {
   hasSelectionInCategory: boolean;
   // Выбран ли хоть один предмет в любой категории.
   hasDrafts: boolean;
+  // Есть ли в примерке некупленные предметы.
+  needsPurchase: boolean;
   // Общая стоимость всех некупленных предметов из примерки.
-  // 0 — значит всё выбранное уже куплено и можно применять.
   totalPrice: number;
   onCancel: () => void;
   onApply: () => void;
@@ -17,13 +18,12 @@ type ShopActionBarProps = {
 export const ShopActionBar = ({
   hasSelectionInCategory,
   hasDrafts,
+  needsPurchase,
   totalPrice,
   onCancel,
   onApply,
   onBuy,
 }: ShopActionBarProps) => {
-  const needsPurchase = totalPrice > 0;
-
   return (
     <View className="flex-row gap-2 pt-4 pb-4">
       {/* Второстепенная кнопка — как «Полная тренировка» */}
