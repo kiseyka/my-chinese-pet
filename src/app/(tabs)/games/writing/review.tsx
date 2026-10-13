@@ -1,4 +1,4 @@
-import WritingLessonScreen from "@/screens/writing/WritingLessonScreen";
+import { WritingLessonScreen } from "@/components/writing/lesson/WritingLessonScreen";
 import { createRepeatPlan } from "@/utils/writing/plans";
 
 /** Тренировка по «Повторению»: план собирается при входе из текущего списка. */

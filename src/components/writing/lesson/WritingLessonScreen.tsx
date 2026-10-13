@@ -1,13 +1,14 @@
-// src/screens/writing/WritingLessonScreen.tsx
+// src/components/writing/lesson/WritingLessonScreen.tsx
 //
-// Экран урока письма. Какие слова и в каком формате проходить, решает buildPlan
-// (маршруты free / review / classic). Ход урока — в useWritingLesson.
+// Экран урока письма. Лежит не в app/, потому что его открывают несколько маршрутов
+// (free / review / classic): каждый передаёт свой buildPlan — какие слова и в каком
+// формате проходить. Ход урока — в useWritingLesson.
 
 import { Screen } from "@/components/layout/Screen";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Title } from "@/components/ui/Title";
-import { DemoCanvas } from "@/components/writing/canvas/DemoCanvas";
-import { WritingCanvas } from "@/components/writing/canvas/WritingCanvas";
+import { DemoCanvas } from "../canvas/DemoCanvas";
+import { WritingCanvas } from "../canvas/WritingCanvas";
 import {
   PillButton,
   ResultComparison,
@@ -16,7 +17,7 @@ import {
   TrainingHeader,
   WordHeading,
   WrittenChars,
-} from "@/components/writing/lesson/LessonParts";
+} from "./LessonParts";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { useCanvasSize } from "@/hooks/writing/useCanvasSize";
 import { useWritingLesson } from "@/hooks/writing/useWritingLesson";
@@ -205,7 +206,7 @@ interface WritingLessonScreenProps {
   buildPlan: () => LessonItem[];
 }
 
-export default function WritingLessonScreen({
+export function WritingLessonScreen({
   title,
   buildPlan,
 }: WritingLessonScreenProps) {

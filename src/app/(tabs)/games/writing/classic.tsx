@@ -1,4 +1,4 @@
-import WritingLessonScreen from "@/screens/writing/WritingLessonScreen";
+import { WritingLessonScreen } from "@/components/writing/lesson/WritingLessonScreen";
 import { createClassicPlan } from "@/utils/writing/plans";
 import { getLevelStepsProgress } from "@/utils/writing/steps";
 import { describeLevel } from "@/utils/writing/words";
