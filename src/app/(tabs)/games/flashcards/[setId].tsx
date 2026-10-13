@@ -1,6 +1,6 @@
 // app/(tabs)/games/flashcards/[setId].tsx
 //
-// Тренировка карточками по своему набору.
+// Тренировка карточками: свой набор или ступень HSK.
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
 import { GameHeader } from "@/components/game/GameHeader";
@@ -24,7 +24,7 @@ export default function LevelGameScreen() {
   const showPinyin = useSettingsStore((s) => s.showPinyin);
 
   const {
-    practiceSet,
+    source,
     currentQuestion,
     selected,
     isAnswered,
@@ -35,14 +35,14 @@ export default function LevelGameScreen() {
   });
 
   // Набор удалили или в нём не хватает слов (вопросов нет)
-  if (!practiceSet || !currentQuestion) {
+  if (!source || !currentQuestion) {
     return (
       <Screen>
         <View className="flex-row items-center">
           <BackButton href="/games/flashcards/sets" />
         </View>
         <Text className="mt-6 font-nunito text-body text-text">
-          {practiceSet
+          {source
             ? `Для тренировки в наборе нужно хотя бы ${MIN_SET_WORDS} слова.`
             : "Набор не найден."}
         </Text>

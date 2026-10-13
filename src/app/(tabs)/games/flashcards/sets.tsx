@@ -1,7 +1,7 @@
 // app/(tabs)/games/flashcards/sets.tsx
 //
 // Главный экран карточек. Две вкладки одного экрана:
-//   - «Ступени» — слова по HSK (пока заглушка, следующий шаг);
+//   - «Ступени» — слова по разделам HSK, по 10 в ступени (StepsTab);
 //   - «Мои наборы» — наборы, которые пользователь собирает сам.
 // Нажатие на набор открывает превью: список слов, «Изменить» и «Начать».
 
@@ -9,6 +9,7 @@ import BookIcon from "@/assets/images/icons/vocabulary.svg";
 import { CustomSetCard } from "@/components/flashcards/CustomSetCard";
 import { SetPreviewModal } from "@/components/flashcards/SetPreviewModal";
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
+import { StepsTab } from "@/components/flashcards/StepsTab";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
@@ -20,6 +21,7 @@ import {
   useCustomSetsStore,
 } from "@/store/customSetsStore";
 import { colors } from "@/theme/colors";
+import { stepTrainingId } from "@/utils/flashcards/steps";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
@@ -34,8 +36,7 @@ const TABS = [
 export default function FlashcardsHomeScreen() {
   const router = useRouter();
 
-  // Пока ступеней нет, открываемся на «Моих наборах»
-  const [tab, setTab] = useState<FlashcardsTab>("sets");
+  const [tab, setTab] = useState<FlashcardsTab>("steps");
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -113,15 +114,14 @@ export default function FlashcardsHomeScreen() {
         contentContainerStyle={{ paddingVertical: 16, gap: 12 }}
       >
         {tab === "steps" ? (
-          <View className="gap-2 rounded-2xl bg-surface p-5">
-            <Text className="font-nunitoBold text-lead text-text">
-              Скоро здесь будут ступени
-            </Text>
-            <Text className="font-nunito text-body text-text">
-              Слова по уровням HSK, как в «Написании». А пока можно собрать свой
-              набор во вкладке «Мои наборы».
-            </Text>
-          </View>
+          <StepsTab
+            onStartStep={(level, index) =>
+              router.push({
+                pathname: "/games/flashcards/[setId]",
+                params: { setId: stepTrainingId(level, index) },
+              })
+            }
+          />
         ) : (
           <>
             {sets.length === 0 && (
