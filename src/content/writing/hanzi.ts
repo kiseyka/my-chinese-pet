@@ -11,6 +11,3 @@ export const HANZI_BOX = 1024;
 export function getHanzi(character: string): HanziData | undefined {
   return hanziData[character];
 }
-
-/** Иероглифы, для которых есть данные. */
-export const writableCharacters: string[] = Object.keys(hanziData);

@@ -1,4 +1,4 @@
-// src/components/writing/DemoCanvas.tsx
+// src/components/writing/canvas/DemoCanvas.tsx
 //
 // Показ порядка и направления черт. Черты рисуются по очереди:
 //   - до своей очереди черта не рисуется вообще;
@@ -12,7 +12,7 @@ import { HANZI_BOX } from "@/content/writing/hanzi";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import Svg, { ClipPath, Defs, G, Path } from "react-native-svg";
-import { HanziGrid, INK_COLOR, OUTLINE_COLOR } from "./HanziView";
+import { CANVAS_COLORS, HanziGuides, canvasFrameStyle } from "./hanziSvg";
 
 /** Сколько миллисекунд рисуется одна черта. */
 const STROKE_DURATION = 700;
@@ -86,24 +86,16 @@ export function DemoCanvas({
   }, [replayKey, indicesKey]);
 
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: 24,
-        overflow: "hidden",
-        backgroundColor: "#FFFBF5",
-      }}
-    >
+    <View style={canvasFrameStyle(size)}>
       <Svg width={size} height={size} viewBox={`0 0 ${HANZI_BOX} ${HANZI_BOX}`}>
-        <HanziGrid />
+        <HanziGuides />
 
         {/* Бледный контур показываемых черт */}
         {strokeIndices.map((index) => (
           <Path
             key={`o${index}`}
             d={strokes[index]}
-            fill={OUTLINE_COLOR}
+            fill={CANVAS_COLORS.outline}
             fillOpacity={0.08}
           />
         ))}
@@ -117,7 +109,7 @@ export function DemoCanvas({
           // Черта уже нарисована целиком
           if (local >= 1) {
             return (
-              <Path key={`d${index}`} d={strokes[index]} fill={INK_COLOR} />
+              <Path key={`d${index}`} d={strokes[index]} fill={CANVAS_COLORS.ink} />
             );
           }
 
@@ -136,7 +128,7 @@ export function DemoCanvas({
               <Path
                 d={medianToPath(medians[index])}
                 fill="none"
-                stroke={INK_COLOR}
+                stroke={CANVAS_COLORS.ink}
                 strokeWidth={BRUSH_WIDTH}
                 strokeLinecap="round"
                 strokeLinejoin="round"

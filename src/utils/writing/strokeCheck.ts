@@ -1,4 +1,4 @@
-// src/utils/strokeCheck.ts
+// src/utils/writing/strokeCheck.ts
 //
 // Проверка одной нарисованной черты по эталонной «средней линии» (median).
 // Все координаты — в системе 1024×1024 (как в hanziData.json).

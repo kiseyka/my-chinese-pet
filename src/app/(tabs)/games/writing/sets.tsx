@@ -1,2 +1,2 @@
-// …/games/writing/sets.tsx
-export { default } from "@/screens/WritingSetsScreen";
+// app/(tabs)/games/writing/sets.tsx — главный экран «Написание»
+export { default } from "@/screens/writing/WritingHomeScreen";

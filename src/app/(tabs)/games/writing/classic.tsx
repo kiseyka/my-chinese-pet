@@ -1,9 +1,7 @@
-import WritingLessonScreen from "@/screens/WritingLessonScreen";
-import {
-  createClassicPlan,
-  describeLevel,
-  getLevelStepsProgress,
-} from "@/utils/writingLessons";
+import WritingLessonScreen from "@/screens/writing/WritingLessonScreen";
+import { createClassicPlan } from "@/utils/writing/plans";
+import { getLevelStepsProgress } from "@/utils/writing/steps";
+import { describeLevel } from "@/utils/writing/words";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo } from "react";
 

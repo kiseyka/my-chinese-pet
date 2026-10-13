@@ -24,6 +24,13 @@ export function getAccuracy(correct: number, total: number): number {
   return total === 0 ? 0 : Math.round((correct / total) * 100);
 }
 
+/** Начисляет награду (без экрана итогов — например, после экзамена). */
+export function grantRewards(rewards: TrainingRewards) {
+  const progress = useProgressStore.getState();
+  progress.addXp(rewards.xp);
+  progress.addCoins(rewards.coins);
+}
+
 export function finishTraining({
   gameId,
   rewards,
@@ -34,9 +41,7 @@ export function finishTraining({
   game.setDuration(Date.now() - game.startTime);
   game.setRewards(rewards);
 
-  const progress = useProgressStore.getState();
-  progress.addXp(rewards.xp);
-  progress.addCoins(rewards.coins);
+  grantRewards(rewards);
 
   if (pandaResult) {
     usePandaStore.getState().setPendingTrainingResult(pandaResult);

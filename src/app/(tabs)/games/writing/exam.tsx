@@ -4,12 +4,12 @@
 // Берём только слова, которые прямо сейчас готовы к экзамену: так вернуться назад
 // и пересдать уже сданное слово не выйдет.
 
-import WritingExamScreen from "@/screens/WritingExamScreen";
+import WritingExamScreen from "@/screens/writing/WritingExamScreen";
 import {
   getWritingExamStatus,
   useWordProgressStore,
 } from "@/store/wordProgressStore";
-import { getRepeatWords } from "@/utils/writingLessons";
+import { findPracticeWords } from "@/utils/writing/words";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 
@@ -22,7 +22,7 @@ export default function ExamWritingRoute() {
     const { flashcardWords, writingExams } = useWordProgressStore.getState();
     const ids = wordIds.split(",").filter(Boolean);
 
-    return getRepeatWords(ids).filter(
+    return findPracticeWords(ids).filter(
       (word) =>
         getWritingExamStatus(
           flashcardWords[word.vocabularyId],

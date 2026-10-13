@@ -1,20 +1,16 @@
-// src/components/writing/ReviewCard.tsx
+// src/components/writing/home/ReviewCard.tsx
 //
 // Карточка-вход «Повторение» на экране «Написание»: иконка, название и сколько слов отмечено.
 // Сами слова и кнопка старта — в ReviewModal.
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import ArrowRight from "@/assets/images/icons/chevron-right.svg";
+import { interopIconColor } from "@/lib/interopIcon";
+import { colors } from "@/theme/colors";
+import { pluralWords } from "@/utils/writing/labels";
 import { Pressable, Text, View } from "react-native";
 
-/** 1 слово, 2 слова, 5 слов, 11 слов, 21 слово. */
-export function pluralWords(n: number) {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "слово";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "слова";
-  return "слов";
-}
+interopIconColor(ArrowRight);
 
 interface ReviewCardProps {
   /** Сколько слов отмечено для повтора. */
@@ -30,7 +26,7 @@ export function ReviewCard({ total, onPress }: ReviewCardProps) {
       accessibilityRole="button"
     >
       <View className="h-11 w-11 items-center justify-center rounded-xl bg-primary/15">
-        <ReviewIcon width={22} height={22} color="#78826D" />
+        <ReviewIcon width={22} height={22} color={colors.primary} />
       </View>
 
       <View className="flex-1 gap-0.5">

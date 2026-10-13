@@ -4,7 +4,7 @@ import LineSvg from "@/assets/images/svg/line.svg";
 import { Screen } from "@/components/layout/Screen";
 import { BrushProgressCircle } from "@/components/ui/BrushProgressCircle";
 import { WordCard } from "@/components/ui/WordCard";
-import { WritingResultsList } from "@/components/writing/WritingResultsList";
+import { WritingResultsList } from "@/components/writing/results/WritingResultsList";
 import { useGameStore } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
