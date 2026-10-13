@@ -24,6 +24,8 @@ export type QuizQuestion = {
   id: string;
   hanzi: string;
   pinyin: string;
+  /** Перевод слова — он же правильный вариант ответа. */
+  translation: string;
   correctAnswer: string;
   options: string[];
 };

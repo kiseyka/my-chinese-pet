@@ -1,4 +1,4 @@
-// src/components/writing/ReviewModal.tsx
+// src/components/writing/modals/ReviewModal.tsx
 //
 // Окно «Повторение»: сетка отмеченных слов (рисует экран через renderGrid,
 // чтобы точки, рамки и печати были те же, что в остальной сетке),
@@ -9,9 +9,10 @@
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { Word } from "@/content/flashcards/types";
+import { colors } from "@/theme/colors";
+import { pluralWords } from "@/utils/writing/labels";
 import { useMemo, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
-import { pluralWords } from "./ReviewCard";
 
 interface ReviewModalProps {
   open: boolean;
@@ -51,7 +52,7 @@ export function ReviewModal({
             {/* Шапка */}
             <View className="items-center gap-2">
               <View className="h-12 w-12 items-center justify-center rounded-xl bg-primary/15">
-                <ReviewIcon width={26} height={26} color="#78826D" />
+                <ReviewIcon width={26} height={26} color={colors.primary} />
               </View>
               <Text className="font-nunitoBold text-title text-text">
                 Повторение

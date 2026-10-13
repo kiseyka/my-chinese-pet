@@ -1,4 +1,4 @@
-// src/components/writing/HanziGrid.tsx
+// src/components/writing/home/WordGrid.tsx
 //
 // Сетка слов для письма: иероглиф, пиньинь и точки по написанию под каждой ячейкой.
 // Двусложное слово занимает две колонки, точки у него общие (за всё слово целиком).
@@ -14,13 +14,12 @@ import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
 import type { Word } from "@/content/flashcards/types";
-import { cssInterop } from "nativewind";
+import { interopIconColor } from "@/lib/interopIcon";
 import { Pressable, View, useWindowDimensions } from "react-native";
-import { SealMark } from "./SealMark";
+import { SealMark } from "../SealMark";
+import { WritingDots } from "./WritingDots";
 
-cssInterop(CheckIcon, {
-  className: { target: "style", nativeStyleToProp: { color: true } },
-});
+interopIconColor(CheckIcon);
 
 /** Колонок в сетке; двусложное слово занимает две. */
 const COLUMNS = 4;
@@ -36,27 +35,7 @@ const MARK_SIZE_WIDE = 18;
 /** Метка экзамена на ячейке: готово к сдаче или сдано. */
 export type ExamMark = "ready" | "passed" | null;
 
-interface WritingDotsProps {
-  level: number;
-}
-
-/** Три точки прогресса: закрашено столько, сколько точек у слова. */
-export function WritingDots({ level }: WritingDotsProps) {
-  return (
-    <View className="flex-row gap-1">
-      {[0, 1, 2].map((index) => (
-        <View
-          key={index}
-          className={`h-1.5 w-1.5 rounded-full ${
-            index < level ? "bg-primary" : "bg-primary/20"
-          }`}
-        />
-      ))}
-    </View>
-  );
-}
-
-interface HanziGridProps {
+interface WordGridProps {
   words: Word[];
   /** Точки слова по письму (0–3). */
   getLevel: (word: Word) => number;
@@ -69,14 +48,14 @@ interface HanziGridProps {
   horizontalInset?: number;
 }
 
-export function HanziGrid({
+export function WordGrid({
   words,
   getLevel,
   onSelect,
   isMarked,
   getExamMark,
   horizontalInset = 32,
-}: HanziGridProps) {
+}: WordGridProps) {
   const { width } = useWindowDimensions();
   const unit = Math.floor(
     (width - horizontalInset - GAP * (COLUMNS - 1)) / COLUMNS,

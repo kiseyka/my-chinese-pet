@@ -1,4 +1,4 @@
-// src/components/writing/ExamModal.tsx
+// src/components/writing/modals/ExamModal.tsx
 //
 // Окно перед экзаменом по письму: сетка слов, готовых к экзамену (по умолчанию выбраны все,
 // тап убирает слово — оно остаётся в очереди), правила в тултипе, блок «Скоро»
@@ -12,25 +12,16 @@ import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
 import { Tooltip } from "@/components/ui/Tooltip";
 import type { Word } from "@/content/flashcards/types";
-import { cssInterop } from "nativewind";
+import { interopIconColor } from "@/lib/interopIcon";
+import { formatExamWait } from "@/utils/writing/labels";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { SealMark } from "./SealMark";
+import { SealMark } from "../SealMark";
 
-cssInterop(InfoIcon, {
-  className: { target: "style", nativeStyleToProp: { color: true } },
-});
+interopIconColor(InfoIcon);
 
 const RULES_HINT =
   "Пишешь по памяти: видно только пиньинь и перевод, без контура и подсказок. На слово можно ошибиться один раз. Сдал — слово отмечается галочкой. Не сдал — пересдать можно через сутки; после второго провала подряд слово теряет одну точку.";
-
-/** «через 9 ч», «через 40 мин» — сколько ждать до экзамена. */
-export function formatExamWait(availableAt: number, now: number): string {
-  const ms = Math.max(0, availableAt - now);
-  const minutes = Math.ceil(ms / 60000);
-  if (minutes < 60) return `через ${Math.max(1, minutes)} мин`;
-  return `через ${Math.ceil(minutes / 60)} ч`;
-}
 
 export interface UpcomingExamWord {
   word: Word;

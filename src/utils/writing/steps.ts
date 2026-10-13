@@ -1,4 +1,4 @@
-// src/utils/writingSteps.ts
+// src/utils/writing/steps.ts
 //
 // Ступени в разделах режима «Написание»: слова раздела выстраиваются в порядок изучения
 // и делятся на ступени по STEP_SIZE слов. Текущая ступень — первая, в которой есть
@@ -9,9 +9,20 @@
 //   - иероглиф раньше слов, в которых он встречается: 你好 идёт после 你 и 好, если они
 //     есть в разделе отдельными словами (или были в предыдущих разделах).
 //
-// Функции здесь не знают про базу слов и стор: всё нужное передаётся аргументами.
+// Чистые функции (порядок, деление, прогресс) не знают про базу слов и стор —
+// всё нужное передаётся аргументами. Внизу — они же, применённые к разделам HSK.
 
 import type { Word } from "@/content/flashcards/types";
+import { getWordFrequency } from "@/content/words/hsk";
+import {
+  getLevelWords,
+  getWordHskLevel,
+  getWordWritingDots,
+  getWritingPool,
+  NO_HSK_LEVEL,
+  type ProgressMap,
+  type WritingLevel,
+} from "./words";
 
 /** Сколько слов в одной ступени. */
 export const STEP_SIZE = 10;
@@ -131,4 +142,67 @@ export function getStepsProgress(
     currentIndex: firstOpen === -1 ? Math.max(states.length - 1, 0) : firstOpen,
     completed: states.length > 0 && firstOpen === -1,
   };
+}
+
+// ── Ступени разделов HSK ─────────────────────────────────────────────────────
+
+/** Слова без частоты (редкие слова не из HSK) идут в конце раздела. */
+function wordFrequency(word: Word): number {
+  return getWordFrequency(word.vocabularyId) ?? Number.MAX_SAFE_INTEGER;
+}
+
+const sequenceCache = new Map<WritingLevel, Word[]>();
+
+/**
+ * Порядок изучения слов раздела. Иероглифы из предыдущих разделов считаются
+ * уже знакомыми; для «Других слов» знакомы все иероглифы разделов HSK.
+ * Считается один раз для каждого раздела.
+ */
+export function getLevelSequence(level: WritingLevel): Word[] {
+  const cached = sequenceCache.get(level);
+  if (cached) return cached;
+
+  const knownChars = new Set<string>();
+  for (const word of getWritingPool()) {
+    const wordLevel = getWordHskLevel(word);
+    const isEarlier =
+      wordLevel !== NO_HSK_LEVEL &&
+      (level === NO_HSK_LEVEL || wordLevel < level);
+
+    if (isEarlier) {
+      for (const char of Array.from(word.hanzi)) knownChars.add(char);
+    }
+  }
+
+  const sequence = orderLevelWords(
+    getLevelWords(level),
+    knownChars,
+    wordFrequency,
+  );
+  sequenceCache.set(level, sequence);
+  return sequence;
+}
+
+const stepsCache = new Map<WritingLevel, Word[][]>();
+
+export function getLevelSteps(level: WritingLevel): Word[][] {
+  const cached = stepsCache.get(level);
+  if (cached) return cached;
+
+  const steps = chunkSteps(getLevelSequence(level));
+  stepsCache.set(level, steps);
+  return steps;
+}
+
+/**
+ * Ступени раздела с прогрессом. Прогресс можно передать явно: так экран, подписанный
+ * на стор, пересчитывается при его изменении.
+ */
+export function getLevelStepsProgress(
+  level: WritingLevel,
+  progress?: ProgressMap,
+): StepsProgress {
+  return getStepsProgress(getLevelSteps(level), (word) =>
+    getWordWritingDots(word, progress),
+  );
 }

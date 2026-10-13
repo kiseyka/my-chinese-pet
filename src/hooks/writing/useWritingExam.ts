@@ -14,17 +14,17 @@
 // чтобы выход посреди экзамена не отменял уже проваленное слово.
 
 import type { Word } from "@/content/flashcards/types";
-import { getHanzi } from "@/content/writing/hanzi";
-import { useProgressStore } from "@/store/userProgressStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import type { HanziData } from "@/types/hanzi";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
+import { getAccuracy, grantRewards } from "@/utils/finishTraining";
 import {
   checkStroke,
   resample,
   type Point,
   type StrokeCheckReason,
-} from "@/utils/strokeCheck";
+} from "@/utils/writing/strokeCheck";
+import { getWordHanziData } from "@/utils/writing/words";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -66,14 +66,9 @@ function prepare(list: Word[]): ExamWord[] {
   const words: ExamWord[] = [];
 
   for (const word of list) {
-    const chars = Array.from(word.hanzi).map((character) =>
-      getHanzi(character),
-    );
-
     // Слово без данных хотя бы об одном иероглифе пропускаем
-    if (chars.length === 0 || chars.some((data) => !data)) continue;
-
-    words.push({ word, chars: chars as HanziData[] });
+    const chars = getWordHanziData(word);
+    if (chars) words.push({ word, chars });
   }
 
   return words;
@@ -245,9 +240,10 @@ export function useWritingExam(buildWords: () => Word[]) {
 
     // Награда: опыт за каждое сданное слово, монеты — по доле сданных
     const passed = nextOutcomes.filter((o) => o.verdict === "passed").length;
-    const accuracy = Math.round((passed / nextOutcomes.length) * 100);
-    useProgressStore.getState().addXp(passed);
-    useProgressStore.getState().addCoins(calculateCoinsEarned(accuracy));
+    grantRewards({
+      xp: passed,
+      coins: calculateCoinsEarned(getAccuracy(passed, nextOutcomes.length)),
+    });
 
     setPhase("finished");
   };
@@ -265,7 +261,6 @@ export function useWritingExam(buildWords: () => Word[]) {
     charData,
     phase,
     note,
-    mistakes,
     /** Сколько ошибок ещё можно сделать в этом слове. */
     mistakesLeft: Math.max(0, ALLOWED_MISTAKES - mistakes),
     verdict,

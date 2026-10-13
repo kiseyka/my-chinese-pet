@@ -1,8 +1,6 @@
 import { practiceSets } from "@/content/flashcards/sets";
 import { mergeAliasedProgress } from "@/store/migrations/mergeAliasedProgress";
-import { useProgressStore } from "@/store/userProgressStore";
 import { MasteryBucket, SkillProgress, WordProgress } from "@/types/progress";
-import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -209,10 +207,6 @@ export const useWordProgressStore = create<WordProgressStore>()(
             flashcardSets: { ...state.flashcardSets, [setId]: updated },
           };
         });
-
-        // xp/монеты по-прежнему считает отдельный стор
-        useProgressStore.getState().addXp(score);
-        useProgressStore.getState().addCoins(calculateCoinsEarned(accuracy));
       },
 
       updateWordProgress: ({ wordId, skill, isCorrect }) => {

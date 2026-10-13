@@ -5,30 +5,23 @@
 //
 // Структура: урок → слова → этапы → ячейки (иероглифы внутри этапа) → черты.
 
-import { getHanzi } from "@/content/writing/hanzi";
-import {
-  useGameStore,
-  type FlashcardQuestionResult,
-  type WritingCharResult,
-} from "@/store/gameStore";
-import { usePandaStore, type WordChange } from "@/store/pandaStore";
-import { useProgressStore } from "@/store/userProgressStore";
-import { useWordProgressStore } from "@/store/wordProgressStore";
+import { useGameStore } from "@/store/gameStore";
 import type { HanziData } from "@/types/hanzi";
-import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
+import {
+  charOutcomesOf,
+  finishWritingLesson,
+  readWritingLevels,
+  type WordOutcome,
+} from "@/utils/writing/lessonResults";
+import { composeDeepItems, type LessonItem } from "@/utils/writing/plans";
+import { buildStages, type WritingStage } from "@/utils/writing/stages";
 import {
   checkStroke,
   type Point,
   type StrokeCheckReason,
-} from "@/utils/strokeCheck";
-import { readWordLevel } from "@/utils/wordLevel";
-import {
-  composeDeepItems,
-  getCharacterWord,
-  type LessonItem,
-} from "@/utils/writingLessons";
-import { buildStages, type WritingStage } from "@/utils/writingStages";
-import { useFocusEffect, useRouter } from "expo-router";
+} from "@/utils/writing/strokeCheck";
+import { getWordHanziData } from "@/utils/writing/words";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Строгость проверки: 1 — обычная, меньше — строже, больше — мягче. */
@@ -53,69 +46,25 @@ interface LessonWord extends LessonItem {
   stages: WritingStage[];
 }
 
-interface CharOutcome {
-  hanzi: string;
-  /** Иероглиф написан на итоговом этапе без раскрытых подсказок. */
-  success: boolean;
-}
-
-interface WordOutcome {
-  word: LessonItem["word"];
-  /** Линии пользователя на последнем этапе по каждому иероглифу (для экрана итогов). */
-  raws: Point[][][];
-  /** Слово написано на последнем этапе без раскрытых подсказок. */
-  success: boolean;
-  /**
-   * Результат каждого иероглифа слова (только для слов из нескольких иероглифов,
-   * повторяющийся иероглиф — один раз). Каждый получает точку как отдельный иероглиф:
-   * под словом из базы или под «char:么», как в окне выбора.
-   */
-  chars: CharOutcome[];
-  /** Это была работа над ошибками (в счёт урока не идёт). */
-  deep: boolean;
-  /** Слово нужно отправить на работу над ошибками, если не получилось. */
-  retryDeep: boolean;
-}
-
 function prepare(plan: LessonItem[]): LessonWord[] {
   const words: LessonWord[] = [];
 
   for (const item of plan) {
-    const chars = Array.from(item.word.hanzi).map((character) =>
-      getHanzi(character),
-    );
-
     // Слово без данных хотя бы об одном иероглифе пропускаем
-    if (chars.length === 0 || chars.some((data) => !data)) continue;
+    const chars = getWordHanziData(item.word);
+    if (!chars) continue;
 
-    const data = chars as HanziData[];
     words.push({
       ...item,
-      chars: data,
-      stages: buildStages(data, item.format, Array.from(item.word.hanzi)),
+      chars,
+      stages: buildStages(chars, item.format, Array.from(item.word.hanzi)),
     });
   }
 
   return words;
 }
 
-/** Результаты отдельных иероглифов слова по тому, где на итоговом этапе были подсказки. */
-function charOutcomesOf(hanzi: string, assistedChars: number[]): CharOutcome[] {
-  const list = Array.from(hanzi);
-  if (list.length < 2) return [];
-
-  return Array.from(new Set(list)).map((character) => ({
-    hanzi: character,
-    // Повторяющийся иероглиф засчитывается, только если все его вхождения без подсказок
-    success: list.every(
-      (c, index) => c !== character || !assistedChars.includes(index),
-    ),
-  }));
-}
-
 export function useWritingLesson(buildPlan: () => LessonItem[]) {
-  const router = useRouter();
-
   const [words, setWords] = useState<LessonWord[]>([]);
   const [isReady, setIsReady] = useState(false);
 
@@ -175,11 +124,8 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     useCallback(() => {
       const prepared = prepare(buildPlan());
 
-      levelsBefore.current = Object.fromEntries(
-        prepared.map((item) => [
-          item.word.vocabularyId,
-          readWordLevel(item.word.vocabularyId, "writing"),
-        ]),
+      levelsBefore.current = readWritingLevels(
+        prepared.map((item) => item.word),
       );
 
       setWords(prepared);
@@ -306,140 +252,6 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     }
   };
 
-  const finishLesson = (allOutcomes: WordOutcome[]) => {
-    const game = useGameStore.getState();
-    const wordProgress = useWordProgressStore.getState();
-
-    // Иероглиф как отдельное «слово» — так же, как в окне выбора:
-    // слово из базы (你) или «char:么» со своим прогрессом
-    const characterOf = (hanzi: string, parent: LessonItem["word"]) =>
-      getCharacterWord(hanzi, parent);
-
-    // 0. Уровни иероглифов до начисления точек (у слов урока они уже записаны в начале)
-    for (const { word, chars } of allOutcomes) {
-      for (const { hanzi } of chars) {
-        const character = characterOf(hanzi, word);
-        if (
-          character &&
-          levelsBefore.current[character.vocabularyId] === undefined
-        ) {
-          levelsBefore.current[character.vocabularyId] = readWordLevel(
-            character.vocabularyId,
-            "writing",
-          );
-        }
-      }
-    }
-
-    // 1. Точки. Тренировка учебная: точки только прибавляются, за подсказки не снимаются.
-    //    Каждое слово получает за урок не больше одной точки.
-    const credited = new Set<string>();
-    const credit = (wordId: string) => {
-      if (credited.has(wordId)) return;
-      credited.add(wordId);
-      wordProgress.updateWordProgress({
-        wordId,
-        skill: "writing",
-        isCorrect: true,
-      });
-    };
-
-    // Слова, написанные без подсказок
-    for (const { word, success } of allOutcomes) {
-      if (success) credit(word.vocabularyId);
-    }
-
-    // Иероглифы внутри слов, написанные без подсказок
-    for (const { word, chars } of allOutcomes) {
-      for (const { hanzi, success } of chars) {
-        if (!success) continue;
-        const character = characterOf(hanzi, word);
-        if (character) credit(character.vocabularyId);
-      }
-    }
-
-    /** Точки слова «было → стало». */
-    const levelChange = (wordId: string) => {
-      const levelAfter = readWordLevel(wordId, "writing");
-      const levelBefore = levelsBefore.current[wordId] ?? levelAfter;
-      return { levelBefore, levelAfter };
-    };
-
-    // 2. В счёт урока идут основные задания, без работы над ошибками
-    const scored = allOutcomes.filter((outcome) => !outcome.deep);
-
-    const results: FlashcardQuestionResult[] = [];
-    const wordChanges: WordChange[] = [];
-
-    // Для экрана итогов: все написанные слова с линиями пользователя и точками,
-    // у слов из нескольких иероглифов — ещё и точки каждого иероглифа
-    game.setWritingResults(
-      scored.map(({ word, success, raws, chars }) => ({
-        vocabularyId: word.vocabularyId,
-        hanzi: word.hanzi,
-        pinyin: word.pinyin,
-        translation: word.translation,
-        isCorrect: success,
-        raws,
-        ...levelChange(word.vocabularyId),
-        characters: chars.flatMap(({ hanzi }): WritingCharResult[] => {
-          const character = characterOf(hanzi, word);
-          if (!character) return [];
-          return [
-            {
-              vocabularyId: character.vocabularyId,
-              hanzi: character.hanzi,
-              pinyin: character.pinyin,
-              ...levelChange(character.vocabularyId),
-            },
-          ];
-        }),
-      })),
-    );
-
-    for (const { word, success } of scored) {
-      const { levelBefore, levelAfter } = levelChange(word.vocabularyId);
-
-      const result: FlashcardQuestionResult = {
-        vocabularyId: word.vocabularyId,
-        hanzi: word.hanzi,
-        pinyin: word.pinyin,
-        translation: word.translation,
-        isCorrect: success,
-      };
-
-      game.answerQuestion(result);
-      results.push(result);
-      wordChanges.push({
-        ...result,
-        levelBefore: levelBefore as WordChange["levelBefore"],
-        levelAfter: levelAfter as WordChange["levelAfter"],
-      });
-    }
-
-    const { score, startTime } = useGameStore.getState();
-    game.setDuration(Date.now() - startTime);
-
-    const total = scored.length;
-    const accuracy = total === 0 ? 0 : Math.round((score / total) * 100);
-
-    useProgressStore.getState().addXp(score);
-    useProgressStore.getState().addCoins(calculateCoinsEarned(accuracy));
-
-    usePandaStore.getState().setPendingTrainingResult({
-      type: "writing_completed",
-      score,
-      total,
-      results,
-      wordChanges,
-    });
-
-    router.replace({
-      pathname: "/games/stats",
-      params: { gameId: "writing" },
-    });
-  };
-
   const continueAfterResult = () => {
     if (!current || isFinishing.current) return;
 
@@ -472,7 +284,7 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
       }
 
       isFinishing.current = true;
-      finishLesson(nextOutcomes);
+      finishWritingLesson(nextOutcomes, levelsBefore.current);
       return;
     }
 
@@ -535,16 +347,10 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     hasWords: words.length > 0,
     word: current?.word,
     chars: current?.chars,
-    roleLabel: current?.roleLabel,
     stage,
-    stageIndex,
-    stageCount: current?.stages.length ?? 0,
     slot,
     slotData,
     slotIndex,
-    slotCount: stage?.slots.length ?? 0,
-    wordIndex,
-    wordCount: words.length,
     /** Прогресс всего урока в процентах (0–100) для шкалы в шапке. */
     progress,
     phase,

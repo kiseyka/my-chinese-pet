@@ -1,4 +1,4 @@
-// src/components/writing/StepCard.tsx
+// src/components/writing/home/StepCard.tsx
 //
 // Карточка ступени: название, шкала «изучено / всего» и сворачиваемая сетка слов
 // (приходит через children) на общем фоне с шапкой.

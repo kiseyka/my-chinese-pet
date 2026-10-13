@@ -1,5 +1,5 @@
-import WritingLessonScreen from "@/screens/WritingLessonScreen";
-import { createFreePlan, type FreeFormat } from "@/utils/writingLessons";
+import { WritingLessonScreen } from "@/components/writing/lesson/WritingLessonScreen";
+import { createFreePlan, type FreeFormat } from "@/utils/writing/plans";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 

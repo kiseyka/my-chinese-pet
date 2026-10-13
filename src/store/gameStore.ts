@@ -37,6 +37,12 @@ export interface WritingWordResult extends FlashcardQuestionResult {
   characters: WritingCharResult[];
 }
 
+/** Что пользователь получил за тренировку (уже начислено в userProgressStore). */
+export interface TrainingRewards {
+  xp: number;
+  coins: number;
+}
+
 interface GameStore {
   score: number;
   startTime: number;
@@ -47,6 +53,9 @@ interface GameStore {
   /** Итоги последней тренировки письма: все написанные слова (не только ошибки). */
   writingResults: WritingWordResult[];
 
+  /** Награда за последнюю тренировку — экран итогов показывает её как есть. */
+  rewards: TrainingRewards;
+
   startGame: () => void;
 
   answerQuestion: (result: FlashcardQuestionResult) => void;
@@ -54,6 +63,8 @@ interface GameStore {
   setWritingResults: (results: WritingWordResult[]) => void;
 
   setDuration: (duration: number) => void;
+
+  setRewards: (rewards: TrainingRewards) => void;
 
   resetGame: () => void;
 }
@@ -69,11 +80,14 @@ export const useGameStore = create<GameStore>((set) => ({
 
   writingResults: [],
 
+  rewards: { xp: 0, coins: 0 },
+
   startGame: () =>
     set({
       score: 0,
       results: [],
       writingResults: [],
+      rewards: { xp: 0, coins: 0 },
       duration: 0,
       startTime: Date.now(),
     }),
@@ -91,8 +105,11 @@ export const useGameStore = create<GameStore>((set) => ({
       duration,
     }),
 
+  setRewards: (rewards) => set({ rewards }),
+
   resetGame: () =>
     set({
+      rewards: { xp: 0, coins: 0 },
       score: 0,
       startTime: 0,
       duration: 0,

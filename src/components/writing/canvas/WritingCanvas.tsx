@@ -1,19 +1,21 @@
-// src/components/writing/WritingCanvas.tsx
+// src/components/writing/canvas/WritingCanvas.tsx
+//
+// Холст для письма пальцем: контуры-подсказки, принятые черты и текущая линия.
+// Проверку черт делает хук урока или экзамена через onStroke.
 
 import { HANZI_BOX } from "@/content/writing/hanzi";
-import type { Point } from "@/utils/strokeCheck";
+import type { Point } from "@/utils/writing/strokeCheck";
 import { useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Svg, { Path } from "react-native-svg";
 import {
-  HINT_COLOR,
-  HanziGrid,
-  INK_COLOR,
+  CANVAS_COLORS,
+  HanziGuides,
   LINE_WIDTH,
-  OUTLINE_COLOR,
+  canvasFrameStyle,
   pointsToPath,
-} from "./HanziView";
+} from "./hanziSvg";
 
 interface WritingCanvasProps {
   size: number;
@@ -80,23 +82,23 @@ export function WritingCanvas({
   const staticLayer = useMemo(
     () => (
       <>
-        <HanziGrid />
+        <HanziGuides />
 
         {outlineIndices.map((index) => (
           <Path
             key={`o${index}`}
             d={strokes[index]}
-            fill={OUTLINE_COLOR}
+            fill={CANVAS_COLORS.outline}
             fillOpacity={0.1}
           />
         ))}
 
         {hintIndex !== null && strokes[hintIndex] && (
-          <Path d={strokes[hintIndex]} fill={HINT_COLOR} fillOpacity={0.55} />
+          <Path d={strokes[hintIndex]} fill={CANVAS_COLORS.hint} fillOpacity={0.55} />
         )}
 
         {snappedIndices.map((index) => (
-          <Path key={`c${index}`} d={strokes[index]} fill={INK_COLOR} />
+          <Path key={`c${index}`} d={strokes[index]} fill={CANVAS_COLORS.ink} />
         ))}
 
         {rawStrokes.map((points, index) => (
@@ -104,7 +106,7 @@ export function WritingCanvas({
             key={`r${index}`}
             d={pointsToPath(points)}
             fill="none"
-            stroke={INK_COLOR}
+            stroke={CANVAS_COLORS.ink}
             strokeWidth={LINE_WIDTH}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -117,15 +119,7 @@ export function WritingCanvas({
 
   return (
     <GestureDetector gesture={pan}>
-      <View
-        style={{
-          width: size,
-          height: size,
-          borderRadius: 24,
-          overflow: "hidden",
-          backgroundColor: "#FFFBF5",
-        }}
-      >
+      <View style={canvasFrameStyle(size)}>
         <Svg
           width={size}
           height={size}
@@ -137,7 +131,7 @@ export function WritingCanvas({
             <Path
               d={pointsToPath(current)}
               fill="none"
-              stroke={INK_COLOR}
+              stroke={CANVAS_COLORS.ink}
               strokeWidth={LINE_WIDTH}
               strokeLinecap="round"
               strokeLinejoin="round"

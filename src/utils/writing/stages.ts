@@ -1,4 +1,4 @@
-// src/utils/writingStages.ts
+// src/utils/writing/stages.ts
 //
 // Строит этапы урока для слова (из одного или нескольких иероглифов).
 //

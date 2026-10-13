@@ -1,23 +1,20 @@
+// src/hooks/useToneGame.ts
+//
+// Тоны: послушать слог → выбрать тон. Ход сессии — в useQuizSession,
+// здесь только правила этой тренировки: вопросы, звук, награда.
+
 import { singleSyllableToneWords } from "@/content/tones/toneWords";
+import { useQuizSession } from "@/hooks/game/useQuizSession";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { useGameStore } from "@/store/gameStore";
-import { useProgressStore } from "@/store/userProgressStore";
+import { finishTraining, getAccuracy } from "@/utils/finishTraining";
 import { parsePinyin } from "@/utils/pinyinTones";
+import { shuffle } from "@/utils/shuffle";
 import { calculateToneCoinsEarned, calculateToneXp } from "@/utils/toneRewards";
-import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 
 const TONE_SESSION_LENGTH = 20;
 const TONE_OPTIONS = [1, 2, 3, 4];
-
-function shuffle<T>(array: T[]): T[] {
-  const copy = [...array];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
 
 interface ToneQuestionData {
   vocabularyId: string;
@@ -46,99 +43,34 @@ function buildSession(): ToneQuestionData[] {
 }
 
 export function useToneGame() {
-  const router = useRouter();
-  const { speak, speakForced } = useSpeakHanzi();
+  const { speakForced } = useSpeakHanzi();
 
-  const [questions, setQuestions] = useState<ToneQuestionData[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedTone, setSelectedTone] = useState<number | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
+  const session = useQuizSession<ToneQuestionData, number>({
+    sessionKey: "tones",
+    buildQuestions: buildSession,
+    isCorrect: (question, tone) => tone === question.correctTone,
+    advanceDelayMs: 900,
 
-  const score = useGameStore((s) => s.score);
-  const startTime = useGameStore((s) => s.startTime);
-  const startGame = useGameStore((s) => s.startGame);
-  const answerQuestion = useGameStore((s) => s.answerQuestion);
-  const setDuration = useGameStore((s) => s.setDuration);
+    onFinish: (questions) => {
+      const { score } = useGameStore.getState();
+      const accuracy = getAccuracy(score, questions.length);
 
-  const isProcessingAnswer = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const currentQuestion = questions[currentIndex];
-
-  useFocusEffect(
-    useCallback(() => {
-      setQuestions(buildSession());
-      startGame();
-      setCurrentIndex(0);
-      setSelectedTone(null);
-      setIsAnswered(false);
-      isProcessingAnswer.current = false;
-    }, [startGame]),
-  );
-
-  useEffect(() => {
-    if (currentQuestion) {
-      speakForced(currentQuestion.hanzi);
-    }
-  }, [currentQuestion?.hanzi]);
-
-  const finishSession = () => {
-    const duration = Date.now() - startTime;
-    setDuration(duration);
-
-    const totalQuestions = questions.length;
-    const accuracy =
-      totalQuestions === 0 ? 0 : Math.round((score / totalQuestions) * 100);
-
-    const xpEarned = calculateToneXp(accuracy);
-    const coinsEarned = calculateToneCoinsEarned(accuracy);
-
-    useProgressStore.getState().addXp(xpEarned);
-    useProgressStore.getState().addCoins(coinsEarned);
-
-    router.replace({
-      pathname: "/games/stats",
-      params: {
+      finishTraining({
         gameId: "tones",
-        xpEarned: String(xpEarned),
-        coinsEarned: String(coinsEarned),
-      },
-    });
-  };
+        rewards: {
+          xp: calculateToneXp(accuracy),
+          coins: calculateToneCoinsEarned(accuracy),
+        },
+      });
+    },
+  });
 
-  const goToNext = () => {
-    const isLast = currentIndex >= questions.length - 1;
+  const { currentQuestion } = session;
 
-    if (isLast) {
-      finishSession();
-      return;
-    }
-
-    setSelectedTone(null);
-    setIsAnswered(false);
-    setCurrentIndex((index) => index + 1);
-    isProcessingAnswer.current = false;
-  };
-
-  const handleSelectTone = (tone: number) => {
-    if (isProcessingAnswer.current || !currentQuestion) return;
-    isProcessingAnswer.current = true;
-
-    setSelectedTone(tone);
-    setIsAnswered(true);
-
-    const isCorrect = tone === currentQuestion.correctTone;
-
-    answerQuestion({
-      vocabularyId: currentQuestion.vocabularyId,
-      hanzi: currentQuestion.hanzi,
-      pinyin: currentQuestion.pinyin,
-      translation: currentQuestion.translation,
-      isCorrect,
-    });
-
-    timeoutRef.current = setTimeout(goToNext, 900);
-  };
+  // Каждый новый вопрос сразу проигрываем (даже при выключенном звуке)
+  useEffect(() => {
+    if (currentQuestion) speakForced(currentQuestion.hanzi);
+  }, [currentQuestion?.hanzi]);
 
   const handlePlayAudio = () => {
     if (currentQuestion) speakForced(currentQuestion.hanzi);
@@ -148,18 +80,15 @@ export function useToneGame() {
     if (currentQuestion) speakForced(currentQuestion.hanzi, { rate: 0.5 });
   };
 
-  const progressPercent =
-    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
   return {
     currentQuestion,
-    currentIndex,
-    totalQuestions: questions.length,
-    selectedTone,
-    isAnswered,
-    progressPercent,
+    currentIndex: session.currentIndex,
+    totalQuestions: session.totalQuestions,
+    selectedTone: session.selected,
+    isAnswered: session.isAnswered,
+    progressPercent: session.progressPercent,
     toneOptions: TONE_OPTIONS,
-    handleSelectTone,
+    handleSelectTone: session.select,
     handlePlayAudio,
     handlePlaySlowAudio,
   };

@@ -1,4 +1,4 @@
-// src/components/writing/WritingResultsList.tsx
+// src/components/writing/results/WritingResultsList.tsx
 //
 // Итоги тренировки письма на экране статистики: все написанные слова — твоё написание,
 // слово, написано ли без подсказок, точки «было → стало» (у слова и у его иероглифов)
@@ -11,14 +11,11 @@
 import { Hanzi } from "@/components/ui/Hanzi";
 import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { Pinyin } from "@/components/ui/Pinyin";
-import { HanziView } from "@/components/writing/HanziView";
+import { HanziView } from "../canvas/HanziView";
 import type { WritingWordResult } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
-
-/** Набор переводов, где лежат переводы слов (как на экране урока). */
-const WORDS_NAMESPACE = "sets";
 
 /** Размер превью твоего написания одного иероглифа. */
 const PREVIEW_SIZE = 56;
@@ -47,7 +44,7 @@ interface WritingResultsListProps {
 }
 
 export function WritingResultsList({ results }: WritingResultsListProps) {
-  const { t } = useTranslation([WORDS_NAMESPACE]);
+  const { t } = useTranslation(["sets"]);
 
   const writingReview = useWordProgressStore((s) => s.writingReview);
   const toggleWritingReview = useWordProgressStore(
