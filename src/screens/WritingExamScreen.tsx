@@ -41,6 +41,10 @@ cssInterop(CheckIcon, {
 /** Набор переводов, где лежат переводы слов (как на экране урока). */
 const WORDS_NAMESPACE = "sets";
 
+/** Сравнение в конце слова: отступы экрана (px-4) и промежуток между иероглифами (gap-3). */
+const SIDE_PADDING = 32;
+const RESULT_GAP = 12;
+
 const MISTAKE_MESSAGES = {
   wrong_position: "Черта в стороне — это ошибка. Попробуй ещё раз",
   wrong_direction: "Не в ту сторону — это ошибка. Попробуй ещё раз",
@@ -215,7 +219,14 @@ function WritingExam({ buildWords }: WritingExamProps) {
 
   const hanziList = Array.from(word.hanzi);
   const charPinyin = syllableOf(word.pinyin, hanziList.length, charIndex);
-  const resultSize = Math.min(size / 2, (width - 32) / chars.length - 12);
+  // Ширина строки: экран минус боковые отступы (px-4) и промежутки gap-3 между иероглифами.
+  // Подписи «Эталон» и «Твоё» стоят над строками и ширину не занимают
+  const resultSize = Math.floor(
+    Math.min(
+      size / 2,
+      (width - SIDE_PADDING - RESULT_GAP * (chars.length - 1)) / chars.length,
+    ),
+  );
 
   return (
     <>
@@ -236,31 +247,35 @@ function WritingExam({ buildWords }: WritingExamProps) {
 
         {phase === "word_result" && verdict ? (
           <>
-            <View className="items-center gap-2">
-              <View className="flex-row items-center gap-3">
-                <Text className="font-nunito w-16 text-small text-text">
+            <View className="items-center gap-3">
+              <View className="items-center gap-1">
+                <Text className="font-nunito text-small text-text opacity-70">
                   Эталон
                 </Text>
-                {chars.map((data, index) => (
-                  <HanziView
-                    key={`ref${index}`}
-                    size={resultSize}
-                    strokes={data.strokes}
-                  />
-                ))}
+                <View className="flex-row gap-3">
+                  {chars.map((data, index) => (
+                    <HanziView
+                      key={`ref${index}`}
+                      size={resultSize}
+                      strokes={data.strokes}
+                    />
+                  ))}
+                </View>
               </View>
 
-              <View className="flex-row items-center gap-3">
-                <Text className="font-nunito w-16 text-small text-text">
+              <View className="items-center gap-1">
+                <Text className="font-nunito text-small text-text opacity-70">
                   Твоё
                 </Text>
-                {chars.map((_, index) => (
-                  <HanziView
-                    key={`raw${index}`}
-                    size={resultSize}
-                    rawStrokes={raws[index] ?? []}
-                  />
-                ))}
+                <View className="flex-row gap-3">
+                  {chars.map((_, index) => (
+                    <HanziView
+                      key={`raw${index}`}
+                      size={resultSize}
+                      rawStrokes={raws[index] ?? []}
+                    />
+                  ))}
+                </View>
               </View>
             </View>
 

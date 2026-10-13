@@ -11,6 +11,7 @@ import FullPracticeIcon from "@/assets/images/icons/book-open.svg";
 import ReviewIcon from "@/assets/images/icons/bookmark-plus.svg";
 import ArrowRight from "@/assets/images/icons/chevron-right.svg";
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
+import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import InfoIcon from "@/assets/images/icons/info.svg";
 import FastPracticeIcon from "@/assets/images/icons/zap.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -21,7 +22,7 @@ import type { Word } from "@/content/flashcards/types";
 import type { WritingExamStatus } from "@/store/wordProgressStore";
 import type { FreeFormat } from "@/utils/writingLessons";
 import { cssInterop } from "nativewind";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { formatExamWait } from "./ExamModal";
@@ -34,6 +35,7 @@ for (const Icon of [
   ReviewIcon,
   ArrowRight,
   CheckIcon,
+  PlusIcon,
   InfoIcon,
   FastPracticeIcon,
 ]) {
@@ -48,6 +50,9 @@ const LEVEL_HINT =
 
 /** Набор переводов, где лежат переводы слов (как на экране урока). */
 const WORDS_NAMESPACE = "sets";
+
+/** Какой тултип открыт (одновременно — только один). */
+type OpenHint = "level" | "exam" | null;
 
 interface PracticeChoiceModalProps {
   /** Слово из сетки; null — окно закрыто. */
@@ -73,73 +78,129 @@ interface SheetItem {
   characters: Word[];
 }
 
-/** Карточка экзамена: активная, если готово; приглушённая — если ждём; печать — если сдано. */
+/**
+ * Слот под иконку в карточках «Повторение» и «Экзамен»: одинаковый размер слева и справа,
+ * чтобы карточки были одной высоты, какая бы иконка в них ни стояла.
+ */
+function IconSlot({ children }: { children?: ReactNode }) {
+  return (
+    <View className="h-8 w-8 items-center justify-center">{children}</View>
+  );
+}
+
+/** Текст тултипа у карточки экзамена (когда экзамен сдан или пока закрыт). */
+function examHint(
+  status: WritingExamStatus,
+  now: number,
+  isWord: boolean,
+): string {
+  switch (status.status) {
+    case "passed":
+      return `Умничка! ${
+        isWord ? "Слово успешно написано" : "Иероглиф успешно написан"
+      } на экзамене.`;
+    case "unavailable":
+      return "Заработай три точки — и на следующий день откроется экзамен.";
+    case "cooldown":
+      return `Три точки есть! Экзамен откроется ${formatExamWait(
+        status.availableAt,
+        now,
+      )}.`;
+    default:
+      return "После двух провалов подряд точку нужно заработать снова. Набери три точки — и на следующий день экзамен откроется.";
+  }
+}
+
+/**
+ * Карточка экзамена. Всегда на месте и всегда одной высоты, чтобы интерфейс не прыгал:
+ * готово — активная кнопка; сдано — галочка и «i»; иначе — неактивная кнопка и «i».
+ */
 function ExamCard({
   status,
   now,
+  isWord,
   onStart,
+  hintVisible,
+  onToggleHint,
+  onCloseHint,
 }: {
   status: WritingExamStatus;
   now: number;
+  /** Выбрано слово целиком (для текста подсказки). */
+  isWord: boolean;
   onStart: () => void;
+  hintVisible: boolean;
+  onToggleHint: () => void;
+  onCloseHint: () => void;
 }) {
-  if (status.status === "unavailable") return null;
-
   if (status.status === "ready") {
     return (
       <Pressable
         onPress={onStart}
-        className="mt-3 flex-row items-center gap-3 rounded-2xl  bg-surface p-4 active:opacity-70"
+        className="mt-3 flex-row items-center gap-3 rounded-2xl bg-surface p-4 active:opacity-70"
         accessibilityRole="button"
       >
-        <SealMark size={30} />
-        <View className="flex-1 gap-0.5">
-          <Text className="font-nunitoBold text-body text-text">
-            Сдать экзамен
-          </Text>
-          <Text className="font-nunito text-small text-text opacity-70">
-            По памяти, без контура и подсказок
-          </Text>
-        </View>
-        <ArrowRight width={20} height={20} className="text-text" />
+        <IconSlot>
+          <SealMark size={28} />
+        </IconSlot>
+        <Text className="flex-1 font-nunitoBold text-body text-text">
+          Сдать экзамен
+        </Text>
+        <IconSlot>
+          <ArrowRight width={20} height={20} className="text-text" />
+        </IconSlot>
       </Pressable>
     );
   }
 
-  const text =
-    status.status === "passed"
-      ? { title: "Экзамен сдан", subtitle: null }
-      : status.status === "cooldown"
-        ? {
-            title: `Экзамен ${formatExamWait(status.availableAt, now)}`,
-            subtitle: "Открывается через сутки после третьей точки",
-          }
-        : {
-            title: "Экзамен откроется после новой точки",
-            subtitle: "После двух провалов подряд точку нужно заработать снова",
-          };
+  const passed = status.status === "passed";
 
+  // Сдано или пока закрыто: справа «i» с подсказкой.
+  // Тултип привязан ко всей карточке, чтобы вставал по центру и не вылезал за края экрана.
   return (
-    <View
-      className={`mt-3 flex-row items-center gap-3 rounded-2xl bg-surface p-4 ${
-        status.status === "passed" ? "" : "opacity-60"
-      }`}
-    >
-      {status.status === "passed" ? (
-        <CheckIcon width={30} height={30} className="text-primary" />
-      ) : (
-        <SealMark size={30} />
-      )}
-      <View className="flex-1 gap-0.5">
-        <Text className="font-nunitoBold text-body text-text">
-          {text.title}
-        </Text>
-        {text.subtitle && (
-          <Text className="font-nunito text-small text-text opacity-70">
-            {text.subtitle}
-          </Text>
-        )}
-      </View>
+    <View className="mt-3">
+      <Tooltip
+        visible={hintVisible}
+        onClose={onCloseHint}
+        text={examHint(status, now, isWord)}
+      >
+        <View
+          className="flex-row items-center gap-3 rounded-2xl bg-surface p-4"
+          accessibilityState={{ disabled: !passed }}
+        >
+          <View
+            className={`flex-1 flex-row items-center gap-3 ${
+              passed ? "" : "opacity-50"
+            }`}
+          >
+            <IconSlot>
+              {passed ? (
+                <CheckIcon width={28} height={28} className="text-primary" />
+              ) : (
+                <SealMark size={28} />
+              )}
+            </IconSlot>
+            <Text className="flex-1 font-nunitoBold text-body text-text">
+              {passed ? "Экзамен сдан" : "Сдать экзамен"}
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={onToggleHint}
+            hitSlop={12}
+            className="active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel={
+              passed ? "Об экзамене" : "Когда откроется экзамен"
+            }
+            accessibilityState={{ expanded: hintVisible }}
+          >
+            <IconSlot>
+              <InfoIcon width={28} height={28} className="text-primary" />
+            </IconSlot>
+          </Pressable>
+        </View>
+      </Tooltip>
     </View>
   );
 }
@@ -160,7 +221,11 @@ export function PracticeChoiceModal({
 
   // Что тренировать: при открытии — слово целиком
   const [target, setTarget] = useState<Word | null>(word);
-  const [showHint, setShowHint] = useState(false);
+  const [openHint, setOpenHint] = useState<OpenHint>(null);
+
+  const toggleHint = (hint: Exclude<OpenHint, null>) =>
+    setOpenHint((current) => (current === hint ? null : hint));
+  const closeHint = () => setOpenHint(null);
 
   // characters в родителе пересчитываются только при смене слова, так что item стабилен
   const item = useMemo<SheetItem | null>(
@@ -174,9 +239,9 @@ export function PracticeChoiceModal({
       onClose={onClose}
       onOpen={(opened) => {
         setTarget(opened.word);
-        setShowHint(false);
+        closeHint();
       }}
-      onBackgroundTap={() => setShowHint(false)}
+      onBackgroundTap={closeHint}
     >
       {({ word: shown, characters: shownCharacters }) => {
         // В шапке — то, что выбрано: слово целиком или один иероглиф
@@ -184,6 +249,9 @@ export function PracticeChoiceModal({
         const options =
           shownCharacters.length > 0 ? [shown, ...shownCharacters] : [];
         const inReview = isInReview(selected);
+        const selectedIsWord =
+          shownCharacters.length > 0 &&
+          selected.vocabularyId === shown.vocabularyId;
 
         return (
           <>
@@ -202,36 +270,31 @@ export function PracticeChoiceModal({
             {/* Уровень изучения: по тапу — тултип, как зарабатывать точки */}
             <View className="mt-3 self-center">
               <Tooltip
-                visible={showHint}
-                onClose={() => setShowHint(false)}
+                visible={openHint === "level"}
+                onClose={closeHint}
                 text={LEVEL_HINT}
               >
                 <Pressable
-                  onPress={() => setShowHint((value) => !value)}
+                  onPress={() => toggleHint("level")}
                   className="flex-row items-center gap-3 rounded-full bg-surface px-4 py-2 active:opacity-70"
                   accessibilityRole="button"
-                  accessibilityState={{ expanded: showHint }}
+                  accessibilityState={{ expanded: openHint === "level" }}
                 >
                   <WritingDots level={getLevel(selected)} />
                   <Text className="font-nunito text-small text-text">
                     Уровень изучения
                   </Text>
-                  <InfoIcon width={18} height={18} className="text-text" />
+                  <InfoIcon width={18} height={18} className="text-primary" />
                 </Pressable>
               </Tooltip>
             </View>
 
             {/* Двусложное слово: целиком или один иероглиф */}
             {options.length > 0 && (
-              <View className="mt-6 gap-3">
-                <View className="gap-0.5">
-                  <Text className="font-nunitoBold text-lead text-text">
-                    Что потренировать?
-                  </Text>
-                  <Text className="font-nunito text-small text-text opacity-70">
-                    Выбери иероглиф или всё слово
-                  </Text>
-                </View>
+              <View className="mt-4 gap-2">
+                <Text className="font-nunitoBold text-lead text-text">
+                  Что потренировать?
+                </Text>
 
                 <View className="flex-row gap-2">
                   {options.map((option) => {
@@ -244,9 +307,9 @@ export function PracticeChoiceModal({
                         key={option.vocabularyId}
                         onPress={() => {
                           setTarget(option);
-                          setShowHint(false);
+                          closeHint();
                         }}
-                        className={`flex-1 items-center gap-1 rounded-2xl border-2 px-2 py-4 active:opacity-70 ${
+                        className={`flex-1 items-center gap-1 rounded-2xl border-2 px-2 py-2.5 active:opacity-70 ${
                           isSelected
                             ? "border-primary bg-primary/20"
                             : "border-transparent bg-surface"
@@ -255,7 +318,7 @@ export function PracticeChoiceModal({
                         accessibilityState={{ selected: isSelected }}
                       >
                         <Hanzi
-                          size="lg"
+                          size="md"
                           numberOfLines={1}
                           adjustsFontSizeToFit
                           maxFontSizeMultiplier={1.2}
@@ -280,46 +343,41 @@ export function PracticeChoiceModal({
             {/* «Повторение»: для выбранного слова или иероглифа (он же в шапке) */}
             <Pressable
               onPress={() => onToggleReview(selected)}
-              className="mt-5 flex-row items-center gap-3 rounded-2xl bg-surface p-4 active:opacity-70"
+              className="mt-4 flex-row items-center gap-3 rounded-2xl bg-surface p-4 active:opacity-70"
               accessibilityRole="switch"
               accessibilityState={{ checked: inReview }}
             >
-              <ReviewIcon width={26} height={26} className="text-primary" />
+              <IconSlot>
+                <ReviewIcon width={26} height={26} className="text-primary" />
+              </IconSlot>
 
-              <View className="flex-1 gap-0.5">
-                <Text className="font-nunitoBold text-body text-text">
-                  {inReview ? "В повторении" : "Добавить в повторение"}
-                </Text>
-                <Text className="font-nunito text-small text-text opacity-70">
-                  {inReview
-                    ? "Нажми, чтобы убрать из раздела «Повторение»"
-                    : "Появится в разделе «Повторение» для тренировки позже"}
-                </Text>
-              </View>
+              <Text className="flex-1 font-nunitoBold text-body text-text">
+                {inReview ? "В повторении" : "Добавить в повторение"}
+              </Text>
 
               {/* Справа: «+» — добавить, галочка — уже в повторении */}
-              {inReview ? (
-                <View className="h-11 w-11 items-center justify-center">
-                  <CheckIcon width={30} height={30} className="text-primary" />
-                </View>
-              ) : (
-                <View className="h-9 w-9 items-center justify-center rounded-full bg-primary">
-                  <Text className="font-nunitoBold text-title text-white">
-                    +
-                  </Text>
-                </View>
-              )}
+              <IconSlot>
+                {inReview ? (
+                  <CheckIcon width={28} height={28} className="text-primary" />
+                ) : (
+                  <PlusIcon width={28} height={28} className="text-primary" />
+                )}
+              </IconSlot>
             </Pressable>
 
-            {/* Экзамен по выбранному слову или иероглифу */}
+            {/* Экзамен по выбранному слову или иероглифу — всегда на месте */}
             <ExamCard
               status={getExamStatus(selected)}
               now={now}
+              isWord={selectedIsWord}
               onStart={() => onStartExam(selected)}
+              hintVisible={openHint === "exam"}
+              onToggleHint={() => toggleHint("exam")}
+              onCloseHint={closeHint}
             />
 
             {/* Формат */}
-            <Text className="mt-6 font-nunitoBold text-lead text-text">
+            <Text className="mt-5 font-nunitoBold text-lead text-text">
               Как будем тренироваться?
             </Text>
 

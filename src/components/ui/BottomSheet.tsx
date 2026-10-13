@@ -246,7 +246,8 @@ export function BottomSheet<T>({
           {/* Содержимое: прокручивается, если не помещается */}
           <ScrollView
             ref={scrollRef}
-            style={{ flexGrow: 0 }}
+            // flexShrink: прокрутка сжимается до высоты панели, а не вылезает за экран
+            style={{ flexGrow: 0, flexShrink: 1 }}
             contentContainerStyle={{
               paddingHorizontal: SHEET_HORIZONTAL_INSET / 2,
               paddingBottom: insets.bottom + 16,
