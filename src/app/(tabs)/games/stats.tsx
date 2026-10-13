@@ -8,7 +8,6 @@ import { WritingResultsList } from "@/components/writing/WritingResultsList";
 import { useGameStore } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
-import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
 import { formatDuration } from "@/utils/formatDuration";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -22,11 +21,7 @@ export default function GeneralStatsScreen() {
   const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
   const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
 
-  const { xp, gameId } = useLocalSearchParams<{
-    xp: string;
-    gameId?: string;
-  }>();
-  const earnedXp = Number(xp);
+  const { gameId } = useLocalSearchParams<{ gameId?: string }>();
 
   // После письма показываем все написанные слова, а не только ошибки
   const writingResults = useGameStore((s) => s.writingResults);
@@ -35,14 +30,14 @@ export default function GeneralStatsScreen() {
   const score = useGameStore((s) => s.score);
   const duration = useGameStore((s) => s.duration);
   const results = useGameStore((s) => s.results);
+  // Награду считает сама тренировка (у тонов свои формулы), здесь только показываем
+  const rewards = useGameStore((s) => s.rewards);
 
   const correctCount = score;
   const totalCount = results.length;
   const wrongAnswers = results.filter((r) => !r.isCorrect);
   const scorePercentage =
     totalCount === 0 ? 0 : Math.round((correctCount / totalCount) * 100);
-
-  const coinsEarned = calculateCoinsEarned(scorePercentage);
 
   const [showWrongAnswers] = useState(true);
 
@@ -71,12 +66,12 @@ export default function GeneralStatsScreen() {
           <View className="flex-1">
             <StatRow
               label={`XP ${t("games.stats.gained")}`}
-              value={`+${correctCount}`}
+              value={`+${rewards.xp}`}
             />
 
             <StatRow
               label="Монеты"
-              value={`+${coinsEarned}`}
+              value={`+${rewards.coins}`}
               icon={
                 <Image
                   className="h-5 w-5"

@@ -1,3 +1,6 @@
+// src/utils/shuffle.ts
+
+/** Перемешивает копию массива (Фишер–Йетс), исходный не трогает. */
 export function shuffle<T>(array: T[]) {
   const result = [...array];
 

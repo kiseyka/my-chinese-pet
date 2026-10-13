@@ -9,6 +9,7 @@ import {
 } from "@/content/panda/scenarios";
 import type { PandaTrainingResult, WordChange } from "@/store/pandaStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
+import { shuffle } from "@/utils/shuffle";
 import i18n from "i18next";
 
 /** Название набора переводов с персональными фразами (см. i18n-конфиг). */
@@ -61,15 +62,6 @@ function pickLine(key: string, lines: string[]): string {
   lastLineIndex[key] = index;
 
   return lines[index];
-}
-
-function shuffle<T>(items: T[]): T[] {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
 }
 
 export function fillTemplate(template: string, word: WordChange): string {

@@ -11,11 +11,11 @@ import {
   type FlashcardQuestionResult,
   type WritingCharResult,
 } from "@/store/gameStore";
-import { usePandaStore, type WordChange } from "@/store/pandaStore";
-import { useProgressStore } from "@/store/userProgressStore";
+import type { WordChange } from "@/store/pandaStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import type { HanziData } from "@/types/hanzi";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
+import { finishTraining, getAccuracy } from "@/utils/finishTraining";
 import {
   checkStroke,
   type Point,
@@ -28,7 +28,7 @@ import {
   type LessonItem,
 } from "@/utils/writingLessons";
 import { buildStages, type WritingStage } from "@/utils/writingStages";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Строгость проверки: 1 — обычная, меньше — строже, больше — мягче. */
@@ -114,8 +114,6 @@ function charOutcomesOf(hanzi: string, assistedChars: number[]): CharOutcome[] {
 }
 
 export function useWritingLesson(buildPlan: () => LessonItem[]) {
-  const router = useRouter();
-
   const [words, setWords] = useState<LessonWord[]>([]);
   const [isReady, setIsReady] = useState(false);
 
@@ -417,26 +415,22 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
       });
     }
 
-    const { score, startTime } = useGameStore.getState();
-    game.setDuration(Date.now() - startTime);
-
+    const { score } = useGameStore.getState();
     const total = scored.length;
-    const accuracy = total === 0 ? 0 : Math.round((score / total) * 100);
 
-    useProgressStore.getState().addXp(score);
-    useProgressStore.getState().addCoins(calculateCoinsEarned(accuracy));
-
-    usePandaStore.getState().setPendingTrainingResult({
-      type: "writing_completed",
-      score,
-      total,
-      results,
-      wordChanges,
-    });
-
-    router.replace({
-      pathname: "/games/stats",
-      params: { gameId: "writing" },
+    finishTraining({
+      gameId: "writing",
+      rewards: {
+        xp: score,
+        coins: calculateCoinsEarned(getAccuracy(score, total)),
+      },
+      pandaResult: {
+        type: "writing_completed",
+        score,
+        total,
+        results,
+        wordChanges,
+      },
     });
   };
 

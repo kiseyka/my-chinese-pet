@@ -1,4 +1,4 @@
-import { shuffle } from "./shuffle";
+import { shuffle } from "@/utils/shuffle";
 import { QuizQuestion, Word } from "./types";
 
 const QUESTIONS_PER_SESSION = 10;
@@ -30,6 +30,7 @@ export function generateQuiz(words: Word[]): QuizQuestion[] {
       id: word.id,
       hanzi: word.hanzi,
       pinyin: word.pinyin,
+      translation: word.translation,
       correctAnswer: word.translation,
       options,
     };

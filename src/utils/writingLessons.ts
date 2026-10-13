@@ -6,6 +6,7 @@ import type { Word } from "@/content/flashcards/types";
 import { getWordFrequency, getWordHsk } from "@/content/words/hsk";
 import { allWords } from "@/content/words/vocabulary";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
+import { shuffle } from "@/utils/shuffle";
 import type { LessonFormat } from "./writingStages";
 import {
   chunkSteps,
@@ -33,15 +34,6 @@ export interface WordGroups {
   learning: Word[];
   /** Освоенные (3 точки). */
   learned: Word[];
-}
-
-function shuffle<T>(items: T[]): T[] {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
 }
 
 /** Раздел тренировок — уровень HSK слова. 0 — «Другие слова». */
