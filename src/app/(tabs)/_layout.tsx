@@ -104,6 +104,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="games/writing/exam"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="games/writing/review"
         options={{
           headerShown: false,

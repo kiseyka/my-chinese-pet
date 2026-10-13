@@ -3,6 +3,10 @@
 // Итоги тренировки письма на экране статистики: все написанные слова — твоё написание,
 // слово, написано ли без подсказок, точки «было → стало» (у слова и у его иероглифов)
 // и переключатель «Повторение».
+//
+// Убрать слово из «Повторения» здесь = «чувствую, что знаю»: слово встаёт в очередь
+// на экзамен (откроется через 24 часа). Поэтому снятие идёт через removeFromWritingReview,
+// а добавление — через toggleWritingReview.
 
 import { Hanzi } from "@/components/ui/Hanzi";
 import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
@@ -49,6 +53,9 @@ export function WritingResultsList({ results }: WritingResultsListProps) {
   const toggleWritingReview = useWordProgressStore(
     (s) => s.toggleWritingReview,
   );
+  const removeFromWritingReview = useWordProgressStore(
+    (s) => s.removeFromWritingReview,
+  );
 
   // Одно слово может встретиться дважды (например, 画画 в уроке) — показываем один раз
   const unique = results.filter(
@@ -65,7 +72,7 @@ export function WritingResultsList({ results }: WritingResultsListProps) {
     <View className="gap-3">
       <Text className="font-nunito text-body text-text">
         {hasReviewWords
-          ? "Если слово больше не вызывает трудностей, убери его из повторения."
+          ? "Если слово больше не вызывает трудностей, убери его из повторения — через сутки его можно будет сдать на экзамене."
           : "Трудные слова можно добавить на повторение."}
       </Text>
 
@@ -129,7 +136,11 @@ export function WritingResultsList({ results }: WritingResultsListProps) {
             )}
 
             <Pressable
-              onPress={() => toggleWritingReview(item.vocabularyId)}
+              onPress={() =>
+                inReview
+                  ? removeFromWritingReview(item.vocabularyId)
+                  : toggleWritingReview(item.vocabularyId)
+              }
               className={`min-h-11 items-center justify-center rounded-xl px-4 py-2 active:opacity-70 ${
                 inReview ? "bg-primary/20" : "border border-primary"
               }`}
