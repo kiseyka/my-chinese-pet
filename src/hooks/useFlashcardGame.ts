@@ -2,24 +2,32 @@
 //
 // Флешкарты: иероглиф → выбрать перевод. Ход сессии — в useQuizSession,
 // здесь только правила этой тренировки: вопросы, прогресс чтения, награда.
+// Слова берутся из пользовательского набора («Мои наборы»).
 
 import { generateQuiz } from "@/content/flashcards/generator";
-import { practiceSets } from "@/content/flashcards/sets";
 import type { QuizQuestion } from "@/content/flashcards/types";
+import { allWords, findWords } from "@/content/words/vocabulary";
 import { useQuizSession } from "@/hooks/game/useQuizSession";
+import {
+  MIN_SET_WORDS,
+  useCustomSet,
+  useCustomSetsStore,
+} from "@/store/customSetsStore";
 import { useGameStore } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
 import { finishTraining, getAccuracy } from "@/utils/finishTraining";
 import { createWordChangeTracker } from "@/utils/wordChanges";
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 interface UseFlashcardGameProps {
   setId: string;
 }
 
 export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
-  const practiceSet = practiceSets.find((set) => set.id === setId);
+  const { t } = useTranslation(["sets"]);
+  const practiceSet = useCustomSet(setId);
 
   const wordChanges = useRef(createWordChangeTracker("reading")).current;
 
@@ -28,8 +36,19 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
 
     buildQuestions: () => {
       wordChanges.reset();
+
+      // Набор берём прямо из стора: на момент входа на экран он самый свежий
+      const current = useCustomSetsStore
+        .getState()
+        .sets.find((set) => set.id === setId);
+      const words = current ? findWords(current.wordIds) : [];
+      if (words.length < MIN_SET_WORDS) return [];
+
       // Новый набор вопросов при каждом входе на экран
-      return practiceSet ? generateQuiz(practiceSet.words) : [];
+      return generateQuiz(words, {
+        extraPool: allWords,
+        translate: (key) => t(key),
+      });
     },
 
     isCorrect: (question, option) => option === question.correctAnswer,
@@ -39,14 +58,12 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
     },
 
     onFinish: (questions) => {
-      if (!practiceSet) return;
-
       // Берём актуальные значения из стора: последний ответ уже записан
       const { score, startTime, results } = useGameStore.getState();
       const total = questions.length;
 
       useWordProgressStore.getState().completeFlashcardSet({
-        setId: practiceSet.id,
+        setId,
         score,
         totalQuestions: total,
         duration: Date.now() - startTime,

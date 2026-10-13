@@ -1,10 +1,14 @@
-// app/(tabs)/games/flashcards/[setsId].tsx
+// app/(tabs)/games/flashcards/[setId].tsx
+//
+// Тренировка карточками по своему набору.
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
 import { GameHeader } from "@/components/game/GameHeader";
 import { Screen } from "@/components/layout/Screen";
+import { BackButton } from "@/components/ui/BackButton";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useFlashcardGame } from "@/hooks/useFlashcardGame";
+import { MIN_SET_WORDS } from "@/store/customSetsStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -30,11 +34,19 @@ export default function LevelGameScreen() {
     setId,
   });
 
+  // Набор удалили или в нём не хватает слов (вопросов нет)
   if (!practiceSet || !currentQuestion) {
     return (
-      <View>
-        <Text>Level not found</Text>
-      </View>
+      <Screen>
+        <View className="flex-row items-center">
+          <BackButton href="/games/flashcards/sets" />
+        </View>
+        <Text className="mt-6 font-nunito text-body text-text">
+          {practiceSet
+            ? `Для тренировки в наборе нужно хотя бы ${MIN_SET_WORDS} слова.`
+            : "Набор не найден."}
+        </Text>
+      </Screen>
     );
   }
 

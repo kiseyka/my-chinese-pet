@@ -1,9 +1,9 @@
-import { practiceSets } from "@/content/flashcards/sets";
 import { mergeAliasedProgress } from "@/store/migrations/mergeAliasedProgress";
 import { MasteryBucket, SkillProgress, WordProgress } from "@/types/progress";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+/** Лучший результат карточек по набору (id из «Моих наборов»). */
 interface FlashcardSetProgress {
   bestScore: number;
   totalQuestions: number;
@@ -175,12 +175,6 @@ export const useWordProgressStore = create<WordProgressStore>()(
       writingExams: {},
 
       completeFlashcardSet: ({ setId, score, totalQuestions, duration }) => {
-        const practiceSet = practiceSets.find((s) => s.id === setId);
-
-        if (!practiceSet) {
-          throw new Error(`Practice Set not found: ${setId}`);
-        }
-
         const accuracy =
           totalQuestions === 0 ? 0 : Math.round((score / totalQuestions) * 100);
 
