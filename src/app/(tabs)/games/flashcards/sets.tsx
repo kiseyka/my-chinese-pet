@@ -123,9 +123,16 @@ export default function FlashcardsHomeScreen() {
         }}
       />
 
-      {tab === "steps" ? (
+      {/* Обе вкладки остаются смонтированными, неактивная прячется:
+          переключение мгновенное, прокрутка и раскрытые ступени сохраняются */}
+      <View
+        className="flex-1"
+        style={{ display: tab === "steps" ? "flex" : "none" }}
+      >
         <StepsTab onStartStep={startStep} />
-      ) : (
+      </View>
+
+      {tab === "sets" && (
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingVertical: 16, gap: 12 }}

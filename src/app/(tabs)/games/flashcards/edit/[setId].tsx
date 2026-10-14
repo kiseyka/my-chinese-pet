@@ -111,10 +111,11 @@ export default function EditSetScreen() {
           goHome();
           deleteSet(set.id);
         }}
-        titleKey="Удалить набор?"
-        messageKey="Слова останутся в словаре, и их прогресс сохранится."
-        cancelTextKey="Отмена"
-        confirmTextKey="Удалить"
+        title="Удалить набор?"
+        message="Слова останутся в словаре, и их прогресс сохранится."
+        cancelLabel="Отмена"
+        confirmLabel="Удалить"
+        isDestructive
       />
 
       {/* Шапка: назад и название */}
