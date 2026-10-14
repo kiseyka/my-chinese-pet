@@ -4,6 +4,7 @@
 // План — список LessonItem; дальше его разворачивает в этапы useWritingLesson.
 
 import type { Word } from "@/content/flashcards/types";
+import { useCustomSetsStore } from "@/store/customSetsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { shuffle } from "@/utils/shuffle";
 import type { LessonFormat } from "./stages";
@@ -80,6 +81,40 @@ export function createRepeatPlan(): LessonItem[] {
       word,
       format: "quick" as const,
       roleLabel: "Повторение",
+      retryDeep: true,
+    }));
+}
+
+// ── Свои наборы ──────────────────────────────────────────────────────────────
+
+/** Сколько слов набора в одной тренировке письма. */
+export const SET_LESSON_SIZE = 5;
+
+/** Слова набора, которые можно писать (до 2 иероглифов, с данными о чертах). */
+export function getSetWritableWords(setId: string): Word[] {
+  const set = useCustomSetsStore
+    .getState()
+    .sets.find((item) => item.id === setId);
+  return set ? findPracticeWords(set.wordIds) : [];
+}
+
+/**
+ * Тренировка письма по своему набору: как «Повторение» — до SET_LESSON_SIZE слов,
+ * сначала те, что дольше всего не писались; быстрый формат, слово с подсказками
+ * в конце идёт на полный цикл.
+ */
+export function createSetPlan(setId: string): LessonItem[] {
+  const state = useWordProgressStore.getState();
+  const lastWritten = (word: Word) =>
+    state.flashcardWords[word.vocabularyId]?.lastAnsweredAt ?? 0;
+
+  return getSetWritableWords(setId)
+    .sort((a, b) => lastWritten(a) - lastWritten(b))
+    .slice(0, SET_LESSON_SIZE)
+    .map((word) => ({
+      word,
+      format: "quick" as const,
+      roleLabel: "Набор",
       retryDeep: true,
     }));
 }

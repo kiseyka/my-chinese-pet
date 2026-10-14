@@ -2,7 +2,8 @@
 //
 // Главный экран режима «Написание»:
 //   - поиск по иероглифу, пиньиню (без тонов) и переводу;
-//   - «Экзамен» и «Повторение»: компактные карточки вверху, по тапу — окно (ExamModal, ReviewModal);
+//   - «Экзамен», «Повторение» и «Мои наборы»: компактные карточки вверху, по тапу — окно
+//     (ExamModal, ReviewModal, SetsModal; наборы те же, что в карточках);
 //   - слова текущего раздела HSK: заголовок со сводкой «изучено / всего» и ступени
 //     по 10 слов, у каждой своя шкала; ступени сворачиваются (первой развёрнута текущая);
 //   - следующие разделы HSK (пока закрыты) и «Другие слова» (свёрнуты).
@@ -28,6 +29,13 @@ import { WordGrid } from "@/components/writing/home/WordGrid";
 import { ExamModal } from "@/components/writing/modals/ExamModal";
 import { PracticeChoiceModal } from "@/components/writing/modals/PracticeChoiceModal";
 import { ReviewModal } from "@/components/writing/modals/ReviewModal";
+import {
+  SetsEntryCard,
+  SetsModal,
+} from "@/components/writing/modals/SetsModal";
+import { useCustomSetsStore } from "@/store/customSetsStore";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import type { Word } from "@/content/flashcards/types";
 import { useWritingHome } from "@/hooks/writing/useWritingHome";
 import { REPEAT_LESSON_SIZE } from "@/utils/writing/plans";
@@ -43,6 +51,11 @@ const GROUP_GAP = 32;
 
 export default function WritingHomeScreen() {
   const home = useWritingHome();
+  const router = useRouter();
+
+  // «Мои наборы» — те же, что в карточках
+  const customSets = useCustomSetsStore((state) => state.sets);
+  const [setsOpen, setSetsOpen] = useState(false);
   const { examQueue, repeatWords, stepsProgress, currentLevel } = home;
 
   /**
@@ -67,7 +80,8 @@ export default function WritingHomeScreen() {
   const hasTopGroup =
     examQueue.ready.length > 0 ||
     examQueue.upcoming.length > 0 ||
-    repeatWords.length > 0;
+    repeatWords.length > 0 ||
+    customSets.length > 0;
   const hasMoreGroup = home.lockedLevels.length > 0 || home.hasOtherWords;
 
   return (
@@ -115,6 +129,27 @@ export default function WritingHomeScreen() {
         onClose={() => home.setReviewOpen(false)}
       />
 
+      <SetsModal
+        open={setsOpen}
+        sets={customSets}
+        getLevel={home.getLevel}
+        renderGrid={(words) =>
+          // Тап по слову: закрываем наборы и открываем окно слова
+          grid(words, SHEET_HORIZONTAL_INSET, (word) => {
+            setSetsOpen(false);
+            home.setSelected(word);
+          })
+        }
+        onStart={(setId) => {
+          setSetsOpen(false);
+          router.push({
+            pathname: "/games/writing/set" as any,
+            params: { setId },
+          });
+        }}
+        onClose={() => setSetsOpen(false)}
+      />
+
       <SearchField
         value={home.query}
         onChangeText={home.setQuery}
@@ -152,6 +187,13 @@ export default function WritingHomeScreen() {
                   <ReviewCard
                     total={repeatWords.length}
                     onPress={() => home.setReviewOpen(true)}
+                  />
+                )}
+
+                {customSets.length > 0 && (
+                  <SetsEntryCard
+                    count={customSets.length}
+                    onPress={() => setSetsOpen(true)}
                   />
                 )}
               </View>
