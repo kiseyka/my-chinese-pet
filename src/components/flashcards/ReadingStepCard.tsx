@@ -1,7 +1,8 @@
 // src/components/flashcards/ReadingStepCard.tsx
 //
-// Карточка ступени карточек: шапка (название, «освоено / всего», кнопка ▶ и стрелка)
-// и сворачиваемая сетка слов. ▶ запускает тренировку ступени и в свёрнутом виде.
+// Карточка ступени карточек: шапка (стрелка, название, кнопка «Тренировать»),
+// тонкая шкала «освоено / всего» и сворачиваемая сетка слов.
+// «Тренировать» работает и у свёрнутой ступени.
 //
 // Точки считает сама карточка (подписана на стор): так при изменении прогресса
 // перерисовываются только видимые карточки, а не весь раздел.
@@ -58,41 +59,37 @@ export const ReadingStepCard = memo(function ReadingStepCard({
 
   return (
     <View className="rounded-2xl bg-surface">
-      {/* Шапка: тап разворачивает; ▶ — отдельная кнопка */}
+      {/* Шапка: стрелка и название (тап разворачивает) и кнопка «Тренировать» справа */}
       <Pressable
         onPress={() => onToggle(index)}
-        className="gap-3 py-3 pl-4 pr-2 active:opacity-70"
+        className="gap-3 px-4 py-3 active:opacity-70"
         accessibilityRole="button"
         accessibilityState={{ expanded }}
         accessibilityLabel={`${title}: освоено ${learned} из ${total}`}
       >
-        <View className="flex-row items-center gap-2">
+        <View className="min-h-10 flex-row items-center gap-2">
+          <Text className="w-4 font-nunito text-body text-textSecondary">
+            {expanded ? "▾" : "▸"}
+          </Text>
           <Text className="flex-1 font-nunitoBold text-body text-text">
             {title}
-          </Text>
-          <Text className="font-nunito text-small text-textSecondary">
-            {learned}/{total}
           </Text>
 
           <Pressable
             onPress={() => onStart(index)}
             hitSlop={6}
-            className="ml-2 h-10 w-10 items-center justify-center rounded-full bg-primary active:opacity-80"
+            className="min-h-10 justify-center rounded-full bg-primary px-4 active:opacity-80"
             accessibilityRole="button"
             accessibilityLabel={`Тренировать: ${title}`}
           >
-            <Text className="pl-0.5 font-nunitoBold text-body text-white">
-              ▶
+            <Text className="font-nunitoBold text-small text-white">
+              Тренировать
             </Text>
           </Pressable>
-
-          <Text className="w-6 text-center font-nunito text-body text-textSecondary">
-            {expanded ? "▴" : "▾"}
-          </Text>
         </View>
 
         {/* Тонкая шкала: освоено / всего */}
-        <View className="mr-2 h-1.5 overflow-hidden rounded-full bg-text/10">
+        <View className="h-1.5 overflow-hidden rounded-full bg-text/10">
           <View
             className="h-full rounded-full bg-primary"
             style={{ width: `${total > 0 ? (learned / total) * 100 : 0}%` }}

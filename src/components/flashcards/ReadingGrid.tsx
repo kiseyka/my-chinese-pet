@@ -2,8 +2,9 @@
 //
 // Сетка слов для карточек: иероглиф, пиньинь и точки чтения. Перевод скрыт —
 // тренировка как раз «иероглиф → перевод»; он показывается по тапу (WordSheet).
-// 4 колонки; длинное слово занимает несколько: 2 иероглифа — 2 колонки,
-// 3 — 3, 4 и больше — весь ряд.
+// 4 колонки. Слово из двух и больше иероглифов занимает минимум 2 колонки
+// (как в «Написании»), а дальше — столько, сколько нужно, чтобы влезли
+// иероглифы и пиньинь: 3–4 иероглифа обычно влезают в 2 колонки.
 
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
@@ -24,8 +25,23 @@ interface ReadingGridProps {
   horizontalInset: number;
 }
 
-function spanOf(word: Word): number {
-  return Math.min(Array.from(word.hanzi).length, COLUMNS);
+/** Примерная ширина буквы пиньиня (размер sm, 14 pt) — с запасом. */
+const PINYIN_CHAR_WIDTH = 7.5;
+/** Поля внутри ячейки по бокам. */
+const CELL_PADDING = 12;
+
+/** Сколько колонок нужно слову. */
+function spanOf(word: Word, unit: number, hanziSize: number): number {
+  const chars = Array.from(word.hanzi).length;
+  if (chars === 1) return 1;
+
+  const needed =
+    Math.max(chars * hanziSize, word.pinyin.length * PINYIN_CHAR_WIDTH) +
+    CELL_PADDING;
+
+  // Ширина n колонок вместе с промежутками: n * unit + (n - 1) * GAP
+  const span = Math.ceil((needed + GAP) / (unit + GAP));
+  return Math.min(Math.max(span, 2), COLUMNS);
 }
 
 export const ReadingGrid = memo(function ReadingGrid({
@@ -44,7 +60,7 @@ export const ReadingGrid = memo(function ReadingGrid({
   return (
     <View className="flex-row flex-wrap" style={{ gap: GAP }}>
       {words.map((word, index) => {
-        const span = spanOf(word);
+        const span = spanOf(word, unit, hanziSize);
 
         return (
           <Pressable
@@ -59,7 +75,6 @@ export const ReadingGrid = memo(function ReadingGrid({
             <Hanzi
               size={hanziSize}
               numberOfLines={1}
-              adjustsFontSizeToFit
               maxFontSizeMultiplier={1.2}
             >
               {word.hanzi}

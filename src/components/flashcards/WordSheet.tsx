@@ -1,7 +1,8 @@
 // src/components/flashcards/WordSheet.tsx
 //
 // Панель слова снизу (по тапу на слово в сетке): иероглиф, пиньинь (тап — озвучка),
-// перевод, точки чтения и список своих наборов — в какой добавить слово.
+// перевод, точки чтения, где лежит слово («HSK 2 · Ступень 7», из поиска —
+// с кнопкой «Показать») и список своих наборов — в какой добавить слово.
 
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
@@ -21,10 +22,19 @@ import { Pressable, Text, View } from "react-native";
 interface WordSheetProps {
   /** Слово; null — панель закрыта. */
   word: Word | null;
+  /** Где лежит слово: «HSK 2 · Ступень 7». */
+  location?: string;
+  /** Если передан — у строки с местом есть кнопка «Показать». */
+  onShowInStep?: () => void;
   onClose: () => void;
 }
 
-export function WordSheet({ word, onClose }: WordSheetProps) {
+export function WordSheet({
+  word,
+  location,
+  onShowInStep,
+  onClose,
+}: WordSheetProps) {
   const { t } = useTranslation();
   const { speakForced } = useSpeakHanzi();
 
@@ -71,6 +81,28 @@ export function WordSheet({ word, onClose }: WordSheetProps) {
                 <WritingDots level={level} />
               </View>
             </View>
+
+            {/* Где лежит слово */}
+            {location && (
+              <View className="mt-5 min-h-12 flex-row items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-2">
+                <Text className="flex-1 font-nunito text-body text-text">
+                  {location}
+                </Text>
+                {onShowInStep && (
+                  <Pressable
+                    onPress={onShowInStep}
+                    hitSlop={8}
+                    className="min-h-10 justify-center active:opacity-60"
+                    accessibilityRole="button"
+                    accessibilityLabel={`Показать: ${location}`}
+                  >
+                    <Text className="font-nunitoBold text-small text-primary">
+                      Показать
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
 
             {/* Свои наборы */}
             <View className="mt-6 gap-2">

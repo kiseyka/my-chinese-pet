@@ -3,10 +3,11 @@
 // Вкладка «Ступени» на экране карточек:
 //   - поиск по всей базе (иероглиф, пиньинь без тонов, перевод), результаты — сеткой;
 //   - чипсы разделов HSK: на экране всегда один раздел (все открыты сразу);
-//   - сводка раздела и список ступеней (FlatList: рисуются только видимые).
-// Сначала выбран текущий раздел — первый, где есть неосвоенные слова, — и в нём
-// развёрнута текущая ступень. ▶ в шапке ступени запускает тренировку.
-// Тап по слову открывает панель с переводом и своими наборами (WordSheet).
+//   - ступени раздела (LevelSteps). Разделы, в которые уже заходили, остаются
+//     в памяти и только прячутся — повторное переключение мгновенное.
+// Сначала выбран текущий раздел — первый, где есть неосвоенные слова.
+// Тап по слову открывает панель (WordSheet): перевод, где лежит слово, свои наборы.
+// Из поиска в панели есть «Показать в ступени»: раздел, ступень и прокрутка к ней.
 
 import { SearchField } from "@/components/ui/SearchField";
 import type { Word } from "@/content/flashcards/types";
@@ -14,17 +15,25 @@ import { allWords } from "@/content/words/vocabulary";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import {
   describeReadingLevel,
+  describeStep,
+  findWordStep,
   getReadingLevels,
   getReadingSteps,
   type ReadingLevel,
 } from "@/utils/flashcards/steps";
 import { searchWords } from "@/utils/searchWords";
-import { useCallback, useMemo, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
-import { FlatList, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { LevelChips } from "./LevelChips";
+import { LevelSteps, type StepJump } from "./LevelSteps";
 import { ReadingGrid } from "./ReadingGrid";
-import { ReadingStepCard } from "./ReadingStepCard";
 import { WordSheet } from "./WordSheet";
 
 /** Отступы Screen по бокам: от них считается ширина ячеек сетки. */
@@ -34,29 +43,24 @@ interface StepsTabProps {
   onStartStep: (level: ReadingLevel, index: number) => void;
 }
 
-type ProgressMaps = {
-  flashcardWords: ReturnType<
-    typeof useWordProgressStore.getState
-  >["flashcardWords"];
-  vocabularyWords: ReturnType<
-    typeof useWordProgressStore.getState
-  >["vocabularyWords"];
-};
-
-function dotsOf(word: Word, maps: ProgressMaps): number {
-  return getWordLevel(
-    maps.flashcardWords[word.vocabularyId],
-    maps.vocabularyWords[word.vocabularyId]?.isKnown ?? false,
-    ["reading"],
-  );
+/** Слово в панели и откуда его открыли. */
+interface SelectedWord {
+  word: Word;
+  fromSearch: boolean;
 }
 
-/** Первая ступень раздела, где есть неосвоенные слова (или первая). */
-function currentStepIndex(level: ReadingLevel, maps: ProgressMaps): number {
-  const index = getReadingSteps(level).findIndex((words) =>
-    words.some((word) => dotsOf(word, maps) < 3),
+function isLevelUnfinished(level: ReadingLevel): boolean {
+  const { flashcardWords, vocabularyWords } = useWordProgressStore.getState();
+  return getReadingSteps(level).some((words) =>
+    words.some(
+      (word) =>
+        getWordLevel(
+          flashcardWords[word.vocabularyId],
+          vocabularyWords[word.vocabularyId]?.isKnown ?? false,
+          ["reading"],
+        ) < 3,
+    ),
   );
-  return Math.max(index, 0);
 }
 
 export function StepsTab({ onStartStep }: StepsTabProps) {
@@ -70,53 +74,36 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
   const levels = getReadingLevels();
 
   // Текущий раздел при открытии экрана: первый, где есть неосвоенные слова
-  const [level, setLevel] = useState<ReadingLevel>(() => {
-    const maps = useWordProgressStore.getState();
-    return (
-      levels.find((item) =>
-        getReadingSteps(item).some((words) =>
-          words.some((word) => dotsOf(word, maps) < 3),
-        ),
-      ) ?? levels[0]
+  const [level, setLevel] = useState<ReadingLevel>(
+    () => levels.find(isLevelUnfinished) ?? levels[0],
+  );
+  // Чипс выделяется сразу, а тяжёлый первый показ раздела идёт следом (с отложенным значением)
+  const shownLevel = useDeferredValue(level);
+
+  // Разделы, в которые уже заходили: их списки держим смонтированными
+  const [visited, setVisited] = useState<ReadingLevel[]>(() => [level]);
+  useEffect(() => {
+    setVisited((previous) =>
+      previous.includes(shownLevel) ? previous : [...previous, shownLevel],
     );
-  });
+  }, [shownLevel]);
+  const mounted = visited.includes(shownLevel)
+    ? visited
+    : [...visited, shownLevel];
 
-  // Развёрнутые ступени по разделам. Раздела ещё нет в записи — развёрнута его текущая ступень
-  const [expandedByLevel, setExpandedByLevel] = useState<
-    Record<number, number[]>
-  >({});
-
-  const expanded = useMemo(
-    () =>
-      new Set(
-        expandedByLevel[level] ?? [
-          currentStepIndex(level, useWordProgressStore.getState()),
-        ],
-      ),
-    [expandedByLevel, level],
+  const [jump, setJump] = useState<(StepJump & { level: ReadingLevel }) | null>(
+    null,
   );
 
-  const toggleStep = useCallback(
-    (index: number) =>
-      setExpandedByLevel((previous) => {
-        const current = new Set(
-          previous[level] ?? [
-            currentStepIndex(level, useWordProgressStore.getState()),
-          ],
-        );
-        if (current.has(index)) current.delete(index);
-        else current.add(index);
-        return { ...previous, [level]: Array.from(current) };
-      }),
-    [level],
+  const [selected, setSelected] = useState<SelectedWord | null>(null);
+  const selectFromGrid = useCallback(
+    (word: Word) => setSelected({ word, fromSearch: false }),
+    [],
   );
-
-  const startStep = useCallback(
-    (index: number) => onStartStep(level, index),
-    [level, onStartStep],
+  const selectFromSearch = useCallback(
+    (word: Word) => setSelected({ word, fromSearch: true }),
+    [],
   );
-
-  const [selected, setSelected] = useState<Word | null>(null);
 
   // ── Поиск ──────────────────────────────────────────────────────────────────
 
@@ -128,27 +115,33 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
   );
   const resultDots = useMemo(
     () =>
-      results.map((word) => dotsOf(word, { flashcardWords, vocabularyWords })),
+      results.map((word) =>
+        getWordLevel(
+          flashcardWords[word.vocabularyId],
+          vocabularyWords[word.vocabularyId]?.isKnown ?? false,
+          ["reading"],
+        ),
+      ),
     [results, flashcardWords, vocabularyWords],
   );
 
-  // ── Раздел ─────────────────────────────────────────────────────────────────
+  // ── Панель слова ───────────────────────────────────────────────────────────
 
-  const steps = getReadingSteps(level);
+  const selectedStep = selected
+    ? findWordStep(selected.word.vocabularyId)
+    : null;
 
-  // Сводка только по выбранному разделу
-  const { learned, total } = useMemo(() => {
-    const maps = { flashcardWords, vocabularyWords };
-    let learnedCount = 0;
-    let totalCount = 0;
-    for (const words of steps) {
-      for (const word of words) {
-        totalCount += 1;
-        if (dotsOf(word, maps) === 3) learnedCount += 1;
-      }
-    }
-    return { learned: learnedCount, total: totalCount };
-  }, [steps, flashcardWords, vocabularyWords]);
+  const showInStep = () => {
+    if (!selectedStep) return;
+    setSelected(null);
+    setQuery("");
+    setLevel(selectedStep.level);
+    setJump({
+      level: selectedStep.level,
+      index: selectedStep.index,
+      nonce: Date.now(),
+    });
+  };
 
   const chips = useMemo(
     () =>
@@ -158,7 +151,18 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
 
   return (
     <View className="flex-1">
-      <WordSheet word={selected} onClose={() => setSelected(null)} />
+      <WordSheet
+        word={selected?.word ?? null}
+        location={
+          selectedStep
+            ? describeStep(selectedStep.level, selectedStep.index)
+            : undefined
+        }
+        onShowInStep={
+          selected?.fromSearch && selectedStep ? showInStep : undefined
+        }
+        onClose={() => setSelected(null)}
+      />
 
       <SearchField
         value={query}
@@ -168,7 +172,7 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
         className="mt-3"
       />
 
-      {isSearching ? (
+      {isSearching && (
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -178,7 +182,7 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
             <ReadingGrid
               words={results}
               dots={resultDots}
-              onSelect={setSelected}
+              onSelect={selectFromSearch}
               horizontalInset={SCREEN_INSET}
             />
           ) : (
@@ -187,42 +191,29 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
             </Text>
           )}
         </ScrollView>
-      ) : (
-        <>
-          <View className="mt-3">
-            <LevelChips chips={chips} value={level} onChange={setLevel} />
-          </View>
-
-          <FlatList
-            // Новый раздел — новый список (и прокрутка с начала)
-            key={level}
-            data={steps}
-            keyExtractor={(_, index) => `${level}-${index}`}
-            extraData={expanded}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingVertical: 12, gap: 12 }}
-            initialNumToRender={6}
-            windowSize={7}
-            ListHeaderComponent={
-              <Text className="font-nunito text-small text-textSecondary">
-                Освоено {learned} из {total}
-              </Text>
-            }
-            renderItem={({ item, index }) => (
-              <ReadingStepCard
-                index={index}
-                words={item}
-                expanded={expanded.has(index)}
-                outerInset={SCREEN_INSET}
-                onToggle={toggleStep}
-                onStart={startStep}
-                onSelectWord={setSelected}
-              />
-            )}
-          />
-        </>
       )}
+
+      {/* Разделы прячем, а не убираем, пока идёт поиск: так не теряется прокрутка */}
+      <View
+        className="flex-1"
+        style={{ display: isSearching ? "none" : "flex" }}
+      >
+        <View className="mt-3">
+          <LevelChips chips={chips} value={level} onChange={setLevel} />
+        </View>
+
+        {mounted.map((item) => (
+          <LevelSteps
+            key={item}
+            level={item}
+            visible={item === shownLevel}
+            outerInset={SCREEN_INSET}
+            jump={jump?.level === item ? jump : null}
+            onStartStep={onStartStep}
+            onSelectWord={selectFromGrid}
+          />
+        ))}
+      </View>
     </View>
   );
 }

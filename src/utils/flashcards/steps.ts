@@ -132,3 +132,30 @@ export function findStepTraining(
     words,
   };
 }
+
+// ── Где слово: раздел и ступень ──────────────────────────────────────────────
+
+let locationCache: Map<string, { level: ReadingLevel; index: number }> | null =
+  null;
+
+/** Раздел и ступень, в которой лежит слово. null — слова нет в ступенях. */
+export function findWordStep(
+  wordId: string,
+): { level: ReadingLevel; index: number } | null {
+  if (!locationCache) {
+    locationCache = new Map();
+    for (const level of getReadingLevels()) {
+      getReadingSteps(level).forEach((words, index) => {
+        for (const word of words) {
+          locationCache!.set(word.vocabularyId, { level, index });
+        }
+      });
+    }
+  }
+  return locationCache.get(wordId) ?? null;
+}
+
+/** «HSK 2 · Ступень 7» */
+export function describeStep(level: ReadingLevel, index: number): string {
+  return `${describeReadingLevel(level)} · Ступень ${index + 1}`;
+}
