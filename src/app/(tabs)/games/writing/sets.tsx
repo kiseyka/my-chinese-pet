@@ -1,13 +1,10 @@
 // app/(tabs)/games/writing/sets.tsx
 //
-// Главный экран режима «Написание»:
-//   - поиск по иероглифу, пиньиню (без тонов) и переводу;
-//   - «Экзамен», «Повторение» и «Мои наборы»: компактные карточки вверху, по тапу — окно
-//     (ExamModal, ReviewModal, SetsModal; наборы те же, что в карточках);
-//   - слова текущего раздела HSK: заголовок со сводкой «изучено / всего» и ступени
-//     по 10 слов, у каждой своя шкала; ступени сворачиваются (первой развёрнута текущая);
-//   - следующие разделы HSK (пока закрыты) и «Другие слова» (свёрнуты).
-// Блоки разделены ритмом отступов: внутри группы 12, между группами 32.
+// Главный экран режима «Написание» — устроен так же, как экран карточек:
+//   - сверху закреплены поиск (иероглиф, пиньинь без тонов, перевод) и вкладки;
+//   - «Ступени»: «Экзамен» и «Повторение», чипсы разделов HSK и ступени
+//     с кнопкой «Тренировать» (WritingStepsTab);
+//   - «Мои наборы»: те же наборы, что в карточках, — «Открыть» и «Тренировать».
 // Нажатие на слово открывает выбор: что писать, в каком формате, «Повторять» и экзамен.
 //
 // Данные и действия — в useWritingHome; здесь только раскладка.
@@ -16,47 +13,49 @@ import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { SHEET_HORIZONTAL_INSET } from "@/components/ui/BottomSheet";
 import { SearchField } from "@/components/ui/SearchField";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Title } from "@/components/ui/Title";
 import { ExamEntryCard } from "@/components/writing/home/ExamEntryCard";
-import {
-  LevelHeader,
-  LockedLevelCard,
-} from "@/components/writing/home/LevelSections";
 import { ReviewCard } from "@/components/writing/home/ReviewCard";
-import { STEP_CARD_INSET, StepCard } from "@/components/writing/home/StepCard";
 import { WordGrid } from "@/components/writing/home/WordGrid";
+import { WritingStepsTab } from "@/components/writing/home/WritingStepsTab";
 import { ExamModal } from "@/components/writing/modals/ExamModal";
 import { PracticeChoiceModal } from "@/components/writing/modals/PracticeChoiceModal";
 import { ReviewModal } from "@/components/writing/modals/ReviewModal";
 import {
-  SetsEntryCard,
-  SetsModal,
+  SetSheet,
+  WritingSetsTab,
 } from "@/components/writing/modals/SetsModal";
-import { useCustomSetsStore } from "@/store/customSetsStore";
-import { useRouter } from "expo-router";
-import { useState } from "react";
 import type { Word } from "@/content/flashcards/types";
 import { useWritingHome } from "@/hooks/writing/useWritingHome";
+import { useCustomSetsStore } from "@/store/customSetsStore";
 import { REPEAT_LESSON_SIZE } from "@/utils/writing/plans";
-import { getLevelSequence } from "@/utils/writing/steps";
-import { NO_HSK_LEVEL, describeLevel } from "@/utils/writing/words";
+import type { WritingLevel } from "@/utils/writing/words";
+import { useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 
 /** Отступы Screen по бокам: от них считается ширина ячеек сетки. */
 const SCREEN_INSET = 32;
 
-/** Отступ между группами блоков (внутри группы — gap-3). */
-const GROUP_GAP = 32;
+type WritingTab = "steps" | "sets";
+
+const TABS = [
+  { key: "steps" as const, label: "Ступени" },
+  { key: "sets" as const, label: "Мои наборы" },
+];
 
 export default function WritingHomeScreen() {
   const home = useWritingHome();
   const router = useRouter();
+  const { examQueue, repeatWords } = home;
+
+  const [tab, setTab] = useState<WritingTab>("steps");
 
   // «Мои наборы» — те же, что в карточках
   const customSets = useCustomSetsStore((state) => state.sets);
-  const [setsOpen, setSetsOpen] = useState(false);
-  const { examQueue, repeatWords, stepsProgress, currentLevel } = home;
+  const [openedSetId, setOpenedSetId] = useState<string | null>(null);
+  const openedSet = customSets.find((set) => set.id === openedSetId) ?? null;
 
   /**
    * Сетка слов. inset — сколько ширины экрана не достаётся сетке
@@ -77,12 +76,42 @@ export default function WritingHomeScreen() {
     />
   );
 
-  const hasTopGroup =
-    examQueue.ready.length > 0 ||
-    examQueue.upcoming.length > 0 ||
-    repeatWords.length > 0 ||
-    customSets.length > 0;
-  const hasMoreGroup = home.lockedLevels.length > 0 || home.hasOtherWords;
+  const startStep = useCallback(
+    (level: WritingLevel, index: number) =>
+      router.push({
+        pathname: "/games/writing/step" as any,
+        params: { level: String(level), index: String(index) },
+      }),
+    [router],
+  );
+
+  const startSet = (setId: string) => {
+    setOpenedSetId(null);
+    router.push({
+      pathname: "/games/writing/set" as any,
+      params: { setId },
+    });
+  };
+
+  // «Экзамен» и «Повторение» над чипсами — отделены от них крупным отступом
+  const hasExam = examQueue.ready.length > 0 || examQueue.upcoming.length > 0;
+  const hasTopCards = hasExam || repeatWords.length > 0;
+  const topCards = hasTopCards ? (
+    <View className="mb-8 gap-3">
+      <ExamEntryCard
+        readyCount={examQueue.ready.length}
+        nextAvailableAt={examQueue.upcoming[0]?.availableAt}
+        now={home.now}
+        onPress={() => home.setExamOpen(true)}
+      />
+      {repeatWords.length > 0 && (
+        <ReviewCard
+          total={repeatWords.length}
+          onPress={() => home.setReviewOpen(true)}
+        />
+      )}
+    </View>
+  ) : null;
 
   return (
     <Screen>
@@ -129,134 +158,77 @@ export default function WritingHomeScreen() {
         onClose={() => home.setReviewOpen(false)}
       />
 
-      <SetsModal
-        open={setsOpen}
-        sets={customSets}
-        getLevel={home.getLevel}
+      <SetSheet
+        set={openedSet}
         renderGrid={(words) =>
-          // Тап по слову: закрываем наборы и открываем окно слова
+          // Тап по слову: закрываем набор и открываем окно слова
           grid(words, SHEET_HORIZONTAL_INSET, (word) => {
-            setSetsOpen(false);
+            setOpenedSetId(null);
             home.setSelected(word);
           })
         }
-        onStart={(setId) => {
-          setSetsOpen(false);
-          router.push({
-            pathname: "/games/writing/set" as any,
-            params: { setId },
-          });
-        }}
-        onClose={() => setSetsOpen(false)}
+        onStart={startSet}
+        onClose={() => setOpenedSetId(null)}
       />
 
+      {/* Сверху закреплены только поиск и вкладки */}
       <SearchField
         value={home.query}
         onChangeText={home.setQuery}
         placeholder="Иероглиф, пиньинь или перевод"
         accessibilityLabel="Поиск слова"
-        className="my-3"
+        className="mt-3"
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingVertical: 16, gap: GROUP_GAP }}
-      >
-        {home.isSearching ? (
-          home.searchResults.length > 0 ? (
+      {!home.isSearching && (
+        <SegmentedTabs
+          tabs={TABS}
+          value={tab}
+          onChange={setTab}
+          className="mt-3"
+        />
+      )}
+
+      {home.isSearching && (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingVertical: 16 }}
+        >
+          {home.searchResults.length > 0 ? (
             grid(home.searchResults)
           ) : (
             <Text className="font-nunito text-body text-text">
               Ничего не нашлось. Пиньинь можно писать без тонов: «nihao».
             </Text>
-          )
-        ) : (
-          <>
-            {/* Группа 1: Экзамен и Повторение */}
-            {hasTopGroup && (
-              <View className="gap-3">
-                <ExamEntryCard
-                  readyCount={examQueue.ready.length}
-                  nextAvailableAt={examQueue.upcoming[0]?.availableAt}
-                  now={home.now}
-                  onPress={() => home.setExamOpen(true)}
-                />
+          )}
+        </ScrollView>
+      )}
 
-                {repeatWords.length > 0 && (
-                  <ReviewCard
-                    total={repeatWords.length}
-                    onPress={() => home.setReviewOpen(true)}
-                  />
-                )}
+      {/* Вкладки остаются смонтированными, неактивная прячется */}
+      <View
+        className="flex-1"
+        style={{
+          display: !home.isSearching && tab === "steps" ? "flex" : "none",
+        }}
+      >
+        <WritingStepsTab
+          renderGrid={(words, inset) => grid(words, inset)}
+          topCards={topCards}
+          onStartStep={startStep}
+          outerInset={SCREEN_INSET}
+        />
+      </View>
 
-                {customSets.length > 0 && (
-                  <SetsEntryCard
-                    count={customSets.length}
-                    onPress={() => setSetsOpen(true)}
-                  />
-                )}
-              </View>
-            )}
-
-            {/* Группа 2: текущий раздел HSK и его ступени */}
-            {stepsProgress && currentLevel !== undefined && (
-              <View className="gap-3">
-                <LevelHeader
-                  level={currentLevel}
-                  learned={home.levelLearned}
-                  total={home.levelTotal}
-                />
-
-                {stepsProgress.steps.map((step, index) => {
-                  const key = `step-${index}`;
-
-                  return (
-                    <StepCard
-                      key={key}
-                      title={`Ступень ${index + 1}`}
-                      learned={step.learned}
-                      total={step.words.length}
-                      expanded={home.expanded.has(key)}
-                      onToggle={() => home.toggleExpanded(key)}
-                    >
-                      {grid(step.words, SCREEN_INSET + STEP_CARD_INSET)}
-                    </StepCard>
-                  );
-                })}
-              </View>
-            )}
-
-            {/* Группа 3: следующие разделы HSK и «Другие слова» */}
-            {hasMoreGroup && (
-              <View className="gap-3">
-                {currentLevel !== undefined &&
-                  home.lockedLevels.map((level) => (
-                    <LockedLevelCard
-                      key={level}
-                      level={level}
-                      currentLevel={currentLevel}
-                    />
-                  ))}
-
-                {/* Другие слова: твои слова без уровня и слова HSK 5+ */}
-                {home.hasOtherWords && (
-                  <View className="gap-3">
-                    <SectionHeader
-                      title={describeLevel(NO_HSK_LEVEL)}
-                      subtitle={`${getLevelSequence(NO_HSK_LEVEL).length}`}
-                      expanded={home.expanded.has("other")}
-                      onPress={() => home.toggleExpanded("other")}
-                    />
-                    {home.expanded.has("other") &&
-                      grid(getLevelSequence(NO_HSK_LEVEL))}
-                  </View>
-                )}
-              </View>
-            )}
-          </>
-        )}
-      </ScrollView>
+      {!home.isSearching && tab === "sets" && (
+        <WritingSetsTab
+          sets={customSets}
+          getLevel={home.getLevel}
+          onOpen={setOpenedSetId}
+          onStart={startSet}
+          onManage={() => router.push("/games/flashcards/sets")}
+        />
+      )}
     </Screen>
   );
 }
