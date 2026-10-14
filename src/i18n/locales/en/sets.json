@@ -9,42 +9,6 @@
     "masteredCount": "Mastered {{count}} of {{total}}",
     "start": "Start"
   },
-  "title": {
-    "greetings": "Greetings",
-    "numbers": "Numbers",
-    "family": "Family",
-    "food": "Food",
-    "animals": "Animals",
-    "clothing": "Clothing",
-    "weather": "Weather",
-    "colors": "Colors",
-    "transportation": "Transportation",
-    "house": "House and Furniture",
-    "body": "Body Parts",
-    "hobbies": "Hobbies",
-    "time": "Time",
-    "professions": "Professions",
-    "places": "Places in the City",
-    "directions": "Location"
-  },
-  "description": {
-    "greetings": "Greetings and polite expressions",
-    "numbers": "Numbers and quantity words",
-    "family": "Family members and relatives",
-    "food": "Food, drinks, and dishes",
-    "animals": "Animals and measure words for them",
-    "clothing": "Clothing and footwear",
-    "weather": "Weather, seasons, and natural phenomena",
-    "colors": "Colors and shades",
-    "transportation": "Transportation and traffic",
-    "house": "House, rooms, furniture, and interior items",
-    "body": "Body parts and health",
-    "hobbies": "Hobbies, sports, entertainment, and technology",
-    "time": "Time, days of the week, and time periods",
-    "professions": "Professions and work relationships",
-    "places": "Places in the city and public establishments",
-    "directions": "Location, directions, and compass points"
-  },
   "numbers": {
     "measure_wei": "Polite measure word for people"
   },

@@ -1,6 +1,6 @@
 // src/utils/pandaDialog.ts
 
-import { practiceSets } from "@/content/flashcards/sets";
+import { allWords } from "@/content/words/vocabulary";
 import { pandaPhrases } from "@/content/panda/phrases";
 import {
   scenarios,
@@ -122,28 +122,26 @@ function getQuizCandidates(): WordChange[] {
   const { flashcardWords, vocabularyWords } = useWordProgressStore.getState();
   const found = new Map<string, WordChange>();
 
-  for (const practiceSet of practiceSets) {
-    for (const word of practiceSet.words) {
-      if (!pandaPhrases[word.hanzi]) continue;
-      if (found.has(word.vocabularyId)) continue;
+  for (const word of allWords) {
+    if (!pandaPhrases[word.hanzi]) continue;
+    if (found.has(word.vocabularyId)) continue;
 
-      const level = getWordLevel(
-        flashcardWords[word.vocabularyId],
-        vocabularyWords[word.vocabularyId]?.isKnown ?? false,
-      );
+    const level = getWordLevel(
+      flashcardWords[word.vocabularyId],
+      vocabularyWords[word.vocabularyId]?.isKnown ?? false,
+    );
 
-      if (level < 1) continue;
+    if (level < 1) continue;
 
-      found.set(word.vocabularyId, {
-        vocabularyId: word.vocabularyId,
-        hanzi: word.hanzi,
-        pinyin: word.pinyin,
-        translation: word.translation,
-        levelBefore: level,
-        levelAfter: level,
-        isCorrect: true,
-      });
-    }
+    found.set(word.vocabularyId, {
+      vocabularyId: word.vocabularyId,
+      hanzi: word.hanzi,
+      pinyin: word.pinyin,
+      translation: word.translation,
+      levelBefore: level,
+      levelAfter: level,
+      isCorrect: true,
+    });
   }
 
   return Array.from(found.values());
