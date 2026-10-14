@@ -4,11 +4,13 @@
 //   - сверху закреплены поиск (иероглиф, пиньинь без тонов, перевод) и вкладки;
 //   - «Ступени»: «Экзамен» и «Повторение», чипсы разделов HSK и ступени
 //     с кнопкой «Тренировать» (WritingStepsTab);
-//   - «Мои наборы»: те же наборы, что в карточках, — «Открыть» и «Тренировать».
+//   - «Мои наборы»: те же наборы, что в карточках, — «Открыть», «Тренировать»,
+//     создание и редактирование (редактор общий с карточками).
 // Нажатие на слово открывает выбор: что писать, в каком формате, «Повторять» и экзамен.
 //
 // Данные и действия — в useWritingHome; здесь только раскладка.
 
+import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { SHEET_HORIZONTAL_INSET } from "@/components/ui/BottomSheet";
@@ -84,6 +86,16 @@ export default function WritingHomeScreen() {
       }),
     [router],
   );
+
+  const createSet = useCustomSetsStore((state) => state.createSet);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Редактор набора — тот же, что в карточках; «назад» вернёт сюда
+  const openEditor = (setId: string) =>
+    router.push({
+      pathname: "/games/flashcards/edit/[setId]",
+      params: { setId, from: "writing" },
+    });
 
   const startSet = (setId: string) => {
     setOpenedSetId(null);
@@ -168,7 +180,23 @@ export default function WritingHomeScreen() {
           })
         }
         onStart={startSet}
+        onEdit={(setId) => {
+          setOpenedSetId(null);
+          openEditor(setId);
+        }}
         onClose={() => setOpenedSetId(null)}
+      />
+
+      <SetTitleModal
+        visible={isCreating}
+        heading="Новый набор"
+        confirmLabel="Создать"
+        onClose={() => setIsCreating(false)}
+        onConfirm={(title) => {
+          const setId = createSet(title);
+          setIsCreating(false);
+          openEditor(setId);
+        }}
       />
 
       {/* Сверху закреплены только поиск и вкладки */}
@@ -226,7 +254,7 @@ export default function WritingHomeScreen() {
           getLevel={home.getLevel}
           onOpen={setOpenedSetId}
           onStart={startSet}
-          onManage={() => router.push("/games/flashcards/sets")}
+          onCreate={() => setIsCreating(true)}
         />
       )}
     </Screen>

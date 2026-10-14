@@ -6,12 +6,16 @@
 //
 //   WritingSetsTab — вкладка: карточки наборов («Открыть» и «Тренировать»);
 //   SetSheet — панель набора: сетка слов для письма (рисует экран через renderGrid —
-//   с теми же точками, рамками и печатями) и «Тренировать письмо».
+//   с теми же точками, рамками и печатями), карандаш (редактор набора) и
+//   «Тренировать письмо».
+// Создавать и менять наборы можно и отсюда: редактор тот же, что в карточках.
 
+import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { Word } from "@/content/flashcards/types";
 import type { CustomSet } from "@/store/customSetsStore";
+import { colors } from "@/theme/colors";
 import { pluralWords } from "@/utils/writing/labels";
 import { SET_LESSON_SIZE } from "@/utils/writing/plans";
 import { LEARNED_DOTS, findPracticeWords } from "@/utils/writing/words";
@@ -26,8 +30,8 @@ interface WritingSetsTabProps {
   getLevel: (word: Word) => number;
   onOpen: (setId: string) => void;
   onStart: (setId: string) => void;
-  /** Перейти к наборам в карточках (там их создают и меняют). */
-  onManage: () => void;
+  /** «+ Создать набор». */
+  onCreate: () => void;
 }
 
 export function WritingSetsTab({
@@ -35,7 +39,7 @@ export function WritingSetsTab({
   getLevel,
   onOpen,
   onStart,
-  onManage,
+  onCreate,
 }: WritingSetsTabProps) {
   return (
     <ScrollView
@@ -48,8 +52,8 @@ export function WritingSetsTab({
             Здесь будут твои наборы
           </Text>
           <Text className="font-nunito text-body text-text">
-            Наборы общие с карточками: собери набор там — и его можно будет
-            тренировать и карточками, и письмом.
+            Наборы общие с карточками: один и тот же набор можно тренировать и
+            карточками, и письмом.
           </Text>
         </View>
       )}
@@ -119,12 +123,12 @@ export function WritingSetsTab({
       })}
 
       <Pressable
-        onPress={onManage}
+        onPress={onCreate}
         className="min-h-14 items-center justify-center rounded-2xl border border-dashed border-primary px-5 py-4 active:opacity-70"
         accessibilityRole="button"
       >
         <Text className="font-nunitoBold text-body text-primary">
-          Собрать или изменить набор
+          + Создать набор
         </Text>
       </Pressable>
     </ScrollView>
@@ -139,10 +143,18 @@ interface SetSheetProps {
   /** Сетка слов набора (та же, что на экране). */
   renderGrid: (words: Word[]) => ReactNode;
   onStart: (setId: string) => void;
+  /** «Изменить»: редактор набора (тот же, что в карточках). */
+  onEdit: (setId: string) => void;
   onClose: () => void;
 }
 
-export function SetSheet({ set, renderGrid, onStart, onClose }: SetSheetProps) {
+export function SetSheet({
+  set,
+  renderGrid,
+  onStart,
+  onEdit,
+  onClose,
+}: SetSheetProps) {
   const item = useMemo(() => set, [set]);
 
   return (
@@ -154,9 +166,23 @@ export function SetSheet({ set, renderGrid, onStart, onClose }: SetSheetProps) {
 
         return (
           <>
-            <Text className="font-nunitoBold text-title text-text">
-              {shown.title}
-            </Text>
+            <View className="flex-row items-center gap-3">
+              <Text
+                numberOfLines={1}
+                className="flex-1 font-nunitoBold text-title text-text"
+              >
+                {shown.title}
+              </Text>
+              <Pressable
+                onPress={() => onEdit(shown.id)}
+                hitSlop={6}
+                className="h-10 w-10 items-center justify-center rounded-full active:bg-text/10"
+                accessibilityRole="button"
+                accessibilityLabel="Изменить набор"
+              >
+                <PencilIcon width={22} height={22} color={colors.text} />
+              </Pressable>
+            </View>
 
             {skipped > 0 && (
               <Text className="mt-2 font-nunito text-small text-text opacity-70">

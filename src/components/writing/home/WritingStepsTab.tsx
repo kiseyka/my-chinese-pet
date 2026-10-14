@@ -5,8 +5,8 @@
 //   - ступени раздела списком (FlatList — рисуются только видимые),
 //     у каждой — «Тренировать» (1 новое слово + 2 повторения из этой ступени);
 //   - всё прокручивается вместе: сверху на экране закреплены только поиск и вкладки.
-// Разделы, в которые уже заходили, остаются в памяти и только прячутся.
-// Закрытые разделы HSK (пока не пройден предыдущий) показывают карточку «закрыт».
+// Все разделы открыты сразу. Разделы, в которые уже заходили, остаются в памяти
+// и только прячутся.
 //
 // Сетку слов рисует экран (renderGrid): там точки письма, рамки «Повторения»
 // и печати экзамена.
@@ -37,7 +37,6 @@ import {
   type ReactNode,
 } from "react";
 import { FlatList, Text, View } from "react-native";
-import { LockedLevelCard } from "./LevelSections";
 
 interface WritingStepsTabProps {
   /** Сетка слов ступени; inset — сколько ширины экрана не достаётся сетке. */
@@ -56,16 +55,11 @@ export function WritingStepsTab({
   outerInset,
 }: WritingStepsTabProps) {
   const levels = useMemo(() => getAvailableLevels(), []);
-  const hskLevels = levels.filter((level) => level !== NO_HSK_LEVEL);
 
-  // Пока финалов ступеней нет, из HSK открыт только первый раздел; «Другие слова» открыты
-  const openLevel = hskLevels[0];
-  const isLocked = (level: WritingLevel) =>
-    level !== NO_HSK_LEVEL && level !== openLevel;
+  // Все разделы открыты сразу
+  const firstHsk = levels.find((item) => item !== NO_HSK_LEVEL);
 
-  const [level, setLevel] = useState<WritingLevel>(
-    () => openLevel ?? levels[0],
-  );
+  const [level, setLevel] = useState<WritingLevel>(() => firstHsk ?? levels[0]);
   const shownLevel = useDeferredValue(level);
 
   // Разделы, в которые уже заходили: их списки держим смонтированными
@@ -83,9 +77,7 @@ export function WritingStepsTab({
     () =>
       levels.map((item) => ({
         key: item,
-        label: isLocked(item)
-          ? `${describeLevel(item)} 🔒`
-          : describeLevel(item),
+        label: describeLevel(item),
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [levels],
@@ -106,8 +98,6 @@ export function WritingStepsTab({
           key={item}
           level={item}
           visible={item === shownLevel}
-          locked={isLocked(item)}
-          openLevel={openLevel}
           header={header}
           renderGrid={renderGrid}
           onStartStep={onStartStep}
@@ -123,9 +113,6 @@ export function WritingStepsTab({
 interface WritingLevelStepsProps {
   level: WritingLevel;
   visible: boolean;
-  locked: boolean;
-  /** Открытый раздел HSK — для текста «откроется, когда пройдёшь …». */
-  openLevel: WritingLevel | undefined;
   header: ReactNode;
   renderGrid: (words: Word[], inset: number) => ReactNode;
   onStartStep: (level: WritingLevel, index: number) => void;
@@ -135,8 +122,6 @@ interface WritingLevelStepsProps {
 const WritingLevelSteps = memo(function WritingLevelSteps({
   level,
   visible,
-  locked,
-  openLevel,
   header,
   renderGrid,
   onStartStep,
@@ -176,7 +161,7 @@ const WritingLevelSteps = memo(function WritingLevelSteps({
 
   return (
     <FlatList
-      data={locked ? [] : steps}
+      data={steps}
       keyExtractor={(_, index) => `${level}-${index}`}
       extraData={[expanded, learnedPerStep, renderGrid]}
       style={{ display: visible ? "flex" : "none" }}
@@ -189,15 +174,9 @@ const WritingLevelSteps = memo(function WritingLevelSteps({
       ListHeaderComponent={
         <View>
           {header}
-          {locked ? (
-            openLevel !== undefined && (
-              <LockedLevelCard level={level} currentLevel={openLevel} />
-            )
-          ) : (
-            <Text className="font-nunito text-small text-textSecondary">
-              Изучено {learned} из {total}
-            </Text>
-          )}
+          <Text className="font-nunito text-small text-textSecondary">
+            Изучено {learned} из {total}
+          </Text>
         </View>
       }
       renderItem={({ item: words, index }) => (

@@ -31,7 +31,12 @@ import { colors } from "@/theme/colors";
 import { describeStep, findWordStep } from "@/utils/flashcards/steps";
 import { searchWords } from "@/utils/searchWords";
 import { pluralWords } from "@/utils/writing/labels";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+  type Href,
+} from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, Pressable, Text, View } from "react-native";
@@ -39,7 +44,14 @@ import { FlatList, Pressable, Text, View } from "react-native";
 export default function EditSetScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { setId } = useLocalSearchParams<{ setId: string }>();
+  // from — куда вернуться (по умолчанию карточки; из «Написания» — туда)
+  const { setId, from } = useLocalSearchParams<{
+    setId: string;
+    from?: string;
+  }>();
+  const backHref = (
+    from === "writing" ? "/games/writing/sets" : "/games/flashcards/sets"
+  ) as Href;
 
   const set = useCustomSet(setId);
   const toggleWord = useCustomSetsStore((state) => state.toggleWord);
@@ -90,14 +102,14 @@ export default function EditSetScreen() {
     [isSearching, query, t],
   );
 
-  const goHome = () => router.replace("/games/flashcards/sets");
+  const goHome = () => router.replace(backHref);
 
   if (!set) {
     // Набор удалён (или ссылка устарела)
     return (
       <Screen>
         <View className="flex-row items-center">
-          <BackButton href="/games/flashcards/sets" />
+          <BackButton href={backHref} />
         </View>
         <Text className="mt-6 font-nunito text-body text-text">
           Набор не найден.
@@ -162,7 +174,7 @@ export default function EditSetScreen() {
 
       {/* Шапка: назад, название (тап — переименовать), карандаш и корзина */}
       <View className="flex-row items-center gap-2">
-        <BackButton href="/games/flashcards/sets" />
+        <BackButton href={backHref} />
         <Pressable
           onPress={() => setIsRenaming(true)}
           className="ml-1 flex-1 active:opacity-60"
