@@ -1,28 +1,43 @@
 // src/components/flashcards/FlashcardResultsList.tsx
 //
-// Итоги тренировки карточками на экране статистики: все слова тренировки,
-// сначала ошибки. У каждого слова — точки чтения и переключатель «Повторение».
-// Сверху — «Добавить ошибки в повторение» одним нажатием.
-// Так же, как в письме: решение, что повторять, принимается здесь, после тренировки.
+// Итоги тренировки карточками: два раздела.
+//   «Ошибки» — слова, на которые хоть раз ответили неверно. Если ошибок нет —
+//   вместо раздела похвала. В шапке раздела — «Все в повторение» (кнопка
+//   не меняет размер и не сдвигает экран: только текст и вид).
+//   «Верно» — остальные слова.
+// У каждого слова: иероглиф, точки, пиньинь, перевод и кнопка «Повторение».
+// Тап по слову открывает панель слова (onOpenWord): там наборы, новый набор,
+// озвучка — так слова можно разложить по наборам прямо отсюда.
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
-import { Hanzi } from "@/components/ui/Hanzi";
-import { LevelDots } from "@/components/ui/LevelDots";
-import { Pinyin } from "@/components/ui/Pinyin";
+import type { WordLevel } from "@/components/ui/LevelDots";
+import type { Word } from "@/content/flashcards/types";
 import type { FlashcardQuestionResult } from "@/store/gameStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
-import { pluralWords } from "@/utils/writing/labels";
-import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
+import { SetWordRow } from "./SetWordRow";
 
 interface FlashcardResultsListProps {
   results: FlashcardQuestionResult[];
+  onOpenWord: (word: Word) => void;
 }
 
-export function FlashcardResultsList({ results }: FlashcardResultsListProps) {
-  const { t } = useTranslation();
+/** Результат в формате Word (для строки и панели слова). */
+function toWord(item: FlashcardQuestionResult): Word {
+  return {
+    id: item.vocabularyId,
+    vocabularyId: item.vocabularyId,
+    hanzi: item.hanzi,
+    pinyin: item.pinyin,
+    translation: item.translation,
+  };
+}
 
+export function FlashcardResultsList({
+  results,
+  onOpenWord,
+}: FlashcardResultsListProps) {
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
   const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
   const readingReview = useWordProgressStore((s) => s.readingReview);
@@ -39,95 +54,109 @@ export function FlashcardResultsList({ results }: FlashcardResultsListProps) {
       byId.set(item.vocabularyId, item);
     }
   }
-  const unique = Array.from(byId.values()).sort(
-    (a, b) => Number(a.isCorrect) - Number(b.isCorrect),
-  );
+  const unique = Array.from(byId.values());
+  const mistakes = unique.filter((item) => !item.isCorrect);
+  const correct = unique.filter((item) => item.isCorrect);
 
-  const mistakesNotInReview = unique
-    .filter((item) => !item.isCorrect && !readingReview[item.vocabularyId])
-    .map((item) => item.vocabularyId);
+  const mistakesToAdd = mistakes
+    .map((item) => item.vocabularyId)
+    .filter((id) => !readingReview[id]);
+
+  const renderRow = (item: FlashcardQuestionResult) => {
+    const inReview = !!readingReview[item.vocabularyId];
+    const level = getWordLevel(
+      flashcardWords[item.vocabularyId],
+      vocabularyWords[item.vocabularyId]?.isKnown ?? false,
+      ["reading"],
+    ) as WordLevel;
+
+    return (
+      <SetWordRow
+        key={item.vocabularyId}
+        word={toWord(item)}
+        action="open"
+        level={level}
+        onPress={() => {}}
+        onOpenWord={onOpenWord}
+        trailing={
+          <Pressable
+            onPress={() => toggleReadingReview(item.vocabularyId)}
+            hitSlop={6}
+            className={`h-11 w-11 items-center justify-center rounded-full ${
+              inReview ? "bg-primary/15" : "active:bg-text/10"
+            }`}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: inReview }}
+            accessibilityLabel={`${item.hanzi}: ${
+              inReview ? "убрать из повторения" : "добавить в повторение"
+            }`}
+          >
+            <ReviewIcon
+              width={22}
+              height={22}
+              color={inReview ? colors.primary : colors.textSecondary}
+            />
+          </Pressable>
+        }
+      />
+    );
+  };
 
   return (
-    <View className="gap-3">
-      {mistakesNotInReview.length > 0 && (
-        <Pressable
-          onPress={() => addToReadingReview(mistakesNotInReview)}
-          className="min-h-12 flex-row items-center justify-center gap-2 rounded-2xl border border-primary px-4 py-3 active:bg-primary/10"
-          accessibilityRole="button"
-        >
-          <ReviewIcon width={20} height={20} color={colors.primary} />
-          <Text className="font-nunitoBold text-body text-primary">
-            Ошибки в повторение · {mistakesNotInReview.length}{" "}
-            {pluralWords(mistakesNotInReview.length)}
-          </Text>
-        </Pressable>
-      )}
-
-      {unique.map((item) => {
-        const inReview = !!readingReview[item.vocabularyId];
-        const level = getWordLevel(
-          flashcardWords[item.vocabularyId],
-          vocabularyWords[item.vocabularyId]?.isKnown ?? false,
-          ["reading"],
-        );
-
-        return (
-          <View
-            key={item.vocabularyId}
-            className="flex-row items-center gap-3 rounded-2xl bg-surface py-3 pl-4 pr-2"
-          >
-            <View className="min-w-0 flex-1 gap-0.5">
-              <View className="flex-row flex-wrap items-baseline gap-x-2">
-                <Hanzi size={24}>{item.hanzi}</Hanzi>
-                <Pinyin size="sm">{item.pinyin}</Pinyin>
-              </View>
-              <Text
-                className="font-nunito text-small text-text"
-                numberOfLines={2}
-              >
-                {t(item.translation)}
-              </Text>
-              <View className="mt-1 flex-row items-center gap-2">
-                <LevelDots level={level} />
-                <Text
-                  className={`font-nunito text-caption ${
-                    item.isCorrect ? "text-textSecondary" : "text-error"
-                  }`}
-                >
-                  {item.isCorrect ? "верно" : "ошибка"}
-                </Text>
-              </View>
-            </View>
-
-            {/* Повторение: добавить или убрать */}
+    <View className="gap-8">
+      {/* Ошибки или похвала */}
+      {mistakes.length > 0 ? (
+        <View className="gap-3">
+          <View className="min-h-10 flex-row items-center justify-between gap-3">
+            <Text className="font-nunitoBold text-title text-text">
+              Ошибки · {mistakes.length}
+            </Text>
+            {/* Ширина фиксирована: смена текста не сдвигает ничего вокруг */}
             <Pressable
-              onPress={() => toggleReadingReview(item.vocabularyId)}
-              hitSlop={6}
-              className={`min-h-10 flex-row items-center gap-1.5 rounded-full px-3 ${
-                inReview
-                  ? "bg-primary/15 active:opacity-70"
-                  : "border border-textSecondary/50 active:bg-text/10"
+              onPress={() => addToReadingReview(mistakesToAdd)}
+              disabled={mistakesToAdd.length === 0}
+              className={`min-h-10 w-44 flex-row items-center justify-center gap-1.5 rounded-full px-3 ${
+                mistakesToAdd.length > 0
+                  ? "border border-primary active:bg-primary/10"
+                  : "border border-transparent bg-primary/15"
               }`}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: inReview }}
-              accessibilityLabel={`${item.hanzi}: повторение`}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: mistakesToAdd.length === 0 }}
             >
-              <ReviewIcon
-                width={16}
-                height={16}
-                color={inReview ? colors.primary : colors.textSecondary}
-              />
-              <Text
-                className={`font-nunitoBold text-small ${
-                  inReview ? "text-primary" : "text-text"
-                }`}
-              >
-                {inReview ? "В повторении" : "Повторять"}
+              <ReviewIcon width={16} height={16} color={colors.primary} />
+              <Text className="font-nunitoBold text-small text-primary">
+                {mistakesToAdd.length > 0
+                  ? "Все в повторение"
+                  : "Все в повторении"}
               </Text>
             </Pressable>
           </View>
-        );
-      })}
+          {mistakes.map(renderRow)}
+        </View>
+      ) : (
+        <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
+          <Text className="font-nunitoBold text-title text-primary">
+            Без ошибок!
+          </Text>
+          <Text className="text-center font-nunito text-body text-text">
+            Все слова узнаны верно.
+          </Text>
+        </View>
+      )}
+
+      {/* Верно */}
+      {correct.length > 0 && (
+        <View className="gap-3">
+          <Text className="font-nunitoBold text-title text-text">
+            Верно · {correct.length}
+          </Text>
+          {correct.map(renderRow)}
+        </View>
+      )}
+
+      <Text className="text-center font-nunito text-small text-textSecondary">
+        Нажми на слово, чтобы добавить его в набор.
+      </Text>
     </View>
   );
 }

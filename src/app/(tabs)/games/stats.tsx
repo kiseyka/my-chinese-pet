@@ -1,34 +1,48 @@
 // app/(tabs)/games/stats.tsx
-import DotSvg from "@/assets/images/svg/dot.svg";
-import LineSvg from "@/assets/images/svg/line.svg";
+//
+// Экран итогов любой тренировки.
+//   - Заголовок и сводка: точность (круг), XP, монеты, время — в стиле новых экранов
+//     (шкала размеров из tailwind.config.js: title / lead / body).
+//   - Слова: у карточек — разделы «Ошибки» и «Верно» с «Повторением» и панелью
+//     слова (наборы); у письма — WritingResultsList; у тонов — ошибки.
+//   - Внизу две кнопки: «Завершить» (к панде) и «Продолжить» — обратно на экран,
+//     откуда запускали тренировку (ступени, наборы, «Написание»).
+
+import { FlashcardResultsList } from "@/components/flashcards/FlashcardResultsList";
+import { WordSheet } from "@/components/flashcards/WordSheet";
 import { Screen } from "@/components/layout/Screen";
 import { BrushProgressCircle } from "@/components/ui/BrushProgressCircle";
 import { WordCard } from "@/components/ui/WordCard";
-import { FlashcardResultsList } from "@/components/flashcards/FlashcardResultsList";
 import { WritingResultsList } from "@/components/writing/results/WritingResultsList";
+import type { Word } from "@/content/flashcards/types";
 import { useGameStore } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
+import { describeStep, findWordStep } from "@/utils/flashcards/steps";
+import type { GameId } from "@/utils/finishTraining";
 import { formatDuration } from "@/utils/formatDuration";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useLocalSearchParams, useRouter, type Href } from "expo-router";
+import { useState, type ReactNode } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
+
+/** Куда ведёт «Продолжить»: экран выбора, с которого запускали тренировку. */
+const RETURN_TO: Record<GameId, Href> = {
+  flashcards: "/games/flashcards/sets",
+  writing: "/games/writing/sets",
+  tones: "/games",
+};
 
 export default function GeneralStatsScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
 
   const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
   const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
 
-  const { gameId } = useLocalSearchParams<{ gameId?: string }>();
+  const { gameId } = useLocalSearchParams<{ gameId?: GameId }>();
 
   // После письма показываем все написанные слова, а не только ошибки
   const writingResults = useGameStore((s) => s.writingResults);
   const isWriting = gameId === "writing" && writingResults.length > 0;
-
-  // После карточек — все слова и «Повторение» (у тонов — по-старому, только ошибки)
   const isFlashcards = gameId === "flashcards";
 
   const score = useGameStore((s) => s.score);
@@ -37,163 +51,128 @@ export default function GeneralStatsScreen() {
   // Награду считает сама тренировка (у тонов свои формулы), здесь только показываем
   const rewards = useGameStore((s) => s.rewards);
 
-  const correctCount = score;
   const totalCount = results.length;
   const wrongAnswers = results.filter((r) => !r.isCorrect);
-  const scorePercentage =
-    totalCount === 0 ? 0 : Math.round((correctCount / totalCount) * 100);
+  const accuracy =
+    totalCount === 0 ? 0 : Math.round((score / totalCount) * 100);
 
-  const [showWrongAnswers] = useState(true);
+  // Панель слова (карточки): перевод, озвучка, повторение, наборы
+  const [opened, setOpened] = useState<Word | null>(null);
+  const openedStep = opened ? findWordStep(opened.vocabularyId) : null;
+
+  const returnTo = gameId ? RETURN_TO[gameId] : "/games";
 
   return (
     <Screen>
-      <View
-        style={{
-          paddingBottom: 16,
-        }}
-        className="flex-1 justify-around gap-10"
+      <WordSheet
+        word={opened}
+        location={
+          openedStep
+            ? describeStep(openedStep.level, openedStep.index)
+            : undefined
+        }
+        onClose={() => setOpened(null)}
+      />
+
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: 24, paddingBottom: 24, gap: 32 }}
       >
-        <Text className="text-text text-xl text-center tracking-widest font-nunitoMedium">
-          {t("games.stats.success")}
-        </Text>
+        {/* Заголовок и сводка */}
+        <View className="gap-5">
+          <Text className="text-center font-nunitoBold text-heading text-text">
+            Тренировка завершена
+          </Text>
 
-        <View className="flex-row items-center gap-5">
-          <BrushProgressCircle
-            percentage={scorePercentage}
-            size={116}
-            strokeWidth={10}
-            progressColor={colors.primary}
-            backgroundColor={colors.progress.inactive}
-            label="Точность"
-          />
-
-          <View className="flex-1">
-            <StatRow
-              label={`XP ${t("games.stats.gained")}`}
-              value={`+${rewards.xp}`}
+          <View className="flex-row items-center gap-5 rounded-2xl bg-surface p-4">
+            <BrushProgressCircle
+              percentage={accuracy}
+              size={108}
+              strokeWidth={10}
+              progressColor={colors.primary}
+              backgroundColor={colors.progress.inactive}
+              label="Точность"
             />
 
-            <StatRow
-              label="Монеты"
-              value={`+${rewards.coins}`}
-              icon={
-                <Image
-                  className="h-5 w-5"
-                  source={require("@/assets/images/paw-coin.png")}
-                  resizeMode="contain"
-                />
-              }
-            />
-
-            <StatRow
-              label={t("games.stats.time")}
-              value={formatDuration(duration)}
-              last
-            />
+            <View className="flex-1">
+              <StatRow label="Опыт" value={`+${rewards.xp} XP`} />
+              <StatRow
+                label="Монеты"
+                value={`+${rewards.coins}`}
+                icon={
+                  <Image
+                    className="h-5 w-5"
+                    source={require("@/assets/images/paw-coin.png")}
+                    resizeMode="contain"
+                  />
+                }
+              />
+              <StatRow label="Время" value={formatDuration(duration)} last />
+            </View>
           </View>
         </View>
 
-        <View className="flex-1 w-full">
-          {isWriting ? (
-            <ScrollView
-              className="w-full"
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 16 }}
-            >
-              <WritingResultsList results={writingResults} />
-            </ScrollView>
-          ) : isFlashcards ? (
-            // Карточки: все слова (сначала ошибки) и «Повторение»
-            <ScrollView
-              className="w-full"
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 16 }}
-            >
-              <FlashcardResultsList results={results} />
-            </ScrollView>
-          ) : wrongAnswers.length > 0 ? (
-            <View className="flex-1 flex-col gap-8">
-              <View className="relative justify-center items-center py-2">
-                <LineSvg
-                  stroke={colors.progress.inactive}
-                  fill={colors.progress.inactive}
-                  className="absolute top-1/2 left-0 z-0"
-                  width="100%"
-                  height={10}
-                />
-                <View className="absolute top-0 z-10 bg-background px-3">
-                  <Text className="text-lg mb-2 text-text">
-                    {t("games.stats.mistakes")}
-                  </Text>
-                  <DotSvg width="100%" height={5} />
-                </View>
-              </View>
-
-              <ScrollView
-                className="w-full"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 16 }}
-              >
-                {showWrongAnswers && (
-                  <View className="flex-col gap-2">
-                    {wrongAnswers.map((item) => {
-                      const wordProgress = vocabularyWords[item.vocabularyId];
-
-                      return (
-                        <WordCard
-                          key={item.vocabularyId}
-                          hanzi={item.hanzi}
-                          pinyin={item.pinyin}
-                          translation={item.translation}
-                          isFavorite={wordProgress?.isFavorite ?? false}
-                          onToggleFavorite={() =>
-                            toggleFavorite(item.vocabularyId)
-                          }
-                        />
-                      );
-                    })}
-                  </View>
-                )}
-              </ScrollView>
-            </View>
-          ) : (
-            <View className="flex-1 items-center justify-center px-8">
-              <Text className="text-2xl text-primary mb-3">
-                🎉 {t("games.stats.perfect")}
-              </Text>
-              <Text className="text-text text-center text-base leading-6">
-                {t("games.stats.perfectMessage")}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View className="w-full px-12 flex-col gap-3">
-          <Pressable
-            onPress={() => router.replace("/pet")}
-            className="bg-primary active:bg-primaryDark rounded-xl"
-          >
-            <Text className="text-background text-lg p-5 text-center font-chineseMedium">
-              {t("games.stats.continue")}
+        {/* Слова */}
+        {isWriting ? (
+          <WritingResultsList results={writingResults} />
+        ) : isFlashcards ? (
+          <FlashcardResultsList results={results} onOpenWord={setOpened} />
+        ) : wrongAnswers.length > 0 ? (
+          <View className="gap-3">
+            <Text className="font-nunitoBold text-title text-text">
+              Ошибки · {wrongAnswers.length}
             </Text>
-          </Pressable>
+            {wrongAnswers.map((item) => (
+              <WordCard
+                key={item.vocabularyId}
+                hanzi={item.hanzi}
+                pinyin={item.pinyin}
+                translation={item.translation}
+                isFavorite={
+                  vocabularyWords[item.vocabularyId]?.isFavorite ?? false
+                }
+                onToggleFavorite={() => toggleFavorite(item.vocabularyId)}
+              />
+            ))}
+          </View>
+        ) : (
+          <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
+            <Text className="font-nunitoBold text-title text-primary">
+              Без ошибок!
+            </Text>
+            <Text className="text-center font-nunito text-body text-text">
+              Все ответы были верны. Отличная работа.
+            </Text>
+          </View>
+        )}
+      </ScrollView>
 
-          {/* {wrongAnswers.length > 0 && (
-            <Pressable
-              onPress={() => router.replace("/games")}
-              className="bg-transparent items-center active:bg-primaryDark/10"
-            >
-              <Text className="text-text px-5 leading-5 mb-2 text-center font-chineseMedium">
-                {t("games.stats.review")}
-              </Text>
-              <RedLineSvg width="100%" height={12} />
-            </Pressable>
-          )} */}
-        </View>
+      {/* Внизу: к панде или обратно к выбору тренировки */}
+      <View className="flex-row gap-3 pb-2 pt-3">
+        <Pressable
+          onPress={() => router.replace("/pet")}
+          className="min-h-14 flex-1 items-center justify-center rounded-2xl border border-primary px-4 active:bg-primary/10"
+          accessibilityRole="button"
+        >
+          <Text className="font-nunitoBold text-body text-primary">
+            Завершить
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.replace(returnTo)}
+          className="min-h-14 flex-1 items-center justify-center rounded-2xl bg-primary px-4 active:opacity-80"
+          accessibilityRole="button"
+        >
+          <Text className="font-nunitoBold text-body text-white">
+            Продолжить
+          </Text>
+        </Pressable>
       </View>
     </Screen>
   );
 }
+
 function StatRow({
   label,
   value,
@@ -202,24 +181,24 @@ function StatRow({
 }: {
   label: string;
   value: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   last?: boolean;
 }) {
   return (
     <View
-      className={`flex-row items-center justify-between py-3 ${
-        last ? "" : "border-b border-primaryDark"
+      className={`flex-row items-center justify-between py-2.5 ${
+        last ? "" : "border-b border-progress-inactive"
       }`}
     >
       <Text
         numberOfLines={1}
-        className="flex-1 pr-2 text-sm font-nunito text-text"
+        className="flex-1 pr-2 font-nunito text-body text-text"
       >
         {label}
       </Text>
 
       <View className="flex-row items-center gap-1">
-        <Text className="text-xl font-nunitoBold text-text">{value}</Text>
+        <Text className="font-nunitoBold text-lead text-text">{value}</Text>
         {icon}
       </View>
     </View>

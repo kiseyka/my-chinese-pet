@@ -19,7 +19,7 @@ import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { Pinyin } from "@/components/ui/Pinyin";
 import type { Word } from "@/content/flashcards/types";
 import { colors } from "@/theme/colors";
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
@@ -41,6 +41,8 @@ interface SetWordRowProps {
   level?: WordLevel;
   /** Тап по строке слова в наборе — открыть панель слова. */
   onOpenWord?: (word: Word) => void;
+  /** Для "open": своя кнопка справа вместо стрелки (например, «Повторение»). */
+  trailing?: ReactNode;
 }
 
 /** Ширина колонки с иероглифами (w-28). */
@@ -66,6 +68,7 @@ export const SetWordRow = memo(function SetWordRow({
   onPress,
   level,
   onOpenWord,
+  trailing,
 }: SetWordRowProps) {
   const { t } = useTranslation();
   const isRemove = action === "remove";
@@ -128,15 +131,39 @@ export const SetWordRow = memo(function SetWordRow({
     );
   }
 
-  // Результат поиска на экране карточек: вся строка открывает панель слова
+  // Результат поиска / итогов: тап по строке открывает панель слова.
+  // Своя кнопка справа (trailing) — рядом, а не внутри строки: иначе при тапе
+  // по строке она тоже «нажималась» бы
   if (action === "open") {
+    const label = `${word.hanzi}, ${word.pinyin}, ${t(word.translation)}`;
+
+    if (trailing) {
+      return (
+        <View
+          className="flex-row items-center rounded-xl bg-surface pr-2"
+          style={{ height: ROW_HEIGHT }}
+        >
+          <Pressable
+            onPress={() => onOpenWord?.(word)}
+            className="h-full flex-1 flex-row items-center gap-3 pl-1 active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityHint={ACTION_LABELS.open}
+          >
+            {content}
+          </Pressable>
+          {trailing}
+        </View>
+      );
+    }
+
     return (
       <Pressable
         onPress={() => onOpenWord?.(word)}
         style={{ height: ROW_HEIGHT }}
         className="flex-row items-center gap-3 rounded-xl bg-surface pl-1 pr-3 active:opacity-70"
         accessibilityRole="button"
-        accessibilityLabel={`${word.hanzi}, ${word.pinyin}, ${t(word.translation)}`}
+        accessibilityLabel={label}
         accessibilityHint={ACTION_LABELS.open}
       >
         {content}
