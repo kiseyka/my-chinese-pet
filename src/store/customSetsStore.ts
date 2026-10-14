@@ -38,6 +38,8 @@ interface CustomSetsActions {
   /** Добавляет слово в набор или убирает, если оно уже там. */
   toggleWord: (setId: string, wordId: string) => void;
   removeWord: (setId: string, wordId: string) => void;
+  /** Заменяет список слов целиком (например, после выбора в панели ступеней). */
+  setWords: (setId: string, wordIds: string[]) => void;
   /** Добавляет несколько слов (уже добавленные пропускаются, порядок сохраняется). */
   addWords: (setId: string, wordIds: string[]) => void;
   reset: () => void;
@@ -114,6 +116,15 @@ export const useCustomSetsStore = create<CustomSetsStore>()(
           sets: updateSet(state.sets, setId, (s) => ({
             ...s,
             wordIds: s.wordIds.filter((id) => id !== wordId),
+          })),
+        }));
+      },
+
+      setWords: (setId, wordIds) => {
+        set((state) => ({
+          sets: updateSet(state.sets, setId, (s) => ({
+            ...s,
+            wordIds: Array.from(new Set(wordIds)),
           })),
         }));
       },

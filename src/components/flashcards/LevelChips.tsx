@@ -2,6 +2,7 @@
 //
 // Выбор раздела HSK: ряд чипсов, листается вбок. На экране всегда один раздел.
 
+import { memo } from "react";
 import { Pressable, ScrollView, Text } from "react-native";
 
 interface LevelChip<K> {
@@ -15,7 +16,7 @@ interface LevelChipsProps<K extends number> {
   onChange: (key: K) => void;
 }
 
-export function LevelChips<K extends number>({
+function LevelChipsInner<K extends number>({
   chips,
   value,
   onChange,
@@ -54,3 +55,6 @@ export function LevelChips<K extends number>({
     </ScrollView>
   );
 }
+
+/** memo: чипсы не перерисовываются, пока не сменился выбранный раздел. */
+export const LevelChips = memo(LevelChipsInner) as typeof LevelChipsInner;

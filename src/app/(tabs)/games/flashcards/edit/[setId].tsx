@@ -64,6 +64,20 @@ export default function EditSetScreen() {
   const words = useMemo(() => (set ? findWords(set.wordIds) : []), [set]);
   const inSet = useMemo(() => new Set(set?.wordIds ?? []), [set]);
 
+  // Один колбэк на весь список (строки в memo не перерисовываются зря)
+  const toggleInSet = useCallback(
+    (wordId: string) => {
+      if (setId) toggleWord(setId, wordId);
+    },
+    [setId, toggleWord],
+  );
+  const removeFromSet = useCallback(
+    (wordId: string) => {
+      if (setId) removeWord(setId, wordId);
+    },
+    [setId, removeWord],
+  );
+
   const isSearching = query.trim().length > 0;
   const results = useMemo(
     () => (isSearching ? searchWords(allWords, query, (key) => t(key)) : []),
@@ -187,7 +201,7 @@ export default function EditSetScreen() {
                 key={word.id}
                 word={word}
                 action={inSet.has(word.id) ? "added" : "add"}
-                onPress={() => toggleWord(set.id, word.id)}
+                onPress={toggleInSet}
               />
             ))
           ) : (
@@ -234,7 +248,7 @@ export default function EditSetScreen() {
                 word={word}
                 action="remove"
                 level={levelOf(word.id)}
-                onPress={() => removeWord(set.id, word.id)}
+                onPress={removeFromSet}
               />
             ))}
           </>

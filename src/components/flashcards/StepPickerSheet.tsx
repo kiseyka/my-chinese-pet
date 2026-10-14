@@ -7,13 +7,17 @@
 //   - «Добавить все» — все слова ступени, которых ещё нет в наборе.
 // Номер ступени, все слова которой уже в наборе, подсвечен.
 // Сначала открыта текущая ступень (первая, где есть неосвоенные слова).
+//
+// Скорость: пока панель открыта, выбор живёт в локальном состоянии панели,
+// а в набор (стор) записывается один раз — при закрытии. Иначе каждый тап
+// сохранял бы набор на диск и перерисовывал список слов на экране под панелью.
 
 import {
   BottomSheet,
   SHEET_HORIZONTAL_INSET,
 } from "@/components/ui/BottomSheet";
 import type { Word } from "@/content/flashcards/types";
-import { useCustomSet, useCustomSetsStore } from "@/store/customSetsStore";
+import { useCustomSetsStore } from "@/store/customSetsStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import {
   describeReadingLevel,
@@ -22,7 +26,7 @@ import {
   type ReadingLevel,
 } from "@/utils/flashcards/steps";
 import { pluralWords } from "@/utils/writing/labels";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { LevelChips } from "./LevelChips";
 import { ReadingGrid } from "./ReadingGrid";
@@ -57,10 +61,74 @@ function findCurrentStep(): { level: ReadingLevel; index: number } {
   return { level: getReadingLevels()[0], index: 0 };
 }
 
+// ── Номера ступеней ──────────────────────────────────────────────────────────
+
+interface StepNumbersProps {
+  count: number;
+  active: number;
+  /** Строка из «0» и «1»: какие ступени уже целиком в наборе (так memo сравнивает дёшево). */
+  completeMask: string;
+  onSelect: (index: number) => void;
+  scrollRef: React.RefObject<ScrollView | null>;
+}
+
+const StepNumbers = memo(function StepNumbers({
+  count,
+  active,
+  completeMask,
+  onSelect,
+  scrollRef,
+}: StepNumbersProps) {
+  return (
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={{ flexGrow: 0 }}
+      contentContainerStyle={{ gap: STEP_CHIP_GAP }}
+    >
+      {Array.from({ length: count }, (_, index) => {
+        const isActive = index === active;
+        const complete = completeMask[index] === "1";
+
+        return (
+          <Pressable
+            key={index}
+            onPress={() => onSelect(index)}
+            className={`h-10 items-center justify-center rounded-xl ${
+              isActive
+                ? "bg-primary"
+                : complete
+                  ? "bg-primary/20 active:opacity-70"
+                  : "bg-surface active:opacity-70"
+            }`}
+            style={{ width: STEP_CHIP_WIDTH }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isActive }}
+            accessibilityLabel={`Ступень ${index + 1}${
+              complete ? ", все слова в наборе" : ""
+            }`}
+          >
+            <Text
+              className={`text-body ${
+                isActive
+                  ? "font-nunitoBold text-white"
+                  : "font-nunito text-text"
+              }`}
+            >
+              {index + 1}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+});
+
+// ── Панель ───────────────────────────────────────────────────────────────────
+
 export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
-  const set = useCustomSet(setId ?? undefined);
-  const toggleWord = useCustomSetsStore((state) => state.toggleWord);
-  const addWords = useCustomSetsStore((state) => state.addWords);
+  const setWords = useCustomSetsStore((state) => state.setWords);
 
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
   const vocabularyWords = useWordProgressStore(
@@ -72,28 +140,53 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
   );
   const [stepIndex, setStepIndex] = useState(() => findCurrentStep().index);
 
+  // Слова набора, пока панель открыта (по порядку добавления)
+  const [ids, setIds] = useState<string[]>([]);
+  const idsRef = useRef(ids);
+  idsRef.current = ids;
+  const changed = useRef(false);
+
   const stepsScroll = useRef<ScrollView>(null);
 
-  // Прокрутить номера ступеней так, чтобы выбранный был виден
-  const scrollToStep = (index: number, animated: boolean) => {
-    stepsScroll.current?.scrollTo({
-      x: Math.max(index * (STEP_CHIP_WIDTH + STEP_CHIP_GAP) - 60, 0),
-      animated,
-    });
-  };
-
-  // При открытии — текущая ступень
   const item = useMemo(() => (setId ? { setId } : null), [setId]);
-  const handleOpen = () => {
+
+  // При открытии — текущая ступень и слова набора из стора
+  const handleOpen = ({ setId: openedId }: { setId: string }) => {
     const current = findCurrentStep();
     setLevel(current.level);
     setStepIndex(current.index);
+
+    const set = useCustomSetsStore
+      .getState()
+      .sets.find((item) => item.id === openedId);
+    setIds(set?.wordIds ?? []);
+    changed.current = false;
   };
+
+  // Записать выбор в набор (один раз)
+  const flush = useCallback(() => {
+    if (!changed.current || !setId) return;
+    changed.current = false;
+    setWords(setId, idsRef.current);
+  }, [setId, setWords]);
+
+  const handleClose = () => {
+    flush();
+    onClose();
+  };
+
+  // На случай ухода с экрана с открытой панелью
+  useEffect(() => flush, [flush]);
 
   // После смены раздела или открытия — показать выбранный номер
   useEffect(() => {
     // Панель появляется не сразу: ждём, пока номера ступеней отрисуются
-    const timer = setTimeout(() => scrollToStep(stepIndex, false), 250);
+    const timer = setTimeout(() => {
+      stepsScroll.current?.scrollTo({
+        x: Math.max(stepIndex * (STEP_CHIP_WIDTH + STEP_CHIP_GAP) - 60, 0),
+        animated: false,
+      });
+    }, 250);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [level, setId]);
@@ -101,7 +194,17 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
   const steps = getReadingSteps(level);
   const words = steps[stepIndex] ?? [];
 
-  const inSet = useMemo(() => new Set(set?.wordIds ?? []), [set]);
+  const inSet = useMemo(() => new Set(ids), [ids]);
+
+  const completeMask = useMemo(
+    () =>
+      steps
+        .map((stepWords) =>
+          stepWords.every((word) => inSet.has(word.vocabularyId)) ? "1" : "0",
+        )
+        .join(""),
+    [steps, inSet],
+  );
 
   const dots = useMemo(
     () =>
@@ -119,6 +222,31 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
     .map((word) => word.vocabularyId)
     .filter((id) => !inSet.has(id));
 
+  const toggle = useCallback((word: Word) => {
+    changed.current = true;
+    setIds((previous) =>
+      previous.includes(word.vocabularyId)
+        ? previous.filter((id) => id !== word.vocabularyId)
+        : [...previous, word.vocabularyId],
+    );
+  }, []);
+
+  const addAll = () => {
+    if (missingIds.length === 0) return;
+    changed.current = true;
+    setIds((previous) => [...previous, ...missingIds]);
+  };
+
+  const isMarked = useCallback(
+    (word: Word) => inSet.has(word.vocabularyId),
+    [inSet],
+  );
+
+  const changeLevel = useCallback((next: ReadingLevel) => {
+    setLevel(next);
+    setStepIndex(0);
+  }, []);
+
   const levelChips = useMemo(
     () =>
       getReadingLevels().map((item) => ({
@@ -129,7 +257,7 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
   );
 
   return (
-    <BottomSheet item={item} onClose={onClose} onOpen={handleOpen}>
+    <BottomSheet item={item} onClose={handleClose} onOpen={handleOpen}>
       {() => (
         <>
           <Text className="font-nunitoBold text-title text-text">
@@ -144,59 +272,20 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
             <LevelChips
               chips={levelChips}
               value={level}
-              onChange={(next) => {
-                setLevel(next);
-                setStepIndex(0);
-              }}
+              onChange={changeLevel}
             />
           </View>
 
           {/* Номер ступени */}
-          <ScrollView
-            ref={stepsScroll}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0 }}
-            contentContainerStyle={{ gap: STEP_CHIP_GAP }}
-            className="mt-3"
-          >
-            {steps.map((stepWords, index) => {
-              const active = index === stepIndex;
-              const complete = stepWords.every((word) =>
-                inSet.has(word.vocabularyId),
-              );
-
-              return (
-                <Pressable
-                  key={index}
-                  onPress={() => setStepIndex(index)}
-                  className={`h-10 items-center justify-center rounded-xl ${
-                    active
-                      ? "bg-primary"
-                      : complete
-                        ? "bg-primary/20 active:opacity-70"
-                        : "bg-surface active:opacity-70"
-                  }`}
-                  style={{ width: STEP_CHIP_WIDTH }}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`Ступень ${index + 1}${
-                    complete ? ", все слова в наборе" : ""
-                  }`}
-                >
-                  <Text
-                    className={`text-body ${
-                      active
-                        ? "font-nunitoBold text-white"
-                        : "font-nunito text-text"
-                    }`}
-                  >
-                    {index + 1}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+          <View className="mt-3">
+            <StepNumbers
+              count={steps.length}
+              active={stepIndex}
+              completeMask={completeMask}
+              onSelect={setStepIndex}
+              scrollRef={stepsScroll}
+            />
+          </View>
 
           {/* Слова ступени */}
           <View className="mt-4 rounded-2xl bg-surface p-3">
@@ -207,19 +296,15 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
               words={words}
               dots={dots}
               horizontalInset={SHEET_HORIZONTAL_INSET + 24}
-              isMarked={(word) => inSet.has(word.vocabularyId)}
+              isMarked={isMarked}
               actionHint="Добавить в набор или убрать"
-              onSelect={(word) => {
-                if (set) toggleWord(set.id, word.vocabularyId);
-              }}
+              onSelect={toggle}
             />
           </View>
 
           {/* Добавить всю ступень */}
           <Pressable
-            onPress={() => {
-              if (set && missingIds.length > 0) addWords(set.id, missingIds);
-            }}
+            onPress={addAll}
             disabled={missingIds.length === 0}
             className={`mt-4 min-h-14 items-center justify-center rounded-2xl px-5 py-4 ${
               missingIds.length > 0
