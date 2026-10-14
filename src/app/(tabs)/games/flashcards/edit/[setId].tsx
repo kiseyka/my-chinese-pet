@@ -11,6 +11,8 @@
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
 import { StepPickerSheet } from "@/components/flashcards/StepPickerSheet";
+import { WordSheet } from "@/components/flashcards/WordSheet";
+import type { Word } from "@/content/flashcards/types";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import TrashIcon from "@/assets/images/icons/trash.svg";
@@ -26,6 +28,7 @@ import {
 } from "@/store/customSetsStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
+import { describeStep, findWordStep } from "@/utils/flashcards/steps";
 import { searchWords } from "@/utils/searchWords";
 import { pluralWords } from "@/utils/writing/labels";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -53,6 +56,9 @@ export default function EditSetScreen() {
   const [isRenaming, setIsRenaming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPicking, setIsPicking] = useState(false);
+  // Слово, открытое в панели (тап по строке в списке набора)
+  const [openedWord, setOpenedWord] = useState<Word | null>(null);
+  const openedStep = openedWord ? findWordStep(openedWord.vocabularyId) : null;
 
   // Экран может оставаться смонтированным: при каждом заходе поиск пустой
   useFocusEffect(
@@ -122,6 +128,16 @@ export default function EditSetScreen() {
           renameSet(set.id, title);
           setIsRenaming(false);
         }}
+      />
+
+      <WordSheet
+        word={openedWord}
+        location={
+          openedStep
+            ? describeStep(openedStep.level, openedStep.index)
+            : undefined
+        }
+        onClose={() => setOpenedWord(null)}
       />
 
       <StepPickerSheet
@@ -212,6 +228,7 @@ export default function EditSetScreen() {
               action="remove"
               level={levelOf(word.id)}
               onPress={removeFromSet}
+              onOpenWord={setOpenedWord}
             />
           )
         }

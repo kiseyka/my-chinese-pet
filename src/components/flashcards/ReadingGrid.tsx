@@ -3,12 +3,15 @@
 // Сетка слов для карточек: иероглиф, пиньинь и точки чтения. Перевод скрыт —
 // тренировка как раз «иероглиф → перевод»; он показывается по тапу (WordSheet).
 // 4 колонки. Ячейка занимает столько колонок, сколько нужно, чтобы влезли
-// иероглифы и пиньинь: 2 иероглифа обычно влезают в одну, 3–4 — в две.
+// иероглифы и пиньинь: 2 иероглифа влезают в одну, 3–4 — в две. Ширина пиньиня
+// считается по ширинам букв шрифта (utils/textWidth); длинный пиньинь сначала
+// чуть уменьшается и только потом расширяет ячейку.
 
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
 import { WritingDots } from "@/components/writing/home/WritingDots";
 import type { Word } from "@/content/flashcards/types";
+import { pinyinWidth } from "@/utils/textWidth";
 import { memo } from "react";
 import { Pressable, View, useWindowDimensions } from "react-native";
 
@@ -29,22 +32,46 @@ interface ReadingGridProps {
   actionHint?: string;
 }
 
-/** Примерная ширина буквы пиньиня (размер sm, 14 pt) — с запасом. */
-const PINYIN_CHAR_WIDTH = 7.5;
-/** Поля внутри ячейки по бокам. */
-const CELL_PADDING = 8;
+/** Размер пиньиня в ячейке (Pinyin size="sm"). */
+const PINYIN_SIZE = 14;
+/** Поля внутри ячейки по бокам (с запасом на рамку и крупный системный шрифт). */
+const CELL_PADDING = 10;
 
-/** Сколько колонок нужно слову. */
-function spanOf(word: Word, unit: number, hanziSize: number): number {
+/** Пиньинь можно чуть уменьшить, чтобы слово влезло в меньше колонок. */
+const PINYIN_MIN_SIZE = 12;
+
+/**
+ * Сколько колонок нужно слову и каким размером писать пиньинь.
+ * Если пиньинь не влезает обычным размером, сначала пробуем его уменьшить
+ * (до PINYIN_MIN_SIZE) — и только потом расширяем ячейку.
+ */
+function layoutOf(
+  word: Word,
+  unit: number,
+  hanziSize: number,
+): { span: number; pinyinSize: number } {
   const chars = Array.from(word.hanzi).length;
+  const spanFor = (width: number) => {
+    // Ширина n колонок вместе с промежутками: n * unit + (n - 1) * GAP
+    const span = Math.ceil((width + CELL_PADDING + GAP) / (unit + GAP));
+    return Math.min(Math.max(span, 1), COLUMNS);
+  };
 
-  const needed =
-    Math.max(chars * hanziSize, word.pinyin.length * PINYIN_CHAR_WIDTH) +
-    CELL_PADDING;
+  const hanziWidth = chars * hanziSize;
+  const normal = spanFor(
+    Math.max(hanziWidth, pinyinWidth(word.pinyin, PINYIN_SIZE)),
+  );
+  const byHanzi = spanFor(hanziWidth);
+  if (normal === byHanzi) return { span: normal, pinyinSize: PINYIN_SIZE };
 
-  // Ширина n колонок вместе с промежутками: n * unit + (n - 1) * GAP
-  const span = Math.ceil((needed + GAP) / (unit + GAP));
-  return Math.min(Math.max(span, 1), COLUMNS);
+  // Пиньинь шире иероглифов: можно ли уложить его в ширину по иероглифам, уменьшив?
+  const room = byHanzi * unit + (byHanzi - 1) * GAP - CELL_PADDING;
+  for (let size = PINYIN_SIZE - 1; size >= PINYIN_MIN_SIZE; size -= 1) {
+    if (pinyinWidth(word.pinyin, size) <= room) {
+      return { span: byHanzi, pinyinSize: size };
+    }
+  }
+  return { span: normal, pinyinSize: PINYIN_SIZE };
 }
 
 export const ReadingGrid = memo(function ReadingGrid({
@@ -65,7 +92,7 @@ export const ReadingGrid = memo(function ReadingGrid({
   return (
     <View className="flex-row flex-wrap" style={{ gap: GAP }}>
       {words.map((word, index) => {
-        const span = spanOf(word, unit, hanziSize);
+        const { span, pinyinSize } = layoutOf(word, unit, hanziSize);
         const marked = isMarked?.(word) ?? false;
 
         return (
@@ -90,7 +117,11 @@ export const ReadingGrid = memo(function ReadingGrid({
             >
               {word.hanzi}
             </Hanzi>
-            <Pinyin size="sm" numberOfLines={1} maxFontSizeMultiplier={1.2}>
+            <Pinyin
+              size={pinyinSize}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1.2}
+            >
               {word.pinyin}
             </Pinyin>
             <View className="mt-1">

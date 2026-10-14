@@ -5,7 +5,9 @@
 //   - "added": слово уже в наборе (в результатах поиска), справа галочка — нажатие убирает;
 //   - "remove": слово в списке набора, справа «✕» — нажатие убирает.
 // В результатах поиска нажимается вся строка (проще попасть пальцем);
-// в списке набора убирает только «✕» — чтобы не удалить слово случайно.
+// в списке набора убирает только «✕» — чтобы не удалить слово случайно,
+// а тап по строке открывает панель слова.
+// Высота у всех строк одна; длинная фраза уменьшается и переносится на 2 строки.
 
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
@@ -33,14 +35,25 @@ interface SetWordRowProps {
   onPress: (wordId: string) => void;
   /** Точки чтения. Без них точек нет. */
   level?: WordLevel;
+  /** Тап по строке слова в наборе — открыть панель слова. */
+  onOpenWord?: (word: Word) => void;
 }
 
-/** Размер иероглифов под ширину колонки (w-24): длинные слова мельче, без авто-подгонки. */
-function hanziSizeFor(hanzi: string): number | "sm" {
+/** Ширина колонки с иероглифами (w-28). */
+const HANZI_COLUMN = 112;
+/** Высота строки: одна для всех слов, чтобы список был ровным. */
+const ROW_HEIGHT = 92;
+
+/**
+ * Размер иероглифов под колонку: короткие слова крупно в одну строку,
+ * длинные фразы мельче и переносятся на вторую строку.
+ */
+function hanziSizeFor(hanzi: string): number {
   const length = Array.from(hanzi).length;
-  if (length <= 3) return "sm";
-  if (length === 4) return 22;
-  return 16;
+  if (length <= 3) return 28;
+  if (length <= 8) return 24; // до 4 в строке, до двух строк
+  if (length <= 10) return 20; // 5 в строке
+  return 17; // ещё длиннее — до двух строк, остальное «…»
 }
 
 export const SetWordRow = memo(function SetWordRow({
@@ -48,20 +61,28 @@ export const SetWordRow = memo(function SetWordRow({
   action,
   onPress,
   level,
+  onOpenWord,
 }: SetWordRowProps) {
   const { t } = useTranslation();
   const isRemove = action === "remove";
 
   const content = (
     <>
-      <View className="w-24 shrink-0 items-center">
-        <Hanzi size={hanziSizeFor(word.hanzi)} numberOfLines={1}>
+      <View
+        className="shrink-0 items-center justify-center"
+        style={{ width: HANZI_COLUMN }}
+      >
+        <Hanzi
+          size={hanziSizeFor(word.hanzi)}
+          numberOfLines={2}
+          className="text-center"
+        >
           {word.hanzi}
         </Hanzi>
         {level !== undefined && <LevelDots level={level} className="mt-1" />}
       </View>
 
-      <View className="min-w-0 flex-1">
+      <View className="min-w-0 flex-1 justify-center">
         <Pinyin size="sm" numberOfLines={1}>
           {word.pinyin}
         </Pinyin>
@@ -72,15 +93,28 @@ export const SetWordRow = memo(function SetWordRow({
     </>
   );
 
-  // Слово в наборе: убирает только «✕», тап по строке ничего не делает
+  // Слово в наборе: тап по строке — панель слова (перевод, озвучка),
+  // убирает только «✕»
   if (isRemove) {
     return (
-      <View className="min-h-16 flex-row items-center gap-3 rounded-xl bg-surface py-2 pl-3 pr-1">
-        {content}
+      <View
+        className="flex-row items-center rounded-xl bg-surface"
+        style={{ height: ROW_HEIGHT }}
+      >
+        <Pressable
+          onPress={() => onOpenWord?.(word)}
+          disabled={!onOpenWord}
+          className="h-full flex-1 flex-row items-center gap-3 pl-1 active:opacity-70"
+          accessibilityRole="button"
+          accessibilityLabel={`${word.hanzi}, ${word.pinyin}`}
+          accessibilityHint="Показать слово"
+        >
+          {content}
+        </Pressable>
         <Pressable
           onPress={() => onPress(word.vocabularyId)}
           hitSlop={8}
-          className="h-11 w-11 shrink-0 items-center justify-center rounded-full active:bg-text/10"
+          className="mr-1 h-11 w-11 shrink-0 items-center justify-center rounded-full active:bg-text/10"
           accessibilityRole="button"
           accessibilityLabel={`${word.hanzi}: ${ACTION_LABELS.remove}`}
         >
@@ -94,7 +128,8 @@ export const SetWordRow = memo(function SetWordRow({
   return (
     <Pressable
       onPress={() => onPress(word.vocabularyId)}
-      className={`min-h-16 flex-row items-center gap-3 rounded-xl border px-3 py-2 active:opacity-70 ${
+      style={{ height: ROW_HEIGHT }}
+      className={`flex-row items-center gap-3 rounded-xl border pl-1 pr-3 active:opacity-70 ${
         action === "added"
           ? "border-primary bg-surface"
           : "border-transparent bg-surface"

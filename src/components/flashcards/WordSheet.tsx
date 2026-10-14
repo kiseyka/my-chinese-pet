@@ -1,6 +1,6 @@
 // src/components/flashcards/WordSheet.tsx
 //
-// Панель слова снизу (по тапу на слово в сетке): иероглиф, пиньинь (тап — озвучка),
+// Панель слова снизу (по тапу на слово в сетке): иероглиф и пиньинь (тап — озвучка),
 // перевод, точки чтения, где лежит слово («HSK 2 · Ступень 7», из поиска —
 // с кнопкой «Показать»), список своих наборов — в какой добавить слово —
 // и «Новый набор»: окно с названием, и слово сразу попадает в новый набор.
@@ -30,6 +30,14 @@ interface WordSheetProps {
   /** Если передан — у строки с местом есть кнопка «Показать». */
   onShowInStep?: () => void;
   onClose: () => void;
+}
+
+/** Крупно для коротких слов; длинные фразы мельче и переносятся. */
+function sheetHanziSize(hanzi: string): number | "lg" {
+  const length = Array.from(hanzi).length;
+  if (length <= 4) return "lg";
+  if (length <= 6) return 44;
+  return 36;
 }
 
 export function WordSheet({
@@ -64,11 +72,23 @@ export function WordSheet({
 
           return (
             <>
-              {/* Шапка: слово, пиньинь (тап — озвучка), перевод, точки */}
+              {/* Шапка: слово и пиньинь (тап — озвучка), перевод, точки */}
               <View className="items-center gap-1">
-                <Hanzi size="lg" numberOfLines={1} adjustsFontSizeToFit>
-                  {shown.hanzi}
-                </Hanzi>
+                {/* Иероглиф и пиньинь: тап — озвучка */}
+                <Pressable
+                  onPress={() => speakForced(shown.hanzi)}
+                  className="active:opacity-60"
+                  accessibilityRole="button"
+                  accessibilityLabel={`${shown.hanzi}: послушать`}
+                >
+                  <Hanzi
+                    size={sheetHanziSize(shown.hanzi)}
+                    numberOfLines={2}
+                    className="text-center"
+                  >
+                    {shown.hanzi}
+                  </Hanzi>
+                </Pressable>
 
                 <Pressable
                   onPress={() => speakForced(shown.hanzi)}
