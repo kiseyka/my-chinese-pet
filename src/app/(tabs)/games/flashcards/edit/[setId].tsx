@@ -4,11 +4,13 @@
 //   - поиск по всей базе слов (иероглиф, пиньинь без тонов, перевод);
 //     в результатах слово добавляется или убирается одним нажатием;
 //   - без поиска — список слов набора с точками чтения, «✕» убирает слово;
-//   - «Переименовать» и «Удалить набор»;
+//   - в шапке: тап по названию или карандаш — переименовать, корзина — удалить;
 //   - внизу «Начать», когда в наборе хватает слов.
 
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
+import PencilIcon from "@/assets/images/icons/pencil.svg";
+import TrashIcon from "@/assets/images/icons/trash.svg";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -20,6 +22,7 @@ import {
   useCustomSetsStore,
 } from "@/store/customSetsStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
+import { colors } from "@/theme/colors";
 import { searchWords } from "@/utils/searchWords";
 import { pluralWords } from "@/utils/writing/labels";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -118,12 +121,12 @@ export default function EditSetScreen() {
         isDestructive
       />
 
-      {/* Шапка: назад и название */}
-      <View className="flex-row items-center gap-3">
+      {/* Шапка: назад, название (тап — переименовать), карандаш и корзина */}
+      <View className="flex-row items-center gap-2">
         <BackButton href="/games/flashcards/sets" />
         <Pressable
           onPress={() => setIsRenaming(true)}
-          className="flex-1 active:opacity-60"
+          className="ml-1 flex-1 active:opacity-60"
           accessibilityRole="button"
           accessibilityHint="Переименовать набор"
         >
@@ -134,23 +137,25 @@ export default function EditSetScreen() {
             {set.title}
           </Text>
         </Pressable>
-      </View>
 
-      {/* Сколько слов и действия с набором */}
-      <View className="mt-1 flex-row items-center justify-between">
-        <Text className="font-nunito text-small text-textSecondary">
-          {total} {pluralWords(total)}
-        </Text>
-        <View className="flex-row gap-4">
-          <Pressable onPress={() => setIsRenaming(true)} hitSlop={8}>
-            <Text className="font-nunito text-small text-primary">
-              Переименовать
-            </Text>
-          </Pressable>
-          <Pressable onPress={() => setIsDeleting(true)} hitSlop={8}>
-            <Text className="font-nunito text-small text-error">Удалить</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={() => setIsRenaming(true)}
+          hitSlop={6}
+          className="h-10 w-10 items-center justify-center rounded-full active:bg-text/10"
+          accessibilityRole="button"
+          accessibilityLabel="Переименовать набор"
+        >
+          <PencilIcon width={22} height={22} color={colors.text} />
+        </Pressable>
+        <Pressable
+          onPress={() => setIsDeleting(true)}
+          hitSlop={6}
+          className="h-10 w-10 items-center justify-center rounded-full active:bg-error/10"
+          accessibilityRole="button"
+          accessibilityLabel="Удалить набор"
+        >
+          <TrashIcon width={22} height={22} color={colors.error} />
+        </Pressable>
       </View>
 
       <SearchField
@@ -186,15 +191,27 @@ export default function EditSetScreen() {
             В наборе пока нет слов. Найди слово через поиск и нажми «+».
           </Text>
         ) : (
-          words.map((word) => (
-            <SetWordRow
-              key={word.id}
-              word={word}
-              action="remove"
-              level={levelOf(word.id)}
-              onPress={() => removeWord(set.id, word.id)}
-            />
-          ))
+          <>
+            {/* Подпись над списком: «Слова в наборе · 12» */}
+            <View className="flex-row items-baseline justify-between">
+              <Text className="font-nunitoBold text-body text-text">
+                Слова в наборе
+              </Text>
+              <Text className="font-nunito text-body text-textSecondary">
+                {total}
+              </Text>
+            </View>
+
+            {words.map((word) => (
+              <SetWordRow
+                key={word.id}
+                word={word}
+                action="remove"
+                level={levelOf(word.id)}
+                onPress={() => removeWord(set.id, word.id)}
+              />
+            ))}
+          </>
         )}
       </ScrollView>
 

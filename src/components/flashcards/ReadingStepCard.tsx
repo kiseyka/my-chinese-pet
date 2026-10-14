@@ -61,29 +61,34 @@ export const ReadingStepCard = memo(function ReadingStepCard({
 
   return (
     <View className="rounded-2xl bg-surface">
-      {/* Шапка: стрелка и название (тап разворачивает) и кнопка «Тренировать» справа */}
-      <Pressable
-        onPress={() => onToggle(index)}
-        className="gap-3 px-4 py-3 active:opacity-70"
-        accessibilityRole="button"
-        accessibilityState={{ expanded }}
-        accessibilityLabel={`${title}: освоено ${learned} из ${total}`}
-      >
+      {/* Шапка. Разворачивает тап по стрелке, названию или шкале; кнопка
+          «Тренировать» — отдельно, рядом, а не внутри: иначе при тапе
+          по шапке она тоже «нажимается» (затемняется) */}
+      <View className="gap-3 px-4 py-3">
         <View className="min-h-10 flex-row items-center gap-2">
-          {/* Стрелка: вправо — свёрнута, вниз — развёрнута */}
-          <View
-            style={{ transform: [{ rotate: expanded ? "90deg" : "0deg" }] }}
+          <Pressable
+            onPress={() => onToggle(index)}
+            hitSlop={{ top: 12, bottom: 12, left: 16 }}
+            className="min-h-10 flex-1 flex-row items-center gap-2 active:opacity-60"
+            accessibilityRole="button"
+            accessibilityState={{ expanded }}
+            accessibilityLabel={`${title}: освоено ${learned} из ${total}`}
           >
-            <ChevronIcon
-              width={24}
-              height={24}
-              color={colors.primary}
-              strokeWidth={2.5}
-            />
-          </View>
-          <Text className="flex-1 font-nunitoBold text-body text-text">
-            {title}
-          </Text>
+            {/* Стрелка: вправо — свёрнута, вниз — развёрнута */}
+            <View
+              style={{ transform: [{ rotate: expanded ? "90deg" : "0deg" }] }}
+            >
+              <ChevronIcon
+                width={24}
+                height={24}
+                color={colors.primary}
+                strokeWidth={2.5}
+              />
+            </View>
+            <Text className="flex-1 font-nunitoBold text-body text-text">
+              {title}
+            </Text>
+          </Pressable>
 
           <Pressable
             onPress={() => onStart(index)}
@@ -98,14 +103,20 @@ export const ReadingStepCard = memo(function ReadingStepCard({
           </Pressable>
         </View>
 
-        {/* Тонкая шкала: освоено / всего */}
-        <View className="h-1.5 overflow-hidden rounded-full bg-text/10">
-          <View
-            className="h-full rounded-full bg-primary"
-            style={{ width: `${total > 0 ? (learned / total) * 100 : 0}%` }}
-          />
-        </View>
-      </Pressable>
+        {/* Тонкая шкала: освоено / всего. Тоже разворачивает */}
+        <Pressable
+          onPress={() => onToggle(index)}
+          hitSlop={{ top: 8, bottom: 12 }}
+          accessible={false}
+        >
+          <View className="h-1.5 overflow-hidden rounded-full bg-text/10">
+            <View
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${total > 0 ? (learned / total) * 100 : 0}%` }}
+            />
+          </View>
+        </Pressable>
+      </View>
 
       {expanded && (
         <View className="px-4 pb-4">

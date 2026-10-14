@@ -1,21 +1,21 @@
 // src/components/flashcards/SetPreviewModal.tsx
 //
-// Превью набора перед тренировкой: название, сколько слов освоено, список слов
-// с точками чтения и кнопки «Изменить» и «Начать».
+// Превью набора перед тренировкой — панель снизу (как панель слова):
+// название, сколько слов освоено, кнопки «Изменить» и «Начать» и список слов
+// с точками чтения. Кнопки сверху, над списком, чтобы до них не нужно было листать.
 // Если слов меньше, чем нужно для карточек, вместо «Начать» — подсказка.
+//
+// Панель, анимации и свайп вниз — в BottomSheet.
 
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { WordCard } from "@/components/ui/WordCard";
 import type { Word } from "@/content/flashcards/types";
 import { MIN_SET_WORDS } from "@/store/customSetsStore";
-import {
-  getMasteryBucket,
-  getWordLevel,
-  useWordProgressStore,
-} from "@/store/wordProgressStore";
+import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { pluralWords } from "@/utils/writing/labels";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useMemo } from "react";
+import { Pressable, Text, View } from "react-native";
 
 interface SetPreviewModalProps {
   visible: boolean;
@@ -34,83 +34,93 @@ export function SetPreviewModal({
   onEdit,
   onClose,
 }: SetPreviewModalProps) {
-  const insets = useSafeAreaInsets();
-
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
   const vocabularyWords = useWordProgressStore(
     (state) => state.vocabularyWords,
   );
   const toggleFavorite = useWordProgressStore((state) => state.toggleFavorite);
 
-  const wordEntries = words.map((word) => {
-    const progress = flashcardWords[word.vocabularyId];
-    const vocabWordProgress = vocabularyWords[word.vocabularyId];
-    const isKnown = vocabWordProgress?.isKnown ?? false;
-
-    return {
-      word,
-      isFavorite: vocabWordProgress?.isFavorite ?? false,
-      level: getWordLevel(progress, isKnown, ["reading"]),
-      isMastered:
-        getMasteryBucket(progress, isKnown, ["reading"]) === "learned",
-    };
-  });
-
-  const total = words.length;
-  const masteredCount = wordEntries.filter((w) => w.isMastered).length;
-  const progress = total > 0 ? (masteredCount / total) * 100 : 0;
-
-  const missing = Math.max(MIN_SET_WORDS - total, 0);
-  const canStart = missing === 0;
+  // Пока панель уезжает, BottomSheet рисует последний item — название и слова не пропадают
+  const item = useMemo(
+    () => (visible ? { title, words } : null),
+    [visible, title, words],
+  );
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
-      <View className="flex-1 justify-end bg-black/40">
-        {/* Тап по затемнению закрывает окно */}
-        <Pressable
-          className="flex-1"
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="Закрыть"
-        />
+    <BottomSheet item={item} onClose={onClose}>
+      {({ title: shownTitle, words: shownWords }) => {
+        const entries = shownWords.map((word) => {
+          const vocab = vocabularyWords[word.vocabularyId];
+          return {
+            word,
+            isFavorite: vocab?.isFavorite ?? false,
+            level: getWordLevel(
+              flashcardWords[word.vocabularyId],
+              vocab?.isKnown ?? false,
+              ["reading"],
+            ),
+          };
+        });
 
-        <View
-          className="rounded-t-3xl bg-background p-6"
-          style={{ maxHeight: "85%", paddingBottom: insets.bottom + 16 }}
-        >
-          {/* Заголовок + закрыть */}
-          <View className="mb-3 flex-row items-start justify-between">
-            <Text className="flex-1 pr-2 font-nunitoBold text-title text-text">
-              {title}
+        const total = shownWords.length;
+        const mastered = entries.filter((entry) => entry.level === 3).length;
+        const missing = Math.max(MIN_SET_WORDS - total, 0);
+        const canStart = missing === 0;
+
+        return (
+          <>
+            <Text className="font-nunitoBold text-title text-text">
+              {shownTitle}
             </Text>
-            <Pressable onPress={onClose} hitSlop={12} className="p-1">
-              <Text className="font-nunito text-lead text-text">✕</Text>
-            </Pressable>
-          </View>
 
-          {total > 0 && (
-            <>
-              <ProgressBar progress={progress} />
-              <Text className="mb-4 mt-1 font-nunito text-caption text-textSecondary">
-                Освоено {masteredCount} из {total}
-              </Text>
-            </>
-          )}
+            {total > 0 && (
+              <View className="mt-3">
+                <ProgressBar progress={(mastered / total) * 100} />
+                <Text className="mt-1 font-nunito text-caption text-textSecondary">
+                  Освоено {mastered} из {total}
+                </Text>
+              </View>
+            )}
 
-          {/* Список слов */}
-          <ScrollView showsVerticalScrollIndicator={false} className="mb-4">
-            {total === 0 ? (
-              <Text className="font-nunito text-body text-text">
-                В наборе пока нет слов. Нажми «Изменить», чтобы добавить их.
+            {/* Кнопки — над списком */}
+            <View className="mt-4 flex-row gap-3">
+              <Pressable
+                onPress={onEdit}
+                className="min-h-14 flex-1 items-center justify-center rounded-2xl bg-surface px-5 py-4 active:opacity-70"
+                accessibilityRole="button"
+              >
+                <Text className="font-nunitoBold text-body text-text">
+                  Изменить
+                </Text>
+              </Pressable>
+
+              {canStart && (
+                <Pressable
+                  onPress={onStart}
+                  className="min-h-14 flex-1 items-center justify-center rounded-2xl bg-primary px-5 py-4 active:opacity-80"
+                  accessibilityRole="button"
+                >
+                  <Text className="font-nunitoBold text-body text-white">
+                    Начать
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
+            {!canStart && total > 0 && (
+              <Text className="mt-2 text-center font-nunito text-small text-textSecondary">
+                Для тренировки нужно ещё {missing} {pluralWords(missing)}
               </Text>
-            ) : (
-              <View className="gap-2">
-                {wordEntries.map(({ word, isFavorite, level }) => (
+            )}
+
+            {/* Список слов */}
+            <View className="mt-5 gap-2">
+              {total === 0 ? (
+                <Text className="font-nunito text-body text-text">
+                  В наборе пока нет слов. Нажми «Изменить», чтобы добавить их.
+                </Text>
+              ) : (
+                entries.map(({ word, isFavorite, level }) => (
                   <WordCard
                     key={word.id}
                     hanzi={word.hanzi}
@@ -120,44 +130,12 @@ export function SetPreviewModal({
                     level={level}
                     onToggleFavorite={() => toggleFavorite(word.vocabularyId)}
                   />
-                ))}
-              </View>
-            )}
-          </ScrollView>
-
-          {!canStart && total > 0 && (
-            <Text className="mb-3 text-center font-nunito text-small text-textSecondary">
-              Для тренировки нужно ещё {missing} {pluralWords(missing)}
-            </Text>
-          )}
-
-          <View className="flex-row gap-3">
-            <Pressable
-              onPress={onEdit}
-              className={`min-h-14 items-center justify-center rounded-2xl bg-surface px-5 py-4 active:opacity-70 ${
-                canStart ? "" : "flex-1"
-              }`}
-              accessibilityRole="button"
-            >
-              <Text className="font-nunitoBold text-body text-text">
-                Изменить
-              </Text>
-            </Pressable>
-
-            {canStart && (
-              <Pressable
-                onPress={onStart}
-                className="min-h-14 flex-1 items-center justify-center rounded-2xl bg-primary px-5 py-4 active:opacity-80"
-                accessibilityRole="button"
-              >
-                <Text className="font-nunitoBold text-body text-white">
-                  Начать
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-      </View>
-    </Modal>
+                ))
+              )}
+            </View>
+          </>
+        );
+      }}
+    </BottomSheet>
   );
 }
