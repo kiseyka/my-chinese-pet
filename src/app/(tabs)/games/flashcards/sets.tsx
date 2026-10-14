@@ -1,7 +1,7 @@
 // app/(tabs)/games/flashcards/sets.tsx
 //
 // Главный экран карточек. Две вкладки одного экрана:
-//   - «Ступени» — слова по разделам HSK, по 10 в ступени (StepsTab);
+//   - «Ступени» — поиск, разделы HSK чипсами и ступени по 10 слов (StepsTab);
 //   - «Мои наборы» — наборы, которые пользователь собирает сам.
 // Нажатие на набор открывает превью: список слов, «Изменить» и «Начать».
 
@@ -21,9 +21,9 @@ import {
   useCustomSetsStore,
 } from "@/store/customSetsStore";
 import { colors } from "@/theme/colors";
-import { stepTrainingId } from "@/utils/flashcards/steps";
+import { stepTrainingId, type ReadingLevel } from "@/utils/flashcards/steps";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 type FlashcardsTab = "steps" | "sets";
@@ -47,6 +47,15 @@ export default function FlashcardsHomeScreen() {
   const previewWords = useMemo(
     () => (previewSet ? findWords(previewSet.wordIds) : []),
     [previewSet],
+  );
+
+  const startStep = useCallback(
+    (level: ReadingLevel, index: number) =>
+      router.push({
+        pathname: "/games/flashcards/[setId]",
+        params: { setId: stepTrainingId(level, index) },
+      }),
+    [router],
   );
 
   const openEditor = (setId: string) => {
@@ -74,7 +83,12 @@ export default function FlashcardsHomeScreen() {
         </Pressable>
       </View>
 
-      <SegmentedTabs tabs={TABS} value={tab} onChange={setTab} className="mt-4" />
+      <SegmentedTabs
+        tabs={TABS}
+        value={tab}
+        onChange={setTab}
+        className="mt-4"
+      />
 
       <SetPreviewModal
         visible={!!previewSet}
@@ -109,55 +123,46 @@ export default function FlashcardsHomeScreen() {
         }}
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: 16, gap: 12 }}
-      >
-        {tab === "steps" ? (
-          <StepsTab
-            onStartStep={(level, index) =>
-              router.push({
-                pathname: "/games/flashcards/[setId]",
-                params: { setId: stepTrainingId(level, index) },
-              })
-            }
-          />
-        ) : (
-          <>
-            {sets.length === 0 && (
-              <View className="gap-2 rounded-2xl bg-surface p-5">
-                <Text className="font-nunitoBold text-lead text-text">
-                  Здесь будут твои наборы
-                </Text>
-                <Text className="font-nunito text-body text-text">
-                  Собери слова, которые хочешь потренировать: из урока, сериала
-                  или просто те, что не запоминаются. Слова можно добавлять и
-                  убирать в любой момент.
-                </Text>
-              </View>
-            )}
-
-            {sets.map((set) => (
-              <CustomSetCard
-                key={set.id}
-                title={set.title}
-                words={findWords(set.wordIds)}
-                onPress={() => setPreviewId(set.id)}
-              />
-            ))}
-
-            <Pressable
-              onPress={() => setIsCreating(true)}
-              className="min-h-14 items-center justify-center rounded-2xl border border-dashed border-primary px-5 py-4 active:opacity-70"
-              accessibilityRole="button"
-            >
-              <Text className="font-nunitoBold text-body text-primary">
-                + Создать набор
+      {tab === "steps" ? (
+        <StepsTab onStartStep={startStep} />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 16, gap: 12 }}
+        >
+          {sets.length === 0 && (
+            <View className="gap-2 rounded-2xl bg-surface p-5">
+              <Text className="font-nunitoBold text-lead text-text">
+                Здесь будут твои наборы
               </Text>
-            </Pressable>
-          </>
-        )}
-      </ScrollView>
+              <Text className="font-nunito text-body text-text">
+                Собери слова, которые хочешь потренировать: из урока, сериала
+                или просто те, что не запоминаются. Слова можно добавлять и
+                убирать в любой момент.
+              </Text>
+            </View>
+          )}
+
+          {sets.map((set) => (
+            <CustomSetCard
+              key={set.id}
+              title={set.title}
+              words={findWords(set.wordIds)}
+              onPress={() => setPreviewId(set.id)}
+            />
+          ))}
+
+          <Pressable
+            onPress={() => setIsCreating(true)}
+            className="min-h-14 items-center justify-center rounded-2xl border border-dashed border-primary px-5 py-4 active:opacity-70"
+            accessibilityRole="button"
+          >
+            <Text className="font-nunitoBold text-body text-primary">
+              + Создать набор
+            </Text>
+          </Pressable>
+        </ScrollView>
+      )}
     </Screen>
   );
 }

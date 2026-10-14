@@ -11,11 +11,7 @@ import type { Word } from "@/content/flashcards/types";
 import { getWordFrequency } from "@/content/words/hsk";
 import { allWords } from "@/content/words/vocabulary";
 import { getWordLevel } from "@/store/wordProgressStore";
-import {
-  chunkSteps,
-  orderLevelWords,
-  STEP_SIZE,
-} from "@/utils/writing/steps";
+import { chunkSteps, orderLevelWords, STEP_SIZE } from "@/utils/writing/steps";
 import {
   getWordHskLevel,
   NO_HSK_LEVEL,

@@ -51,7 +51,8 @@ export function SetPreviewModal({
       word,
       isFavorite: vocabWordProgress?.isFavorite ?? false,
       level: getWordLevel(progress, isKnown, ["reading"]),
-      isMastered: getMasteryBucket(progress, isKnown, ["reading"]) === "learned",
+      isMastered:
+        getMasteryBucket(progress, isKnown, ["reading"]) === "learned",
     };
   });
 
