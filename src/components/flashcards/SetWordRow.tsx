@@ -3,12 +3,15 @@
 // Строка слова на экране редактирования набора.
 //   - "add": слова нет в наборе, справа «+» — нажатие добавляет;
 //   - "added": слово уже в наборе (в результатах поиска), справа галочка — нажатие убирает;
-//   - "remove": слово в списке набора, справа «✕» — нажатие убирает.
+//   - "remove": слово в списке набора, справа «✕» — нажатие убирает;
+//   - "open": результат поиска на экране карточек, справа стрелка — нажатие открывает
+//     панель слова (onOpenWord).
 // В результатах поиска нажимается вся строка (проще попасть пальцем);
 // в списке набора убирает только «✕» — чтобы не удалить слово случайно,
 // а тап по строке открывает панель слова.
 // Высота у всех строк одна; длинная фраза уменьшается и переносится на 2 строки.
 
+import ArrowRight from "@/assets/images/icons/chevron-right.svg";
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
@@ -20,12 +23,13 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
-export type SetWordAction = "add" | "added" | "remove";
+export type SetWordAction = "add" | "added" | "remove" | "open";
 
 const ACTION_LABELS: Record<SetWordAction, string> = {
   add: "Добавить в набор",
   added: "Убрать из набора",
   remove: "Убрать из набора",
+  open: "Показать слово",
 };
 
 interface SetWordRowProps {
@@ -124,7 +128,24 @@ export const SetWordRow = memo(function SetWordRow({
     );
   }
 
-  // Результат поиска: вся строка добавляет или убирает
+  // Результат поиска на экране карточек: вся строка открывает панель слова
+  if (action === "open") {
+    return (
+      <Pressable
+        onPress={() => onOpenWord?.(word)}
+        style={{ height: ROW_HEIGHT }}
+        className="flex-row items-center gap-3 rounded-xl bg-surface pl-1 pr-3 active:opacity-70"
+        accessibilityRole="button"
+        accessibilityLabel={`${word.hanzi}, ${word.pinyin}, ${t(word.translation)}`}
+        accessibilityHint={ACTION_LABELS.open}
+      >
+        {content}
+        <ArrowRight width={20} height={20} color={colors.textSecondary} />
+      </Pressable>
+    );
+  }
+
+  // Результат поиска в редакторе набора: вся строка добавляет или убирает
   return (
     <Pressable
       onPress={() => onPress(word.vocabularyId)}

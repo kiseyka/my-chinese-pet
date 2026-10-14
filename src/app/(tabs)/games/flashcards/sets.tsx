@@ -9,7 +9,8 @@
 import BookIcon from "@/assets/images/icons/vocabulary.svg";
 import { CustomSetCard } from "@/components/flashcards/CustomSetCard";
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
-import { ReadingGrid } from "@/components/flashcards/ReadingGrid";
+import { SetWordRow } from "@/components/flashcards/SetWordRow";
+import type { WordLevel } from "@/components/ui/LevelDots";
 import {
   StepsTab,
   type StepJumpRequest,
@@ -36,12 +37,12 @@ import { searchWords } from "@/utils/searchWords";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
 
 type FlashcardsTab = "steps" | "sets";
 
-/** Отступы Screen по бокам: от них считается ширина ячеек сетки. */
-const SCREEN_INSET = 32;
+/** Строке результата поиска действие «добавить/убрать» не нужно. */
+const noop = () => {};
 
 const TABS = [
   { key: "steps" as const, label: "Ступени" },
@@ -183,26 +184,31 @@ export default function FlashcardsHomeScreen() {
         onClose={() => setSelected(null)}
       />
 
-      {/* Результаты поиска — по всей базе, поверх обеих вкладок */}
+      {/* Результаты поиска — по всей базе, поверх обеих вкладок:
+          иероглиф, пиньинь и перевод, чтобы было видно, что нашлось */}
       {isSearching && (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
+        <FlatList
+          data={results}
+          keyExtractor={(word) => word.id}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingVertical: 16 }}
-        >
-          {results.length > 0 ? (
-            <ReadingGrid
-              words={results}
-              dots={resultDots}
-              onSelect={selectFromSearch}
-              horizontalInset={SCREEN_INSET}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 16, gap: 8 }}
+          initialNumToRender={10}
+          renderItem={({ item, index }) => (
+            <SetWordRow
+              word={item}
+              action="open"
+              level={resultDots[index] as WordLevel}
+              onPress={noop}
+              onOpenWord={selectFromSearch}
             />
-          ) : (
+          )}
+          ListEmptyComponent={
             <Text className="font-nunito text-body text-text">
               Ничего не нашлось. Пиньинь можно писать без тонов: «nihao».
             </Text>
-          )}
-        </ScrollView>
+          }
+        />
       )}
 
       <SetTitleModal
