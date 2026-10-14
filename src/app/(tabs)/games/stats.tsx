@@ -3,8 +3,9 @@
 // Экран итогов любой тренировки.
 //   - Заголовок и сводка: точность (круг), XP, монеты, время — в стиле новых экранов
 //     (шкала размеров из tailwind.config.js: title / lead / body).
-//   - Слова: у карточек — разделы «Ошибки» и «Верно» с «Повторением» и панелью
-//     слова (наборы); у письма — WritingResultsList; у тонов — ошибки.
+//   - Слова: у карточек — «Ошибки» и «Верно», у письма — «С подсказками» и
+//     «Без подсказок» (с твоим написанием); у обоих — «Повторение» своего навыка
+//     и панель слова (наборы). У тонов — ошибки.
 //   - Внизу две кнопки: «Завершить» (к панде) и «Продолжить» — обратно на экран,
 //     откуда запускали тренировку (ступени, наборы, «Написание»).
 
@@ -66,8 +67,10 @@ export default function GeneralStatsScreen() {
     <Screen>
       <WordSheet
         word={opened}
+        skill={isWriting ? "writing" : "reading"}
         location={
-          openedStep
+          // Ступени письма и карточек не совпадают — место показываем только для карточек
+          openedStep && !isWriting
             ? describeStep(openedStep.level, openedStep.index)
             : undefined
         }
@@ -115,7 +118,7 @@ export default function GeneralStatsScreen() {
 
         {/* Слова */}
         {isWriting ? (
-          <WritingResultsList results={writingResults} />
+          <WritingResultsList results={writingResults} onOpenWord={setOpened} />
         ) : isFlashcards ? (
           <FlashcardResultsList results={results} onOpenWord={setOpened} />
         ) : wrongAnswers.length > 0 ? (
