@@ -3,12 +3,15 @@
 // Строка слова на экране редактирования набора.
 //   - "add": слова нет в наборе, справа «+» — нажатие добавляет;
 //   - "added": слово уже в наборе (в результатах поиска), справа галочка — нажатие убирает;
-//   - "remove": слово в списке набора, справа «✕» — нажатие убирает.
+//   - "remove": слово в списке набора, справа «✕» — нажатие убирает;
+//   - "open": результат поиска на экране карточек, справа стрелка — нажатие открывает
+//     панель слова (onOpenWord).
 // В результатах поиска нажимается вся строка (проще попасть пальцем);
 // в списке набора убирает только «✕» — чтобы не удалить слово случайно,
 // а тап по строке открывает панель слова.
 // Высота у всех строк одна; длинная фраза уменьшается и переносится на 2 строки.
 
+import ArrowRight from "@/assets/images/icons/chevron-right.svg";
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
@@ -16,16 +19,17 @@ import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { Pinyin } from "@/components/ui/Pinyin";
 import type { Word } from "@/content/flashcards/types";
 import { colors } from "@/theme/colors";
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
-export type SetWordAction = "add" | "added" | "remove";
+export type SetWordAction = "add" | "added" | "remove" | "open";
 
 const ACTION_LABELS: Record<SetWordAction, string> = {
   add: "Добавить в набор",
   added: "Убрать из набора",
   remove: "Убрать из набора",
+  open: "Показать слово",
 };
 
 interface SetWordRowProps {
@@ -37,6 +41,8 @@ interface SetWordRowProps {
   level?: WordLevel;
   /** Тап по строке слова в наборе — открыть панель слова. */
   onOpenWord?: (word: Word) => void;
+  /** Для "open": своя кнопка справа вместо стрелки (например, «Повторение»). */
+  trailing?: ReactNode;
 }
 
 /** Ширина колонки с иероглифами (w-28). */
@@ -62,6 +68,7 @@ export const SetWordRow = memo(function SetWordRow({
   onPress,
   level,
   onOpenWord,
+  trailing,
 }: SetWordRowProps) {
   const { t } = useTranslation();
   const isRemove = action === "remove";
@@ -124,7 +131,48 @@ export const SetWordRow = memo(function SetWordRow({
     );
   }
 
-  // Результат поиска: вся строка добавляет или убирает
+  // Результат поиска / итогов: тап по строке открывает панель слова.
+  // Своя кнопка справа (trailing) — рядом, а не внутри строки: иначе при тапе
+  // по строке она тоже «нажималась» бы
+  if (action === "open") {
+    const label = `${word.hanzi}, ${word.pinyin}, ${t(word.translation)}`;
+
+    if (trailing) {
+      return (
+        <View
+          className="flex-row items-center rounded-xl bg-surface pr-2"
+          style={{ height: ROW_HEIGHT }}
+        >
+          <Pressable
+            onPress={() => onOpenWord?.(word)}
+            className="h-full flex-1 flex-row items-center gap-3 pl-1 active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityHint={ACTION_LABELS.open}
+          >
+            {content}
+          </Pressable>
+          {trailing}
+        </View>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={() => onOpenWord?.(word)}
+        style={{ height: ROW_HEIGHT }}
+        className="flex-row items-center gap-3 rounded-xl bg-surface pl-1 pr-3 active:opacity-70"
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={ACTION_LABELS.open}
+      >
+        {content}
+        <ArrowRight width={20} height={20} color={colors.textSecondary} />
+      </Pressable>
+    );
+  }
+
+  // Результат поиска в редакторе набора: вся строка добавляет или убирает
   return (
     <Pressable
       onPress={() => onPress(word.vocabularyId)}
