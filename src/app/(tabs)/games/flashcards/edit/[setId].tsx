@@ -3,12 +3,15 @@
 // Редактирование своего набора:
 //   - поиск по всей базе слов (иероглиф, пиньинь без тонов, перевод);
 //     в результатах слово добавляется или убирается одним нажатием;
-//   - без поиска — список слов набора с точками чтения, «✕» убирает слово;
+//   - без поиска — «Добавить из ступеней HSK» (StepPickerSheet) и список слов набора
+//     с точками чтения, «✕» убирает слово;
 //   - в шапке: тап по названию или карандаш — переименовать, корзина — удалить;
 //   - внизу «Начать», когда в наборе хватает слов.
 
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
+import { StepPickerSheet } from "@/components/flashcards/StepPickerSheet";
+import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import TrashIcon from "@/assets/images/icons/trash.svg";
 import { Screen } from "@/components/layout/Screen";
@@ -49,6 +52,7 @@ export default function EditSetScreen() {
   const [query, setQuery] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPicking, setIsPicking] = useState(false);
 
   // Экран может оставаться смонтированным: при каждом заходе поиск пустой
   useFocusEffect(
@@ -104,6 +108,11 @@ export default function EditSetScreen() {
           renameSet(set.id, title);
           setIsRenaming(false);
         }}
+      />
+
+      <StepPickerSheet
+        setId={isPicking ? set.id : null}
+        onClose={() => setIsPicking(false)}
       />
 
       <ConfirmModal
@@ -186,21 +195,38 @@ export default function EditSetScreen() {
               Ничего не нашлось. Пиньинь можно писать без тонов: «nihao».
             </Text>
           )
-        ) : total === 0 ? (
-          <Text className="font-nunito text-body text-text">
-            В наборе пока нет слов. Найди слово через поиск и нажми «+».
-          </Text>
         ) : (
           <>
+            {/* Добавить слова из ступеней HSK */}
+            <Pressable
+              onPress={() => setIsPicking(true)}
+              className="min-h-12 flex-row items-center justify-between gap-3 rounded-2xl border border-dashed border-primary px-4 py-3 active:opacity-70"
+              accessibilityRole="button"
+            >
+              <Text className="flex-1 font-nunitoBold text-body text-primary">
+                Добавить из ступеней HSK
+              </Text>
+              <PlusIcon width={22} height={22} color={colors.primary} />
+            </Pressable>
+
+            {total === 0 && (
+              <Text className="mt-2 font-nunito text-body text-text">
+                В наборе пока нет слов. Найди слово через поиск или выбери из
+                ступеней.
+              </Text>
+            )}
+
             {/* Подпись над списком: «Слова в наборе · 12» */}
-            <View className="flex-row items-baseline justify-between">
-              <Text className="font-nunitoBold text-body text-text">
-                Слова в наборе
-              </Text>
-              <Text className="font-nunito text-body text-textSecondary">
-                {total}
-              </Text>
-            </View>
+            {total > 0 && (
+              <View className="mt-2 flex-row items-baseline justify-between">
+                <Text className="font-nunitoBold text-body text-text">
+                  Слова в наборе
+                </Text>
+                <Text className="font-nunito text-body text-textSecondary">
+                  {total}
+                </Text>
+              </View>
+            )}
 
             {words.map((word) => (
               <SetWordRow
