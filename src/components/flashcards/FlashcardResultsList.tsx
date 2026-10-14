@@ -5,11 +5,13 @@
 //   вместо раздела похвала. В шапке раздела — «Все в повторение» (кнопка
 //   не меняет размер и не сдвигает экран: только текст и вид).
 //   «Верно» — остальные слова.
-// У каждого слова: иероглиф, точки, пиньинь, перевод и кнопка «Повторение».
-// Тап по слову открывает панель слова (onOpenWord): там наборы, новый набор,
-// озвучка — так слова можно разложить по наборам прямо отсюда.
+// У каждого слова: иероглиф, точки, пиньинь, перевод и две кнопки справа:
+//   закладка — «Повторение» сразу, без панели;
+//   плюс — панель слова (onOpenWord): наборы, новый набор, озвучка.
+// Тап по самому слову открывает ту же панель.
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
+import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import type { WordLevel } from "@/components/ui/LevelDots";
 import type { Word } from "@/content/flashcards/types";
 import type { FlashcardQuestionResult } from "@/store/gameStore";
@@ -79,24 +81,38 @@ export function FlashcardResultsList({
         onPress={() => {}}
         onOpenWord={onOpenWord}
         trailing={
-          <Pressable
-            onPress={() => toggleReadingReview(item.vocabularyId)}
-            hitSlop={6}
-            className={`h-11 w-11 items-center justify-center rounded-full ${
-              inReview ? "bg-primary/15" : "active:bg-text/10"
-            }`}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: inReview }}
-            accessibilityLabel={`${item.hanzi}: ${
-              inReview ? "убрать из повторения" : "добавить в повторение"
-            }`}
-          >
-            <ReviewIcon
-              width={22}
-              height={22}
-              color={inReview ? colors.primary : colors.textSecondary}
-            />
-          </Pressable>
+          <View className="flex-row items-center">
+            {/* Повторение — сразу, без панели */}
+            <Pressable
+              onPress={() => toggleReadingReview(item.vocabularyId)}
+              hitSlop={4}
+              className={`h-11 w-11 items-center justify-center rounded-full ${
+                inReview ? "bg-primary/15" : "active:bg-text/10"
+              }`}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: inReview }}
+              accessibilityLabel={`${item.hanzi}: ${
+                inReview ? "убрать из повторения" : "добавить в повторение"
+              }`}
+            >
+              <ReviewIcon
+                width={22}
+                height={22}
+                color={inReview ? colors.primary : colors.textSecondary}
+              />
+            </Pressable>
+
+            {/* Плюс — панель слова: наборы, новый набор */}
+            <Pressable
+              onPress={() => onOpenWord(toWord(item))}
+              hitSlop={4}
+              className="h-11 w-11 items-center justify-center rounded-full active:bg-primary/10"
+              accessibilityRole="button"
+              accessibilityLabel={`${item.hanzi}: добавить в набор`}
+            >
+              <PlusIcon width={24} height={24} color={colors.primary} />
+            </Pressable>
+          </View>
         }
       />
     );
@@ -155,7 +171,7 @@ export function FlashcardResultsList({
       )}
 
       <Text className="text-center font-nunito text-small text-textSecondary">
-        Нажми на слово, чтобы добавить его в набор.
+        Закладка — в повторение, плюс — в любой набор.
       </Text>
     </View>
   );
