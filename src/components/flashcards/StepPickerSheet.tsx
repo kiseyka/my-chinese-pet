@@ -5,6 +5,7 @@
 //   - сетка слов выбранной ступени: тап добавляет слово в набор или убирает,
 //     слова из набора — в зелёной рамке;
 //   - «Выбрать все» у названия ступени — все её слова, которых ещё нет в наборе;
+//     если вся ступень уже в наборе — «Убрать все»;
 //   - «Готово» внизу закрывает панель (выбор сохраняется и при свайпе вниз).
 // Номер ступени, все слова которой уже в наборе, подсвечен.
 // Сначала открыта текущая ступень (первая, где есть неосвоенные слова).
@@ -126,6 +127,14 @@ const StepNumbers = memo(function StepNumbers({
   );
 });
 
+/** «Готово», «Готово · добавлено 3 слова», «Готово · +3, −10». */
+function doneLabel(added: number, removed: number): string {
+  if (added > 0 && removed > 0) return `Готово · +${added}, −${removed}`;
+  if (added > 0) return `Готово · добавлено ${added} ${pluralWords(added)}`;
+  if (removed > 0) return `Готово · убрано ${removed} ${pluralWords(removed)}`;
+  return "Готово";
+}
+
 // ── Панель ───────────────────────────────────────────────────────────────────
 
 export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
@@ -223,6 +232,14 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
   );
 
   const addedCount = ids.filter((id) => !initialIds.has(id)).length;
+  const removedCount = useMemo(() => {
+    const current = new Set(ids);
+    let count = 0;
+    initialIds.forEach((id) => {
+      if (!current.has(id)) count += 1;
+    });
+    return count;
+  }, [ids, initialIds]);
 
   const missingIds = words
     .map((word) => word.vocabularyId)
@@ -236,6 +253,12 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
         : [...previous, word.vocabularyId],
     );
   }, []);
+
+  const removeAll = () => {
+    const stepIds = new Set(words.map((word) => word.vocabularyId));
+    changed.current = true;
+    setIds((previous) => previous.filter((id) => !stepIds.has(id)));
+  };
 
   const addAll = () => {
     if (missingIds.length === 0) return;
@@ -315,9 +338,17 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
                   </Text>
                 </Pressable>
               ) : (
-                <Text className="font-nunito text-small text-textSecondary">
-                  все в наборе
-                </Text>
+                <Pressable
+                  onPress={removeAll}
+                  hitSlop={8}
+                  className="min-h-9 justify-center rounded-full border border-textSecondary px-3 active:bg-text/10"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Убрать все слова ступени ${stepIndex + 1} из набора`}
+                >
+                  <Text className="font-nunitoBold text-small text-text">
+                    Убрать все
+                  </Text>
+                </Pressable>
               )}
             </View>
             <ReadingGrid
@@ -337,9 +368,7 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
             accessibilityRole="button"
           >
             <Text className="font-nunitoBold text-body text-white">
-              {addedCount > 0
-                ? `Готово · добавлено ${addedCount} ${pluralWords(addedCount)}`
-                : "Готово"}
+              {doneLabel(addedCount, removedCount)}
             </Text>
           </Pressable>
         </>
