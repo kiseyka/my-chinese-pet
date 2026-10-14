@@ -3,11 +3,10 @@
 // Главный экран карточек. Две вкладки одного экрана:
 //   - «Ступени» — поиск, разделы HSK чипсами и ступени по 10 слов (StepsTab);
 //   - «Мои наборы» — наборы, которые пользователь собирает сам.
-// Нажатие на набор открывает превью: список слов, «Изменить» и «Начать».
+// У карточки набора две кнопки: «Открыть» (страница набора) и «Тренировать».
 
 import BookIcon from "@/assets/images/icons/vocabulary.svg";
 import { CustomSetCard } from "@/components/flashcards/CustomSetCard";
-import { SetPreviewModal } from "@/components/flashcards/SetPreviewModal";
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { StepsTab } from "@/components/flashcards/StepsTab";
 import { Screen } from "@/components/layout/Screen";
@@ -15,15 +14,11 @@ import { BackButton } from "@/components/ui/BackButton";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Title } from "@/components/ui/Title";
 import { findWords } from "@/content/words/vocabulary";
-import {
-  MIN_SET_WORDS,
-  useCustomSet,
-  useCustomSetsStore,
-} from "@/store/customSetsStore";
+import { useCustomSetsStore } from "@/store/customSetsStore";
 import { colors } from "@/theme/colors";
 import { stepTrainingId, type ReadingLevel } from "@/utils/flashcards/steps";
 import { useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 type FlashcardsTab = "steps" | "sets";
@@ -37,17 +32,10 @@ export default function FlashcardsHomeScreen() {
   const router = useRouter();
 
   const [tab, setTab] = useState<FlashcardsTab>("steps");
-  const [previewId, setPreviewId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const sets = useCustomSetsStore((state) => state.sets);
   const createSet = useCustomSetsStore((state) => state.createSet);
-
-  const previewSet = useCustomSet(previewId ?? undefined);
-  const previewWords = useMemo(
-    () => (previewSet ? findWords(previewSet.wordIds) : []),
-    [previewSet],
-  );
 
   const startStep = useCallback(
     (level: ReadingLevel, index: number) =>
@@ -88,26 +76,6 @@ export default function FlashcardsHomeScreen() {
         value={tab}
         onChange={setTab}
         className="mt-4"
-      />
-
-      <SetPreviewModal
-        visible={!!previewSet}
-        title={previewSet?.title ?? ""}
-        words={previewWords}
-        onClose={() => setPreviewId(null)}
-        onEdit={() => {
-          if (!previewSet) return;
-          setPreviewId(null);
-          openEditor(previewSet.id);
-        }}
-        onStart={() => {
-          if (!previewSet || previewWords.length < MIN_SET_WORDS) return;
-          setPreviewId(null);
-          router.push({
-            pathname: "/games/flashcards/[setId]",
-            params: { setId: previewSet.id },
-          });
-        }}
       />
 
       <SetTitleModal
@@ -155,7 +123,13 @@ export default function FlashcardsHomeScreen() {
               key={set.id}
               title={set.title}
               words={findWords(set.wordIds)}
-              onPress={() => setPreviewId(set.id)}
+              onOpen={() => openEditor(set.id)}
+              onStart={() =>
+                router.push({
+                  pathname: "/games/flashcards/[setId]",
+                  params: { setId: set.id },
+                })
+              }
             />
           ))}
 
