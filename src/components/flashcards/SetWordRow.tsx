@@ -35,6 +35,14 @@ interface SetWordRowProps {
   level?: WordLevel;
 }
 
+/** Размер иероглифов под ширину колонки (w-24): длинные слова мельче, без авто-подгонки. */
+function hanziSizeFor(hanzi: string): number | "sm" {
+  const length = Array.from(hanzi).length;
+  if (length <= 3) return "sm";
+  if (length === 4) return 22;
+  return 16;
+}
+
 export const SetWordRow = memo(function SetWordRow({
   word,
   action,
@@ -47,7 +55,7 @@ export const SetWordRow = memo(function SetWordRow({
   const content = (
     <>
       <View className="w-24 shrink-0 items-center">
-        <Hanzi size="sm" numberOfLines={1} adjustsFontSizeToFit>
+        <Hanzi size={hanziSizeFor(word.hanzi)} numberOfLines={1}>
           {word.hanzi}
         </Hanzi>
         {level !== undefined && <LevelDots level={level} className="mt-1" />}

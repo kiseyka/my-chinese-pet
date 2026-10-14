@@ -19,7 +19,8 @@ interface ReadingGridProps {
   words: Word[];
   /** Точки чтения каждого слова, в том же порядке. */
   dots: number[];
-  onSelect: (word: Word) => void;
+  /** Без него ячейки не нажимаются (только просмотр). */
+  onSelect?: (word: Word) => void;
   /** Сколько ширины экрана не достаётся сетке (все отступы по бокам вместе). */
   horizontalInset: number;
   /** Отмеченное слово (например, уже в наборе): зелёная рамка. */
@@ -70,7 +71,8 @@ export const ReadingGrid = memo(function ReadingGrid({
         return (
           <Pressable
             key={word.vocabularyId}
-            onPress={() => onSelect(word)}
+            onPress={onSelect ? () => onSelect(word) : undefined}
+            disabled={!onSelect}
             // Рамка есть у всех ячеек (у обычных прозрачная), чтобы содержимое не сдвигалось
             className={`items-center justify-center rounded-2xl border-2 pb-2 pt-1 active:bg-primary/10 ${
               marked ? "border-primary bg-primary/10" : "border-transparent"

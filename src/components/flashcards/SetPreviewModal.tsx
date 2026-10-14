@@ -1,21 +1,27 @@
 // src/components/flashcards/SetPreviewModal.tsx
 //
 // Превью набора перед тренировкой — панель снизу (как панель слова):
-// название, сколько слов освоено, кнопки «Изменить» и «Начать» и список слов
-// с точками чтения. Кнопки сверху, над списком, чтобы до них не нужно было листать.
+// название, сколько слов освоено, кнопки «Изменить» и «Начать» и сетка слов
+// с точками чтения (до PREVIEW_LIMIT слов). Кнопки сверху, над списком, чтобы до них не нужно было листать.
 // Если слов меньше, чем нужно для карточек, вместо «Начать» — подсказка.
 //
 // Панель, анимации и свайп вниз — в BottomSheet.
 
-import { BottomSheet } from "@/components/ui/BottomSheet";
+import {
+  BottomSheet,
+  SHEET_HORIZONTAL_INSET,
+} from "@/components/ui/BottomSheet";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { WordCard } from "@/components/ui/WordCard";
 import type { Word } from "@/content/flashcards/types";
 import { MIN_SET_WORDS } from "@/store/customSetsStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { pluralWords } from "@/utils/writing/labels";
 import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
+import { ReadingGrid } from "./ReadingGrid";
+
+/** Сколько слов показывать в превью. */
+const PREVIEW_LIMIT = 40;
 
 interface SetPreviewModalProps {
   visible: boolean;
@@ -38,7 +44,6 @@ export function SetPreviewModal({
   const vocabularyWords = useWordProgressStore(
     (state) => state.vocabularyWords,
   );
-  const toggleFavorite = useWordProgressStore((state) => state.toggleFavorite);
 
   // Пока панель уезжает, BottomSheet рисует последний item — название и слова не пропадают
   const item = useMemo(
@@ -49,21 +54,16 @@ export function SetPreviewModal({
   return (
     <BottomSheet item={item} onClose={onClose}>
       {({ title: shownTitle, words: shownWords }) => {
-        const entries = shownWords.map((word) => {
-          const vocab = vocabularyWords[word.vocabularyId];
-          return {
-            word,
-            isFavorite: vocab?.isFavorite ?? false,
-            level: getWordLevel(
-              flashcardWords[word.vocabularyId],
-              vocab?.isKnown ?? false,
-              ["reading"],
-            ),
-          };
-        });
+        const dots = shownWords.map((word) =>
+          getWordLevel(
+            flashcardWords[word.vocabularyId],
+            vocabularyWords[word.vocabularyId]?.isKnown ?? false,
+            ["reading"],
+          ),
+        );
 
         const total = shownWords.length;
-        const mastered = entries.filter((entry) => entry.level === 3).length;
+        const mastered = dots.filter((dot) => dot === 3).length;
         const missing = Math.max(MIN_SET_WORDS - total, 0);
         const canStart = missing === 0;
 
@@ -113,24 +113,28 @@ export function SetPreviewModal({
               </Text>
             )}
 
-            {/* Список слов */}
-            <View className="mt-5 gap-2">
+            {/* Слова — сеткой, как в ступенях (лёгкая: большой набор открывается быстро).
+                Больше PREVIEW_LIMIT не рисуем: весь список — в «Изменить» */}
+            <View className="mt-5">
               {total === 0 ? (
                 <Text className="font-nunito text-body text-text">
                   В наборе пока нет слов. Нажми «Изменить», чтобы добавить их.
                 </Text>
               ) : (
-                entries.map(({ word, isFavorite, level }) => (
-                  <WordCard
-                    key={word.id}
-                    hanzi={word.hanzi}
-                    pinyin={word.pinyin}
-                    translation={word.translation}
-                    isFavorite={isFavorite}
-                    level={level}
-                    onToggleFavorite={() => toggleFavorite(word.vocabularyId)}
+                <>
+                  <ReadingGrid
+                    words={shownWords.slice(0, PREVIEW_LIMIT)}
+                    dots={dots.slice(0, PREVIEW_LIMIT)}
+                    horizontalInset={SHEET_HORIZONTAL_INSET}
                   />
-                ))
+                  {total > PREVIEW_LIMIT && (
+                    <Text className="mt-3 text-center font-nunito text-small text-textSecondary">
+                      и ещё {total - PREVIEW_LIMIT}{" "}
+                      {pluralWords(total - PREVIEW_LIMIT)} — все слова в
+                      «Изменить»
+                    </Text>
+                  )}
+                </>
               )}
             </View>
           </>

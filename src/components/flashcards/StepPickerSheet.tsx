@@ -4,7 +4,8 @@
 //   - чипсы разделов HSK и номера ступеней (листаются вбок);
 //   - сетка слов выбранной ступени: тап добавляет слово в набор или убирает,
 //     слова из набора — в зелёной рамке;
-//   - «Добавить все» — все слова ступени, которых ещё нет в наборе.
+//   - «Выбрать все» у названия ступени — все её слова, которых ещё нет в наборе;
+//   - «Готово» внизу закрывает панель (выбор сохраняется и при свайпе вниз).
 // Номер ступени, все слова которой уже в наборе, подсвечен.
 // Сначала открыта текущая ступень (первая, где есть неосвоенные слова).
 //
@@ -145,6 +146,8 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
   const idsRef = useRef(ids);
   idsRef.current = ids;
   const changed = useRef(false);
+  // Слова набора на момент открытия: чтобы показать «добавлено N»
+  const [initialIds, setInitialIds] = useState<Set<string>>(new Set());
 
   const stepsScroll = useRef<ScrollView>(null);
 
@@ -160,6 +163,7 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
       .getState()
       .sets.find((item) => item.id === openedId);
     setIds(set?.wordIds ?? []);
+    setInitialIds(new Set(set?.wordIds ?? []));
     changed.current = false;
   };
 
@@ -217,6 +221,8 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
       ),
     [words, flashcardWords, vocabularyWords],
   );
+
+  const addedCount = ids.filter((id) => !initialIds.has(id)).length;
 
   const missingIds = words
     .map((word) => word.vocabularyId)
@@ -287,11 +293,33 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
             />
           </View>
 
-          {/* Слова ступени */}
+          {/* Слова ступени. «Выбрать все» — маленькая кнопка у названия ступени,
+              чтобы её не путали с кнопкой «Готово» внизу */}
           <View className="mt-4 rounded-2xl bg-surface p-3">
-            <Text className="mb-2 font-nunitoBold text-body text-text">
-              Ступень {stepIndex + 1}
-            </Text>
+            <View className="mb-2 min-h-10 flex-row items-center justify-between gap-2">
+              <Text className="font-nunitoBold text-body text-text">
+                Ступень {stepIndex + 1}
+              </Text>
+              {missingIds.length > 0 ? (
+                <Pressable
+                  onPress={addAll}
+                  hitSlop={8}
+                  className="min-h-9 justify-center rounded-full border border-primary px-3 active:bg-primary/10"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Выбрать все слова ступени ${stepIndex + 1}`}
+                >
+                  <Text className="font-nunitoBold text-small text-primary">
+                    {missingIds.length === words.length
+                      ? "Выбрать все"
+                      : `+ ещё ${missingIds.length}`}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text className="font-nunito text-small text-textSecondary">
+                  все в наборе
+                </Text>
+              )}
+            </View>
             <ReadingGrid
               words={words}
               dots={dots}
@@ -302,28 +330,16 @@ export function StepPickerSheet({ setId, onClose }: StepPickerSheetProps) {
             />
           </View>
 
-          {/* Добавить всю ступень */}
+          {/* Готово: закрывает панель и сохраняет выбор */}
           <Pressable
-            onPress={addAll}
-            disabled={missingIds.length === 0}
-            className={`mt-4 min-h-14 items-center justify-center rounded-2xl px-5 py-4 ${
-              missingIds.length > 0
-                ? "bg-primary active:opacity-80"
-                : "bg-primary/20"
-            }`}
+            onPress={handleClose}
+            className="mt-4 min-h-14 items-center justify-center rounded-2xl bg-primary px-5 py-4 active:opacity-80"
             accessibilityRole="button"
-            accessibilityState={{ disabled: missingIds.length === 0 }}
           >
-            <Text
-              className={`font-nunitoBold text-body ${
-                missingIds.length > 0 ? "text-white" : "text-text"
-              }`}
-            >
-              {missingIds.length === 0
-                ? "Все слова ступени уже в наборе"
-                : missingIds.length === words.length
-                  ? `Добавить все ${words.length} ${pluralWords(words.length)}`
-                  : `Добавить остальные ${missingIds.length} ${pluralWords(missingIds.length)}`}
+            <Text className="font-nunitoBold text-body text-white">
+              {addedCount > 0
+                ? `Готово · добавлено ${addedCount} ${pluralWords(addedCount)}`
+                : "Готово"}
             </Text>
           </Pressable>
         </>

@@ -31,7 +31,7 @@ import { pluralWords } from "@/utils/writing/labels";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 
 export default function EditSetScreen() {
   const router = useRouter();
@@ -189,71 +189,74 @@ export default function EditSetScreen() {
         className="my-3"
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
+      {/* Список: рисуются только видимые строки (в наборе может быть много слов) */}
+      <FlatList
+        data={isSearching ? results : words}
+        keyExtractor={(word) => word.id}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 16, gap: 8 }}
-      >
-        {isSearching ? (
-          results.length > 0 ? (
-            results.map((word) => (
-              <SetWordRow
-                key={word.id}
-                word={word}
-                action={inSet.has(word.id) ? "added" : "add"}
-                onPress={toggleInSet}
-              />
-            ))
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        renderItem={({ item: word }) =>
+          isSearching ? (
+            <SetWordRow
+              word={word}
+              action={inSet.has(word.id) ? "added" : "add"}
+              onPress={toggleInSet}
+            />
           ) : (
+            <SetWordRow
+              word={word}
+              action="remove"
+              level={levelOf(word.id)}
+              onPress={removeFromSet}
+            />
+          )
+        }
+        ListEmptyComponent={
+          isSearching ? (
             <Text className="font-nunito text-body text-text">
               Ничего не нашлось. Пиньинь можно писать без тонов: «nihao».
             </Text>
+          ) : null
+        }
+        ListHeaderComponent={
+          isSearching ? null : (
+            <View className="gap-2">
+              {/* Добавить слова из ступеней HSK */}
+              <Pressable
+                onPress={() => setIsPicking(true)}
+                className="min-h-12 flex-row items-center justify-between gap-3 rounded-2xl border border-dashed border-primary px-4 py-3 active:opacity-70"
+                accessibilityRole="button"
+              >
+                <Text className="flex-1 font-nunitoBold text-body text-primary">
+                  Добавить из ступеней HSK
+                </Text>
+                <PlusIcon width={22} height={22} color={colors.primary} />
+              </Pressable>
+
+              {total === 0 ? (
+                <Text className="mt-2 font-nunito text-body text-text">
+                  В наборе пока нет слов. Найди слово через поиск или выбери из
+                  ступеней.
+                </Text>
+              ) : (
+                /* Подпись над списком: «Слова в наборе · 12» */
+                <View className="mt-2 flex-row items-baseline justify-between">
+                  <Text className="font-nunitoBold text-body text-text">
+                    Слова в наборе
+                  </Text>
+                  <Text className="font-nunito text-body text-textSecondary">
+                    {total}
+                  </Text>
+                </View>
+              )}
+            </View>
           )
-        ) : (
-          <>
-            {/* Добавить слова из ступеней HSK */}
-            <Pressable
-              onPress={() => setIsPicking(true)}
-              className="min-h-12 flex-row items-center justify-between gap-3 rounded-2xl border border-dashed border-primary px-4 py-3 active:opacity-70"
-              accessibilityRole="button"
-            >
-              <Text className="flex-1 font-nunitoBold text-body text-primary">
-                Добавить из ступеней HSK
-              </Text>
-              <PlusIcon width={22} height={22} color={colors.primary} />
-            </Pressable>
-
-            {total === 0 && (
-              <Text className="mt-2 font-nunito text-body text-text">
-                В наборе пока нет слов. Найди слово через поиск или выбери из
-                ступеней.
-              </Text>
-            )}
-
-            {/* Подпись над списком: «Слова в наборе · 12» */}
-            {total > 0 && (
-              <View className="mt-2 flex-row items-baseline justify-between">
-                <Text className="font-nunitoBold text-body text-text">
-                  Слова в наборе
-                </Text>
-                <Text className="font-nunito text-body text-textSecondary">
-                  {total}
-                </Text>
-              </View>
-            )}
-
-            {words.map((word) => (
-              <SetWordRow
-                key={word.id}
-                word={word}
-                action="remove"
-                level={levelOf(word.id)}
-                onPress={removeFromSet}
-              />
-            ))}
-          </>
-        )}
-      </ScrollView>
+        }
+      />
 
       {/* Низ: старт или сколько слов не хватает. Пока идёт поиск, не мешаем */}
       {!isSearching && (
