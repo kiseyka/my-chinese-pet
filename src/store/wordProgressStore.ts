@@ -61,6 +61,11 @@ interface WordProgressState {
    * хочет отработать. Отдельно от избранного словаря: это временный список.
    */
   writingReview: Record<string, WritingReviewEntry>;
+  /**
+   * «Повторение» в карточках (чтение): слова, которые пользователь хочет повторить.
+   * Своё для каждого навыка: слово можно легко читать и не уметь писать.
+   */
+  readingReview: Record<string, WritingReviewEntry>;
   /** Экзамены по письму, по id слова. */
   writingExams: Record<string, WritingExamEntry>;
 }
@@ -83,6 +88,10 @@ interface WordProgressActions {
     isKnown?: boolean;
   }) => void;
   toggleFavorite: (wordId: string) => void;
+  /** Добавляет слово в «Повторение» карточек или убирает оттуда. */
+  toggleReadingReview: (wordId: string) => void;
+  /** Добавляет несколько слов в «Повторение» карточек (уже добавленные пропускает). */
+  addToReadingReview: (wordIds: string[]) => void;
   /** Добавляет слово в «Повторение» письма или убирает оттуда (без экзамена). */
   toggleWritingReview: (wordId: string) => void;
   /**
@@ -172,6 +181,7 @@ export const useWordProgressStore = create<WordProgressStore>()(
       flashcardWords: {},
       vocabularyWords: {},
       writingReview: {},
+      readingReview: {},
       writingExams: {},
 
       completeFlashcardSet: ({ setId, score, totalQuestions, duration }) => {
@@ -265,6 +275,29 @@ export const useWordProgressStore = create<WordProgressStore>()(
           return {
             vocabularyWords: { ...state.vocabularyWords, [wordId]: updated },
           };
+        });
+      },
+
+      toggleReadingReview: (wordId) => {
+        set((state) => {
+          const next = { ...state.readingReview };
+
+          if (next[wordId]) delete next[wordId];
+          else next[wordId] = { addedAt: Date.now() };
+
+          return { readingReview: next };
+        });
+      },
+
+      addToReadingReview: (wordIds) => {
+        set((state) => {
+          const now = Date.now();
+          const next = { ...state.readingReview };
+          wordIds.forEach((id, index) => {
+            // +index: сохраняем порядок добавления
+            if (!next[id]) next[id] = { addedAt: now + index };
+          });
+          return { readingReview: next };
         });
       },
 
@@ -386,6 +419,7 @@ export const useWordProgressStore = create<WordProgressStore>()(
           flashcardWords: {},
           vocabularyWords: {},
           writingReview: {},
+          readingReview: {},
           writingExams: {},
         });
       },
@@ -394,7 +428,7 @@ export const useWordProgressStore = create<WordProgressStore>()(
       name: "word-progress",
       storage: createJSONStorage(() => AsyncStorage),
       // Версия 1: склеены дубликаты слов (см. content/words/aliases.ts).
-      // writingReview и writingExams добавлены без смены версии: у старых
+      // writingReview, readingReview и writingExams добавлены без смены версии: у старых
       // сохранений их нет, и persist подставляет значение по умолчанию ({}).
       version: 1,
       migrate: (persisted, version) =>

@@ -4,6 +4,7 @@ import LineSvg from "@/assets/images/svg/line.svg";
 import { Screen } from "@/components/layout/Screen";
 import { BrushProgressCircle } from "@/components/ui/BrushProgressCircle";
 import { WordCard } from "@/components/ui/WordCard";
+import { FlashcardResultsList } from "@/components/flashcards/FlashcardResultsList";
 import { WritingResultsList } from "@/components/writing/results/WritingResultsList";
 import { useGameStore } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
@@ -26,6 +27,9 @@ export default function GeneralStatsScreen() {
   // После письма показываем все написанные слова, а не только ошибки
   const writingResults = useGameStore((s) => s.writingResults);
   const isWriting = gameId === "writing" && writingResults.length > 0;
+
+  // После карточек — все слова и «Повторение» (у тонов — по-старому, только ошибки)
+  const isFlashcards = gameId === "flashcards";
 
   const score = useGameStore((s) => s.score);
   const duration = useGameStore((s) => s.duration);
@@ -97,6 +101,15 @@ export default function GeneralStatsScreen() {
               contentContainerStyle={{ paddingBottom: 16 }}
             >
               <WritingResultsList results={writingResults} />
+            </ScrollView>
+          ) : isFlashcards ? (
+            // Карточки: все слова (сначала ошибки) и «Повторение»
+            <ScrollView
+              className="w-full"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 16 }}
+            >
+              <FlashcardResultsList results={results} />
             </ScrollView>
           ) : wrongAnswers.length > 0 ? (
             <View className="flex-1 flex-col gap-8">

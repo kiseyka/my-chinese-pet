@@ -2,9 +2,10 @@
 //
 // Панель слова снизу (по тапу на слово в сетке): иероглиф и пиньинь (тап — озвучка),
 // перевод, точки чтения, где лежит слово («HSK 2 · Ступень 7», из поиска —
-// с кнопкой «Показать»), список своих наборов — в какой добавить слово —
+// с кнопкой «Показать»), «Повторение» карточек, список своих наборов — в какой добавить слово —
 // и «Новый набор»: окно с названием, и слово сразу попадает в новый набор.
 
+import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import VolumeIcon from "@/assets/images/icons/volume.svg";
@@ -51,6 +52,10 @@ export function WordSheet({
 
   const sets = useCustomSetsStore((state) => state.sets);
   const toggleWord = useCustomSetsStore((state) => state.toggleWord);
+  const readingReview = useWordProgressStore((state) => state.readingReview);
+  const toggleReadingReview = useWordProgressStore(
+    (state) => state.toggleReadingReview,
+  );
   const createSet = useCustomSetsStore((state) => state.createSet);
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
   const vocabularyWords = useWordProgressStore(
@@ -69,6 +74,7 @@ export function WordSheet({
             vocabularyWords[shown.vocabularyId]?.isKnown ?? false,
             ["reading"],
           );
+          const inReview = !!readingReview[shown.vocabularyId];
 
           return (
             <>
@@ -131,6 +137,34 @@ export function WordSheet({
                   )}
                 </View>
               )}
+
+              {/* Повторение в карточках */}
+              <Pressable
+                onPress={() => toggleReadingReview(shown.vocabularyId)}
+                className={`mt-3 min-h-12 flex-row items-center gap-3 rounded-2xl border bg-surface px-4 py-3 active:opacity-70 ${
+                  inReview ? "border-primary" : "border-transparent"
+                }`}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: inReview }}
+              >
+                <ReviewIcon
+                  width={22}
+                  height={22}
+                  color={inReview ? colors.primary : colors.textSecondary}
+                />
+                <Text className="flex-1 font-nunito text-body text-text">
+                  {inReview ? "На повторении" : "Добавить в повторение"}
+                </Text>
+                {inReview ? (
+                  <CheckIcon width={22} height={22} color={colors.primary} />
+                ) : (
+                  <PlusIcon
+                    width={22}
+                    height={22}
+                    color={colors.textSecondary}
+                  />
+                )}
+              </Pressable>
 
               {/* Свои наборы */}
               <View className="mt-6 gap-2">

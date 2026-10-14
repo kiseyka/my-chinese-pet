@@ -5,6 +5,7 @@
 //   - чипсы разделов HSK: на экране всегда один раздел (все открыты сразу);
 //   - ступени раздела (LevelSteps). Разделы, в которые уже заходили, остаются
 //     в памяти и только прячутся — повторное переключение мгновенное.
+// Над разделами — «Повторение» (ReadingReviewSheet).
 // Сначала выбран текущий раздел — первый, где есть неосвоенные слова.
 // Тап по слову открывает панель (WordSheet): перевод, где лежит слово, свои наборы.
 // Из поиска в панели есть «Показать в ступени»: раздел, ступень и прокрутка к ней.
@@ -21,6 +22,7 @@ import {
   getReadingSteps,
   type ReadingLevel,
 } from "@/utils/flashcards/steps";
+import { getReadingReviewWords } from "@/utils/flashcards/source";
 import { searchWords } from "@/utils/searchWords";
 import {
   useCallback,
@@ -32,6 +34,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { ScrollView, Text, View } from "react-native";
 import { LevelChips } from "./LevelChips";
+import { ReadingReviewCard, ReadingReviewSheet } from "./ReadingReviewSheet";
 import { LevelSteps, type StepJump } from "./LevelSteps";
 import { ReadingGrid } from "./ReadingGrid";
 import { WordSheet } from "./WordSheet";
@@ -41,6 +44,7 @@ const SCREEN_INSET = 32;
 
 interface StepsTabProps {
   onStartStep: (level: ReadingLevel, index: number) => void;
+  onStartReview: () => void;
 }
 
 /** Слово в панели и откуда его открыли. */
@@ -63,7 +67,7 @@ function isLevelUnfinished(level: ReadingLevel): boolean {
   );
 }
 
-export function StepsTab({ onStartStep }: StepsTabProps) {
+export function StepsTab({ onStartStep, onStartReview }: StepsTabProps) {
   const { t } = useTranslation();
 
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
@@ -96,6 +100,15 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
   );
 
   const [selected, setSelected] = useState<SelectedWord | null>(null);
+  // ── Повторение ─────────────────────────────────────────────────────────────
+
+  const readingReview = useWordProgressStore((state) => state.readingReview);
+  const reviewWords = useMemo(
+    () => getReadingReviewWords(readingReview),
+    [readingReview],
+  );
+  const [reviewOpen, setReviewOpen] = useState(false);
+
   const selectFromGrid = useCallback(
     (word: Word) => setSelected({ word, fromSearch: false }),
     [],
@@ -151,6 +164,21 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
 
   return (
     <View className="flex-1">
+      <ReadingReviewSheet
+        open={reviewOpen}
+        words={reviewWords}
+        onClose={() => setReviewOpen(false)}
+        onSelectWord={(word) => {
+          // Панель слова поверх панели повторения не открываем — сначала закрываем её
+          setReviewOpen(false);
+          setSelected({ word, fromSearch: false });
+        }}
+        onStart={() => {
+          setReviewOpen(false);
+          onStartReview();
+        }}
+      />
+
       <WordSheet
         word={selected?.word ?? null}
         location={
@@ -199,6 +227,14 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
         style={{ display: isSearching ? "none" : "flex" }}
       >
         {/* Отступ снизу: при прокрутке ступени не прилипают к чипсам */}
+        {/* Повторение — над разделами HSK */}
+        <View className="mt-3">
+          <ReadingReviewCard
+            total={reviewWords.length}
+            onPress={() => setReviewOpen(true)}
+          />
+        </View>
+
         <View className="mb-1 mt-3 pb-2">
           <LevelChips chips={chips} value={level} onChange={setLevel} />
         </View>

@@ -16,6 +16,7 @@ import { Title } from "@/components/ui/Title";
 import { findWords } from "@/content/words/vocabulary";
 import { useCustomSetsStore } from "@/store/customSetsStore";
 import { colors } from "@/theme/colors";
+import { READING_REVIEW_ID } from "@/utils/flashcards/source";
 import { stepTrainingId, type ReadingLevel } from "@/utils/flashcards/steps";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -42,6 +43,15 @@ export default function FlashcardsHomeScreen() {
       router.push({
         pathname: "/games/flashcards/[setId]",
         params: { setId: stepTrainingId(level, index) },
+      }),
+    [router],
+  );
+
+  const startReview = useCallback(
+    () =>
+      router.push({
+        pathname: "/games/flashcards/[setId]",
+        params: { setId: READING_REVIEW_ID },
       }),
     [router],
   );
@@ -97,7 +107,7 @@ export default function FlashcardsHomeScreen() {
         className="flex-1"
         style={{ display: tab === "steps" ? "flex" : "none" }}
       >
-        <StepsTab onStartStep={startStep} />
+        <StepsTab onStartStep={startStep} onStartReview={startReview} />
       </View>
 
       {tab === "sets" && (
