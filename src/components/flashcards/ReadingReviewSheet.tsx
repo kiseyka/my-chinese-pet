@@ -1,15 +1,12 @@
 // src/components/flashcards/ReadingReviewSheet.tsx
 //
-// «Повторение» в карточках:
-//   ReadingReviewCard — компактная карточка над чипсами HSK: сколько слов на повторении;
-//   ReadingReviewSheet — панель снизу: сетка слов, подсказка, сколько попадёт
-//   в тренировку, и «Начать повторение».
+// Панель «Повторение» в карточках: сетка слов, подсказка, сколько попадёт
+// в тренировку, и «Начать повторение». Вход — та же карточка ReviewCard, что в «Написании».
 // Тап по слову в панели закрывает её и открывает панель слова (там можно убрать
 // слово из повторения). Слова попадают сюда с экрана итогов тренировки
 // и из панели слова.
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
-import ArrowRight from "@/assets/images/icons/chevron-right.svg";
 import {
   BottomSheet,
   SHEET_HORIZONTAL_INSET,
@@ -25,40 +22,6 @@ import { ReadingGrid } from "./ReadingGrid";
 
 /** Сколько слов берёт одна тренировка карточками. */
 const LESSON_SIZE = 10;
-
-// ── Карточка-вход ────────────────────────────────────────────────────────────
-
-export function ReadingReviewCard({
-  total,
-  onPress,
-}: {
-  total: number;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className="flex-row items-center gap-3 rounded-2xl bg-surface px-4 py-3 active:opacity-70"
-      accessibilityRole="button"
-      accessibilityLabel={`Повторение: ${total} ${pluralWords(total)}`}
-    >
-      <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
-        <ReviewIcon width={20} height={20} color={colors.primary} />
-      </View>
-
-      <View className="flex-1">
-        <Text className="font-nunitoBold text-body text-text">Повторение</Text>
-        <Text className="font-nunito text-small text-text opacity-70">
-          {total === 0
-            ? "трудные слова — после тренировки"
-            : `${total} ${pluralWords(total)}`}
-        </Text>
-      </View>
-
-      <ArrowRight width={20} height={20} color={colors.text} />
-    </Pressable>
-  );
-}
 
 // ── Панель ───────────────────────────────────────────────────────────────────
 

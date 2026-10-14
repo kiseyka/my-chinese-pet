@@ -10,7 +10,15 @@
 import type { Word } from "@/content/flashcards/types";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { getReadingSteps, type ReadingLevel } from "@/utils/flashcards/steps";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { FlatList, Text, View } from "react-native";
 import { ReadingStepCard } from "./ReadingStepCard";
 
@@ -28,6 +36,8 @@ interface LevelStepsProps {
   jump: StepJump | null;
   onStartStep: (level: ReadingLevel, index: number) => void;
   onSelectWord: (word: Word) => void;
+  /** Блок над ступенями, который прокручивается вместе с ними (повторение, чипсы HSK). */
+  header?: ReactNode;
 }
 
 function dotsOf(word: Word): number {
@@ -54,6 +64,7 @@ export const LevelSteps = memo(function LevelSteps({
   jump,
   onStartStep,
   onSelectWord,
+  header,
 }: LevelStepsProps) {
   const steps = getReadingSteps(level);
 
@@ -150,11 +161,14 @@ export const LevelSteps = memo(function LevelSteps({
         }, 150);
       }}
       ListHeaderComponent={
-        summary ? (
-          <Text className="font-nunito text-small text-textSecondary">
-            Освоено {summary.learned} из {summary.total}
-          </Text>
-        ) : null
+        <View>
+          {header}
+          {summary && (
+            <Text className="font-nunito text-small text-textSecondary">
+              Освоено {summary.learned} из {summary.total}
+            </Text>
+          )}
+        </View>
       }
       renderItem={({ item, index }) => (
         <ReadingStepCard

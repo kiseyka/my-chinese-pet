@@ -1,6 +1,7 @@
 // app/(tabs)/games/flashcards/sets.tsx
 //
-// Главный экран карточек. Две вкладки одного экрана:
+// Главный экран карточек. Сверху закреплены поиск (по всей базе) и вкладки;
+// панель слова — общая для поиска и ступеней. Две вкладки одного экрана:
 //   - «Ступени» — поиск, разделы HSK чипсами и ступени по 10 слов (StepsTab);
 //   - «Мои наборы» — наборы, которые пользователь собирает сам.
 // У карточки набора две кнопки: «Открыть» (страница набора) и «Тренировать».
@@ -8,21 +9,39 @@
 import BookIcon from "@/assets/images/icons/vocabulary.svg";
 import { CustomSetCard } from "@/components/flashcards/CustomSetCard";
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
-import { StepsTab } from "@/components/flashcards/StepsTab";
+import { ReadingGrid } from "@/components/flashcards/ReadingGrid";
+import {
+  StepsTab,
+  type StepJumpRequest,
+} from "@/components/flashcards/StepsTab";
+import { WordSheet } from "@/components/flashcards/WordSheet";
+import { SearchField } from "@/components/ui/SearchField";
+import type { Word } from "@/content/flashcards/types";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Title } from "@/components/ui/Title";
-import { findWords } from "@/content/words/vocabulary";
+import { allWords, findWords } from "@/content/words/vocabulary";
 import { useCustomSetsStore } from "@/store/customSetsStore";
 import { colors } from "@/theme/colors";
 import { READING_REVIEW_ID } from "@/utils/flashcards/source";
-import { stepTrainingId, type ReadingLevel } from "@/utils/flashcards/steps";
+import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
+import {
+  describeStep,
+  findWordStep,
+  stepTrainingId,
+  type ReadingLevel,
+} from "@/utils/flashcards/steps";
+import { searchWords } from "@/utils/searchWords";
+import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 type FlashcardsTab = "steps" | "sets";
+
+/** Отступы Screen по бокам: от них считается ширина ячеек сетки. */
+const SCREEN_INSET = 32;
 
 const TABS = [
   { key: "steps" as const, label: "Ступени" },
@@ -56,6 +75,58 @@ export default function FlashcardsHomeScreen() {
     [router],
   );
 
+  // ── Поиск и панель слова ───────────────────────────────────────────────────
+
+  const { t } = useTranslation();
+  const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
+  const vocabularyWords = useWordProgressStore(
+    (state) => state.vocabularyWords,
+  );
+
+  const [query, setQuery] = useState("");
+  const isSearching = query.trim().length > 0;
+  const results = useMemo(
+    () => (isSearching ? searchWords(allWords, query, (key) => t(key)) : []),
+    [isSearching, query, t],
+  );
+  const resultDots = useMemo(
+    () =>
+      results.map((word) =>
+        getWordLevel(
+          flashcardWords[word.vocabularyId],
+          vocabularyWords[word.vocabularyId]?.isKnown ?? false,
+          ["reading"],
+        ),
+      ),
+    [results, flashcardWords, vocabularyWords],
+  );
+
+  // Слово в панели и откуда его открыли (из поиска есть «Показать в ступени»)
+  const [selected, setSelected] = useState<{
+    word: Word;
+    fromSearch: boolean;
+  } | null>(null);
+  const selectFromGrid = useCallback(
+    (word: Word) => setSelected({ word, fromSearch: false }),
+    [],
+  );
+  const selectFromSearch = useCallback(
+    (word: Word) => setSelected({ word, fromSearch: true }),
+    [],
+  );
+  const selectedStep = selected
+    ? findWordStep(selected.word.vocabularyId)
+    : null;
+
+  const [jump, setJump] = useState<StepJumpRequest | null>(null);
+  const showInStep = () => {
+    if (!selectedStep) return;
+    setSelected(null);
+    setQuery("");
+    setTab("steps");
+    setJump({ ...selectedStep, nonce: Date.now() });
+  };
+
   const openEditor = (setId: string) => {
     router.push({
       pathname: "/games/flashcards/edit/[setId]",
@@ -81,12 +152,58 @@ export default function FlashcardsHomeScreen() {
         </Pressable>
       </View>
 
-      <SegmentedTabs
-        tabs={TABS}
-        value={tab}
-        onChange={setTab}
-        className="mt-4"
+      {/* Сверху закреплены только поиск и вкладки — как в «Написании», поиск первым */}
+      <SearchField
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Иероглиф, пиньинь или перевод"
+        accessibilityLabel="Поиск слова"
+        className="mt-3"
       />
+
+      {!isSearching && (
+        <SegmentedTabs
+          tabs={TABS}
+          value={tab}
+          onChange={setTab}
+          className="mt-3"
+        />
+      )}
+
+      <WordSheet
+        word={selected?.word ?? null}
+        location={
+          selectedStep
+            ? describeStep(selectedStep.level, selectedStep.index)
+            : undefined
+        }
+        onShowInStep={
+          selected?.fromSearch && selectedStep ? showInStep : undefined
+        }
+        onClose={() => setSelected(null)}
+      />
+
+      {/* Результаты поиска — по всей базе, поверх обеих вкладок */}
+      {isSearching && (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingVertical: 16 }}
+        >
+          {results.length > 0 ? (
+            <ReadingGrid
+              words={results}
+              dots={resultDots}
+              onSelect={selectFromSearch}
+              horizontalInset={SCREEN_INSET}
+            />
+          ) : (
+            <Text className="font-nunito text-body text-text">
+              Ничего не нашлось. Пиньинь можно писать без тонов: «nihao».
+            </Text>
+          )}
+        </ScrollView>
+      )}
 
       <SetTitleModal
         visible={isCreating}
@@ -105,12 +222,19 @@ export default function FlashcardsHomeScreen() {
           переключение мгновенное, прокрутка и раскрытые ступени сохраняются */}
       <View
         className="flex-1"
-        style={{ display: tab === "steps" ? "flex" : "none" }}
+        style={{
+          display: !isSearching && tab === "steps" ? "flex" : "none",
+        }}
       >
-        <StepsTab onStartStep={startStep} onStartReview={startReview} />
+        <StepsTab
+          onStartStep={startStep}
+          onStartReview={startReview}
+          onSelectWord={selectFromGrid}
+          jump={jump}
+        />
       </View>
 
-      {tab === "sets" && (
+      {!isSearching && tab === "sets" && (
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingVertical: 16, gap: 12 }}
