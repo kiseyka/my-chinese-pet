@@ -2,9 +2,8 @@
 //
 // Сетка слов для карточек: иероглиф, пиньинь и точки чтения. Перевод скрыт —
 // тренировка как раз «иероглиф → перевод»; он показывается по тапу (WordSheet).
-// 4 колонки. Слово из двух и больше иероглифов занимает минимум 2 колонки
-// (как в «Написании»), а дальше — столько, сколько нужно, чтобы влезли
-// иероглифы и пиньинь: 3–4 иероглифа обычно влезают в 2 колонки.
+// 4 колонки. Ячейка занимает столько колонок, сколько нужно, чтобы влезли
+// иероглифы и пиньинь: 2 иероглифа обычно влезают в одну, 3–4 — в две.
 
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
@@ -28,12 +27,11 @@ interface ReadingGridProps {
 /** Примерная ширина буквы пиньиня (размер sm, 14 pt) — с запасом. */
 const PINYIN_CHAR_WIDTH = 7.5;
 /** Поля внутри ячейки по бокам. */
-const CELL_PADDING = 12;
+const CELL_PADDING = 8;
 
 /** Сколько колонок нужно слову. */
 function spanOf(word: Word, unit: number, hanziSize: number): number {
   const chars = Array.from(word.hanzi).length;
-  if (chars === 1) return 1;
 
   const needed =
     Math.max(chars * hanziSize, word.pinyin.length * PINYIN_CHAR_WIDTH) +
@@ -41,7 +39,7 @@ function spanOf(word: Word, unit: number, hanziSize: number): number {
 
   // Ширина n колонок вместе с промежутками: n * unit + (n - 1) * GAP
   const span = Math.ceil((needed + GAP) / (unit + GAP));
-  return Math.min(Math.max(span, 2), COLUMNS);
+  return Math.min(Math.max(span, 1), COLUMNS);
 }
 
 export const ReadingGrid = memo(function ReadingGrid({

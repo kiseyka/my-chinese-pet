@@ -12,6 +12,8 @@ import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { memo, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { ReadingGrid } from "./ReadingGrid";
+import ChevronIcon from "@/assets/images/icons/chevron-right.svg";
+import { colors } from "@/theme/colors";
 
 /** Внутренний отступ карточки (px-4) с двух сторон: на столько сетке меньше места. */
 export const READING_STEP_CARD_INSET = 32;
@@ -68,9 +70,17 @@ export const ReadingStepCard = memo(function ReadingStepCard({
         accessibilityLabel={`${title}: освоено ${learned} из ${total}`}
       >
         <View className="min-h-10 flex-row items-center gap-2">
-          <Text className="w-4 font-nunito text-body text-textSecondary">
-            {expanded ? "▾" : "▸"}
-          </Text>
+          {/* Стрелка: вправо — свёрнута, вниз — развёрнута */}
+          <View
+            style={{ transform: [{ rotate: expanded ? "90deg" : "0deg" }] }}
+          >
+            <ChevronIcon
+              width={24}
+              height={24}
+              color={colors.primary}
+              strokeWidth={2.5}
+            />
+          </View>
           <Text className="flex-1 font-nunitoBold text-body text-text">
             {title}
           </Text>

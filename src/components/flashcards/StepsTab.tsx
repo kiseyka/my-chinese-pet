@@ -198,7 +198,8 @@ export function StepsTab({ onStartStep }: StepsTabProps) {
         className="flex-1"
         style={{ display: isSearching ? "none" : "flex" }}
       >
-        <View className="mt-3">
+        {/* Отступ снизу: при прокрутке ступени не прилипают к чипсам */}
+        <View className="mb-1 mt-3 pb-2">
           <LevelChips chips={chips} value={level} onChange={setLevel} />
         </View>
 
