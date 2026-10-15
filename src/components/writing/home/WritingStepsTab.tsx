@@ -49,6 +49,14 @@ import { FlatList, View } from "react-native";
 
 type RenderGrid = (words: Word[], inset: number) => ReactNode;
 
+/** «Показать ступень» (из поиска): раздел, ступень и метка прыжка. */
+export interface WritingStepJump {
+  level: WritingLevel;
+  index: number;
+  /** Меняется при каждом прыжке, даже к той же ступени. */
+  nonce: number;
+}
+
 interface WritingStepsTabProps {
   /** Сетка слов ступени; inset — сколько ширины экрана не достаётся сетке. */
   renderGrid: RenderGrid;
@@ -57,6 +65,8 @@ interface WritingStepsTabProps {
   onStartStep: (level: WritingLevel, index: number) => void;
   /** Отступы экрана по бокам. */
   outerInset: number;
+  /** Прыжок к ступени: переключить раздел, развернуть ступень и прокрутить к ней. */
+  jump?: WritingStepJump | null;
 }
 
 export function WritingStepsTab({
@@ -64,6 +74,7 @@ export function WritingStepsTab({
   topCards,
   onStartStep,
   outerInset,
+  jump = null,
 }: WritingStepsTabProps) {
   const levels = useMemo(() => getAvailableLevels(), []);
 
@@ -72,6 +83,11 @@ export function WritingStepsTab({
 
   const [level, setLevel] = useState<WritingLevel>(() => firstHsk ?? levels[0]);
   const shownLevel = useDeferredValue(level);
+
+  // Прыжок из поиска — сначала переключаем раздел
+  useEffect(() => {
+    if (jump) setLevel(jump.level);
+  }, [jump]);
 
   // Разделы, в которые уже заходили: их списки держим смонтированными
   const [visited, setVisited] = useState<WritingLevel[]>(() => [level]);
@@ -124,6 +140,7 @@ export function WritingStepsTab({
           onStartStep={onStartStep}
           outerInset={outerInset}
           shared={shared}
+          jump={jump?.level === item ? jump : null}
         />
       ))}
     </View>
@@ -140,6 +157,7 @@ interface WritingLevelStepsProps {
   onStartStep: (level: WritingLevel, index: number) => void;
   outerInset: number;
   shared: SharedScroll;
+  jump: WritingStepJump | null;
 }
 
 const WritingLevelSteps = memo(function WritingLevelSteps({
@@ -150,6 +168,7 @@ const WritingLevelSteps = memo(function WritingLevelSteps({
   onStartStep,
   outerInset,
   shared,
+  jump,
 }: WritingLevelStepsProps) {
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
   const steps = getLevelSteps(level);
@@ -188,6 +207,21 @@ const WritingLevelSteps = memo(function WritingLevelSteps({
   const listRef = useRef<FlatList<Word[]>>(null);
   const scroll = useSyncedScroll(listRef, visible, shared, "y");
 
+  // Прыжок к ступени: развернуть её и прокрутить к ней
+  useEffect(() => {
+    if (!jump) return;
+    setExpanded((previous) => new Set(previous).add(jump.index));
+    // Ждём, пока список покажется и развернёт ступень
+    const timer = setTimeout(() => {
+      listRef.current?.scrollToIndex({
+        index: jump.index,
+        viewPosition: 0,
+        animated: true,
+      });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [jump]);
+
   const renderItem = useCallback(
     ({ item: words, index }: { item: Word[]; index: number }) => (
       <WritingStepItem
@@ -218,6 +252,20 @@ const WritingLevelSteps = memo(function WritingLevelSteps({
       initialNumToRender={5}
       maxToRenderPerBatch={5}
       windowSize={5}
+      onScrollToIndexFailed={(info) => {
+        // Ступень ещё не измерена: прокручиваем примерно, потом точно
+        listRef.current?.scrollToOffset({
+          offset: info.averageItemLength * info.index,
+          animated: false,
+        });
+        setTimeout(() => {
+          listRef.current?.scrollToIndex({
+            index: info.index,
+            viewPosition: 0,
+            animated: true,
+          });
+        }, 150);
+      }}
       ListHeaderComponent={renderHeader(visible)}
       renderItem={renderItem}
     />

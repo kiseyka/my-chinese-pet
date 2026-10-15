@@ -109,8 +109,25 @@ export function useWritingHome() {
   const [examOpen, setExamOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
 
-  /** Слово, для которого открыто окно выбора (PracticeChoiceModal). */
-  const [selected, setSelected] = useState<Word | null>(null);
+  /**
+   * Слово, для которого открыто окно выбора (PracticeChoiceModal), и откуда открыто:
+   * из поиска окно показывает, где слово лежит, и «Показать» ступень.
+   */
+  const [selection, setSelection] = useState<{
+    word: Word;
+    fromSearch: boolean;
+  } | null>(null);
+  const selected = selection?.word ?? null;
+  const selectedFromSearch = selection?.fromSearch ?? false;
+  const setSelected = useCallback(
+    (word: Word | null) =>
+      setSelection(word ? { word, fromSearch: false } : null),
+    [],
+  );
+  const selectFromSearch = useCallback(
+    (word: Word) => setSelection({ word, fromSearch: true }),
+    [],
+  );
   const selectedCharacters = useMemo(
     () => (selected ? getWordCharacters(selected) : []),
     [selected],
@@ -169,6 +186,8 @@ export function useWritingHome() {
     setReviewOpen,
     selected,
     setSelected,
+    selectedFromSearch,
+    selectFromSearch,
     selectedCharacters,
 
     // переходы

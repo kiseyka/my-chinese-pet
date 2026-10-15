@@ -164,8 +164,9 @@ export default function FlashcardsHomeScreen() {
 
       <WordSheet
         word={selected?.word ?? null}
+        // Место слова — только для найденного поиском: из ступени оно и так видно
         location={
-          selectedStep
+          selected?.fromSearch && selectedStep
             ? describeStep(selectedStep.level, selectedStep.index)
             : undefined
         }

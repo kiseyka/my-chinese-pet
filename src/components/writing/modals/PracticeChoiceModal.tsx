@@ -1,6 +1,8 @@
 // src/components/writing/modals/PracticeChoiceModal.tsx
 //
-// Окно перед тренировкой письма: шапка с выбранным словом или иероглифом и уровнем изучения,
+// Окно перед тренировкой письма: шапка с выбранным словом или иероглифом
+// (тап по иероглифу или пиньиню — озвучка) и уровнем изучения;
+// для слова из поиска — где оно лежит и «Показать» ступень;
 // выбор, что писать (у двусложного слова — слово целиком или один из иероглифов),
 // переключатель «Повторение», экзамен по выбранному слову и выбор формата
 // (быстрая или полная тренировка).
@@ -8,14 +10,13 @@
 // Панель, анимации и свайп — в BottomSheet; блоки окна — в PracticeChoiceParts.
 
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { Hanzi } from "@/components/ui/Hanzi";
-import { Pinyin } from "@/components/ui/Pinyin";
+import { WordHeader } from "@/components/word/WordHeader";
+import { WordLocationRow } from "@/components/word/WordLocationRow";
 import type { Word } from "@/content/flashcards/types";
 import type { WritingExamStatus } from "@/store/wordProgressStore";
 import type { FreeFormat } from "@/utils/writing/plans";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
 import {
   CharacterChoice,
   ExamStatusCard,
@@ -42,6 +43,10 @@ interface PracticeChoiceModalProps {
   now: number;
   onStartExam: (word: Word) => void;
   onStart: (word: Word, format: FreeFormat) => void;
+  /** Где лежит слово («HSK 2 · Ступень 7») — только для слова из поиска. */
+  location?: string;
+  /** «Показать» ступень слова. */
+  onShowInStep?: () => void;
   onClose: () => void;
 }
 
@@ -61,6 +66,8 @@ export function PracticeChoiceModal({
   now,
   onStartExam,
   onStart,
+  location,
+  onShowInStep,
   onClose,
 }: PracticeChoiceModalProps) {
   const { t } = useTranslation(["sets"]);
@@ -98,17 +105,12 @@ export function PracticeChoiceModal({
 
         return (
           <>
-            {/* Шапка: выбранное слово или иероглиф */}
-            <View className="items-center gap-1">
-              <Hanzi size="lg">{selected.hanzi}</Hanzi>
-              <Pinyin size="md">{selected.pinyin}</Pinyin>
-              <Text
-                className="text-center font-nunito text-body text-text"
-                numberOfLines={2}
-              >
-                {t(selected.translation)}
-              </Text>
-            </View>
+            {/* Шапка: выбранное слово или иероглиф, тап — озвучка */}
+            <WordHeader
+              hanzi={selected.hanzi}
+              pinyin={selected.pinyin}
+              translation={t(selected.translation)}
+            />
 
             <LevelPill
               level={getLevel(selected)}
@@ -116,6 +118,14 @@ export function PracticeChoiceModal({
               onToggleHint={() => toggleHint("level")}
               onCloseHint={closeHint}
             />
+
+            {location && (
+              <WordLocationRow
+                className="mt-4"
+                location={location}
+                onShow={onShowInStep}
+              />
+            )}
 
             {isTwoChar && (
               <CharacterChoice

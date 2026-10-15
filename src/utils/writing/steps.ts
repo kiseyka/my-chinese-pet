@@ -15,6 +15,8 @@
 import type { Word } from "@/content/flashcards/types";
 import { getWordFrequency } from "@/content/words/hsk";
 import {
+  describeLevel,
+  getAvailableLevels,
   getLevelWords,
   getWordHskLevel,
   getWordWritingDots,
@@ -205,4 +207,30 @@ export function getLevelStepsProgress(
   return getStepsProgress(getLevelSteps(level), (word) =>
     getWordWritingDots(word, progress),
   );
+}
+
+// ── Где лежит слово ──────────────────────────────────────────────────────────
+
+let locationCache: Map<string, { level: WritingLevel; index: number }> | null =
+  null;
+
+/** Раздел и ступень письма, где лежит слово (для «Показать» из поиска). */
+export function findWritingWordStep(
+  wordId: string,
+): { level: WritingLevel; index: number } | null {
+  if (!locationCache) {
+    const cache = new Map<string, { level: WritingLevel; index: number }>();
+    for (const level of getAvailableLevels()) {
+      getLevelSteps(level).forEach((words, index) => {
+        for (const word of words) cache.set(word.vocabularyId, { level, index });
+      });
+    }
+    locationCache = cache;
+  }
+  return locationCache.get(wordId) ?? null;
+}
+
+/** «HSK 2 · Ступень 7». */
+export function describeWritingStep(level: WritingLevel, index: number): string {
+  return `${describeLevel(level)} · Ступень ${index + 1}`;
 }
