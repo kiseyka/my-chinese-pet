@@ -7,10 +7,12 @@
 //   - ступени раздела (LevelSteps).
 // Всё это прокручивается вместе со ступенями: сверху закреплены только поиск и вкладки.
 // Разделы, в которые уже заходили, остаются в памяти и только прячутся —
-// повторное переключение мгновенное.
+// повторное переключение мгновенное. Прокрутка у всех разделов общая (useSharedScroll),
+// поэтому шапка с чипсами при переключении стоит на месте.
 // Сначала выбран текущий раздел — первый, где есть неосвоенные слова.
 
 import { ReviewCard } from "@/components/writing/home/ReviewCard";
+import { useSharedScroll } from "@/hooks/useSharedLevelScroll";
 import type { Word } from "@/content/flashcards/types";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { getReadingReviewWords } from "@/utils/flashcards/source";
@@ -20,7 +22,13 @@ import {
   getReadingSteps,
   type ReadingLevel,
 } from "@/utils/flashcards/steps";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { View } from "react-native";
 import { LevelChips } from "./LevelChips";
 import { LevelSteps, type StepJump } from "./LevelSteps";
@@ -103,19 +111,28 @@ export function StepsTab({
     [levels],
   );
 
-  // Отступы: повторение отделено крупно (32), чипсы ближе к ступеням (12)
-  const header = (
-    <View className="pb-3">
-      {reviewWords.length > 0 && (
-        <View className="mb-8">
-          <ReviewCard
-            total={reviewWords.length}
-            onPress={() => setReviewOpen(true)}
-          />
-        </View>
-      )}
-      <LevelChips chips={chips} value={level} onChange={setLevel} />
-    </View>
+  const shared = useSharedScroll();
+  const reviewCount = reviewWords.length;
+
+  // Шапка — как в «Написании»: строка «Повторение», под ней чипсы, ближе к ступеням (12)
+  const renderHeader = useCallback(
+    (visible: boolean) => (
+      <View className="pb-3">
+        {reviewCount > 0 && (
+          <View className="mb-4">
+            <ReviewCard total={reviewCount} onPress={() => setReviewOpen(true)} />
+          </View>
+        )}
+        <LevelChips
+          chips={chips}
+          value={level}
+          onChange={setLevel}
+          shared={shared}
+          active={visible}
+        />
+      </View>
+    ),
+    [reviewCount, chips, level, shared],
   );
 
   return (
@@ -144,7 +161,8 @@ export function StepsTab({
           jump={jump?.level === item ? jump : null}
           onStartStep={onStartStep}
           onSelectWord={onSelectWord}
-          header={header}
+          renderHeader={renderHeader}
+          shared={shared}
         />
       ))}
     </View>

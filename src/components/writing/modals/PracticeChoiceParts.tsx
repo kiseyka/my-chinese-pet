@@ -11,18 +11,17 @@ import FullPracticeIcon from "@/assets/images/icons/book-open.svg";
 import ReviewIcon from "@/assets/images/icons/bookmark-plus.svg";
 import ArrowRight from "@/assets/images/icons/chevron-right.svg";
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
-import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import InfoIcon from "@/assets/images/icons/info.svg";
 import FastPracticeIcon from "@/assets/images/icons/zap.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { TOOLTIP_RAISED, Tooltip } from "@/components/ui/Tooltip";
+import { IconSlot, ToggleCard } from "@/components/word/ToggleCard";
 import type { Word } from "@/content/flashcards/types";
 import { interopIconColor } from "@/lib/interopIcon";
 import type { WritingExamStatus } from "@/store/wordProgressStore";
 import { formatExamWait } from "@/utils/writing/labels";
 import type { FreeFormat } from "@/utils/writing/plans";
-import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SealMark } from "../SealMark";
 import { WritingDots } from "../home/WritingDots";
@@ -33,7 +32,6 @@ interopIconColor(
   ReviewIcon,
   ArrowRight,
   CheckIcon,
-  PlusIcon,
   InfoIcon,
   FastPracticeIcon,
 );
@@ -41,16 +39,6 @@ interopIconColor(
 /** Текст тултипа у «Уровня изучения». */
 const LEVEL_HINT =
   "Точка добавляется, когда пишешь иероглиф по памяти без подсказок. Ошибка забирает точку. Три точки — иероглиф изучен.";
-
-/**
- * Слот под иконку в карточках «Повторение» и «Экзамен»: одинаковый размер слева и справа,
- * чтобы карточки были одной высоты, какая бы иконка в них ни стояла.
- */
-function IconSlot({ children }: { children?: ReactNode }) {
-  return (
-    <View className="h-8 w-8 items-center justify-center">{children}</View>
-  );
-}
 
 // ── Уровень изучения ─────────────────────────────────────────────────────────
 
@@ -66,7 +54,10 @@ export function LevelPill({
   onCloseHint: () => void;
 }) {
   return (
-    <View className="mt-3 self-center">
+    <View
+      className="mt-3 self-center"
+      style={hintVisible ? TOOLTIP_RAISED : undefined}
+    >
       <Tooltip visible={hintVisible} onClose={onCloseHint} text={LEVEL_HINT}>
         <Pressable
           onPress={onToggleHint}
@@ -161,29 +152,13 @@ export function ReviewToggleCard({
   onToggle: () => void;
 }) {
   return (
-    <Pressable
+    <ToggleCard
+      className="mt-4"
+      icon={<ReviewIcon width={26} height={26} className="text-primary" />}
+      label={inReview ? "В повторении" : "Добавить в повторение"}
+      checked={inReview}
       onPress={onToggle}
-      className="mt-4 flex-row items-center gap-3 rounded-2xl bg-surface p-4 active:opacity-70"
-      accessibilityRole="switch"
-      accessibilityState={{ checked: inReview }}
-    >
-      <IconSlot>
-        <ReviewIcon width={26} height={26} className="text-primary" />
-      </IconSlot>
-
-      <Text className="flex-1 font-nunitoBold text-body text-text">
-        {inReview ? "В повторении" : "Добавить в повторение"}
-      </Text>
-
-      {/* Справа: «+» — добавить, галочка — уже в повторении */}
-      <IconSlot>
-        {inReview ? (
-          <CheckIcon width={28} height={28} className="text-primary" />
-        ) : (
-          <PlusIcon width={28} height={28} className="text-primary" />
-        )}
-      </IconSlot>
-    </Pressable>
+    />
   );
 }
 
@@ -259,7 +234,7 @@ export function ExamStatusCard({
   // Сдано или пока закрыто: справа «i» с подсказкой.
   // Тултип привязан ко всей карточке, чтобы вставал по центру и не вылезал за края экрана.
   return (
-    <View className="mt-3">
+    <View className="mt-3" style={hintVisible ? TOOLTIP_RAISED : undefined}>
       <Tooltip
         visible={hintVisible}
         onClose={onCloseHint}

@@ -2,15 +2,19 @@
 //
 // Главный экран режима «Написание» — устроен так же, как экран карточек:
 //   - сверху закреплены поиск (иероглиф, пиньинь без тонов, перевод) и вкладки;
-//   - «Ступени»: «Экзамен» и «Повторение», чипсы разделов HSK и ступени
+//   - «Ступени»: строки «Экзамен» и «Повторение», чипсы разделов HSK и ступени
 //     с кнопкой «Тренировать» (WritingStepsTab);
 //   - «Мои наборы»: те же наборы, что в карточках, — «Открыть», «Тренировать»,
 //     создание и редактирование (редактор общий с карточками).
 // Нажатие на слово открывает выбор: что писать, в каком формате, «Повторять» и экзамен.
+// Поиск — списком (иероглиф, пиньинь, перевод), как в карточках; у найденного слова
+// в окне видно, где оно лежит, и есть «Показать» ступень.
 //
 // Данные и действия — в useWritingHome; здесь только раскладка.
 
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
+import { SetWordRow } from "@/components/flashcards/SetWordRow";
+import type { WordLevel } from "@/components/ui/LevelDots";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { SHEET_HORIZONTAL_INSET } from "@/components/ui/BottomSheet";
@@ -20,7 +24,10 @@ import { Title } from "@/components/ui/Title";
 import { ExamEntryCard } from "@/components/writing/home/ExamEntryCard";
 import { ReviewCard } from "@/components/writing/home/ReviewCard";
 import { WordGrid } from "@/components/writing/home/WordGrid";
-import { WritingStepsTab } from "@/components/writing/home/WritingStepsTab";
+import {
+  WritingStepsTab,
+  type WritingStepJump,
+} from "@/components/writing/home/WritingStepsTab";
 import { ExamModal } from "@/components/writing/modals/ExamModal";
 import { PracticeChoiceModal } from "@/components/writing/modals/PracticeChoiceModal";
 import { ReviewModal } from "@/components/writing/modals/ReviewModal";
@@ -32,15 +39,22 @@ import type { Word } from "@/content/flashcards/types";
 import { useWritingHome } from "@/hooks/writing/useWritingHome";
 import { useCustomSetsStore } from "@/store/customSetsStore";
 import { REPEAT_LESSON_SIZE } from "@/utils/writing/plans";
+import {
+  describeWritingStep,
+  findWritingWordStep,
+} from "@/utils/writing/steps";
 import type { WritingLevel } from "@/utils/writing/words";
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { FlatList, Text, View } from "react-native";
 
 /** Отступы Screen по бокам: от них считается ширина ячеек сетки. */
 const SCREEN_INSET = 32;
 
 type WritingTab = "steps" | "sets";
+
+/** Строке результата поиска действие «добавить/убрать» не нужно. */
+const noop = () => {};
 
 const TABS = [
   { key: "steps" as const, label: "Ступени" },
@@ -78,6 +92,22 @@ export default function WritingHomeScreen() {
     />
   );
 
+  // Сетка ступени — стабильная функция: иначе тап по чипсу перерисовывает все ступени
+  const { getLevel, isInReview, getExamMark, setSelected } = home;
+  const renderStepGrid = useCallback(
+    (words: Word[], inset: number) => (
+      <WordGrid
+        words={words}
+        getLevel={getLevel}
+        onSelect={setSelected}
+        isMarked={isInReview}
+        getExamMark={getExamMark}
+        horizontalInset={inset}
+      />
+    ),
+    [getLevel, isInReview, getExamMark, setSelected],
+  );
+
   const startStep = useCallback(
     (level: WritingLevel, index: number) =>
       router.push({
@@ -86,6 +116,21 @@ export default function WritingHomeScreen() {
       }),
     [router],
   );
+
+  // ── Слово из поиска: где лежит и «Показать» ────────────────────────────────
+
+  const selectedStep =
+    home.selected && home.selectedFromSearch
+      ? findWritingWordStep(home.selected.vocabularyId)
+      : null;
+  const [jump, setJump] = useState<WritingStepJump | null>(null);
+  const showInStep = () => {
+    if (!selectedStep) return;
+    home.setSelected(null);
+    home.setQuery("");
+    setTab("steps");
+    setJump({ ...selectedStep, nonce: Date.now() });
+  };
 
   const createSet = useCustomSetsStore((state) => state.createSet);
   const [isCreating, setIsCreating] = useState(false);
@@ -105,25 +150,28 @@ export default function WritingHomeScreen() {
     });
   };
 
-  // «Экзамен» и «Повторение» над чипсами — отделены от них крупным отступом
-  const hasExam = examQueue.ready.length > 0 || examQueue.upcoming.length > 0;
-  const hasTopCards = hasExam || repeatWords.length > 0;
-  const topCards = hasTopCards ? (
-    <View className="mb-8 gap-3">
-      <ExamEntryCard
-        readyCount={examQueue.ready.length}
-        nextAvailableAt={examQueue.upcoming[0]?.availableAt}
-        now={home.now}
-        onPress={() => home.setExamOpen(true)}
-      />
-      {repeatWords.length > 0 && (
-        <ReviewCard
-          total={repeatWords.length}
-          onPress={() => home.setReviewOpen(true)}
+  // «Экзамен» и «Повторение» над чипсами — компактные строки, как в карточках
+  const readyCount = examQueue.ready.length;
+  const nextExamAt = examQueue.upcoming[0]?.availableAt;
+  const repeatCount = repeatWords.length;
+  const { now, setExamOpen, setReviewOpen } = home;
+  const topCards = useMemo(() => {
+    const hasExam = readyCount > 0 || nextExamAt !== undefined;
+    if (!hasExam && repeatCount === 0) return null;
+    return (
+      <View className="mb-4 gap-2">
+        <ExamEntryCard
+          readyCount={readyCount}
+          nextAvailableAt={nextExamAt}
+          now={now}
+          onPress={() => setExamOpen(true)}
         />
-      )}
-    </View>
-  ) : null;
+        {repeatCount > 0 && (
+          <ReviewCard total={repeatCount} onPress={() => setReviewOpen(true)} />
+        )}
+      </View>
+    );
+  }, [readyCount, nextExamAt, repeatCount, now, setExamOpen, setReviewOpen]);
 
   return (
     <Screen>
@@ -143,6 +191,12 @@ export default function WritingHomeScreen() {
         now={home.now}
         onStartExam={(word) => home.startExam([word])}
         onStart={home.startPractice}
+        location={
+          selectedStep
+            ? describeWritingStep(selectedStep.level, selectedStep.index)
+            : undefined
+        }
+        onShowInStep={selectedStep ? showInStep : undefined}
         onClose={() => home.setSelected(null)}
       />
 
@@ -217,20 +271,30 @@ export default function WritingHomeScreen() {
         />
       )}
 
+      {/* Результаты поиска — списком: иероглиф, пиньинь и перевод, точки письма */}
       {home.isSearching && (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
+        <FlatList
+          data={home.searchResults}
+          keyExtractor={(word) => word.vocabularyId}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingVertical: 16 }}
-        >
-          {home.searchResults.length > 0 ? (
-            grid(home.searchResults)
-          ) : (
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 16, gap: 8 }}
+          initialNumToRender={10}
+          renderItem={({ item }) => (
+            <SetWordRow
+              word={item}
+              action="open"
+              level={home.getLevel(item) as WordLevel}
+              onPress={noop}
+              onOpenWord={home.selectFromSearch}
+            />
+          )}
+          ListEmptyComponent={
             <Text className="font-nunito text-body text-text">
               Ничего не нашлось. Пиньинь можно писать без тонов: «nihao».
             </Text>
-          )}
-        </ScrollView>
+          }
+        />
       )}
 
       {/* Вкладки остаются смонтированными, неактивная прячется */}
@@ -241,10 +305,11 @@ export default function WritingHomeScreen() {
         }}
       >
         <WritingStepsTab
-          renderGrid={(words, inset) => grid(words, inset)}
+          renderGrid={renderStepGrid}
           topCards={topCards}
           onStartStep={startStep}
           outerInset={SCREEN_INSET}
+          jump={jump}
         />
       </View>
 

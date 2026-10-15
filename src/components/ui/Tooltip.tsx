@@ -2,7 +2,11 @@
 //
 // Тултип: пузырь с текстом и стрелкой под (или над) элементом-якорем.
 // Якорь передаётся детьми; показом управляет родитель (visible / onClose).
-// Пузырь лежит поверх соседних блоков, поэтому у обёртки высокий zIndex.
+// Пузырь лежит поверх соседних блоков, поэтому у обёртки высокий zIndex — только пока
+// он открыт: иначе у двух тултипов подряд (уровень и экзамен) zIndex одинаковый,
+// и нижний блок перекрывал пузырь верхнего.
+// zIndex действует только среди соседей: если тултип вложен в обёртку,
+// обёртке тоже нужен zIndex, пока тултип открыт (TOOLTIP_RAISED).
 // Закрывается тапом по самому пузырю; остальное (тап по якорю, по фону) решает родитель.
 
 import { useEffect, useRef, type ReactNode } from "react";
@@ -21,6 +25,9 @@ interface TooltipProps {
 }
 
 const GAP = 10;
+
+/** Стиль для обёртки вокруг открытого тултипа: поднять её над соседями. */
+export const TOOLTIP_RAISED = { zIndex: 50, elevation: 50 } as const;
 
 export function Tooltip({
   children,
@@ -51,7 +58,7 @@ export function Tooltip({
   });
 
   return (
-    <View style={{ zIndex: 20, elevation: 20 }}>
+    <View style={visible ? TOOLTIP_RAISED : undefined}>
       {children}
 
       {visible && (

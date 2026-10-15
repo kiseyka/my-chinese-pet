@@ -1,27 +1,25 @@
 // src/components/flashcards/WordSheet.tsx
 //
-// Панель слова снизу (по тапу на слово в сетке): иероглиф и пиньинь (тап — озвучка),
-// перевод, точки чтения, где лежит слово («HSK 2 · Ступень 7», из поиска —
-// с кнопкой «Показать»), «Повторение» карточек, список своих наборов — в какой добавить слово —
-// и «Новый набор»: окно с названием, и слово сразу попадает в новый набор.
+// Панель слова снизу (по тапу на слово в сетке, в результатах, в наборе) — в том же
+// виде, что окно слова в «Написании»: иероглиф и пиньинь (тап — озвучка), перевод,
+// точки, «Добавить в повторение» и свои наборы карточками-переключателями.
+// Где лежит слово («HSK 2 · Ступень 7» и «Показать») — только если передано
+// (на экране карточек — только для слова из поиска).
 
-import ReviewIcon from "@/assets/images/icons/bookmark.svg";
-import CheckIcon from "@/assets/images/icons/circle-check.svg";
-import PlusIcon from "@/assets/images/icons/circle-plus.svg";
-import VolumeIcon from "@/assets/images/icons/volume.svg";
+import ReviewIcon from "@/assets/images/icons/bookmark-plus.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { Hanzi } from "@/components/ui/Hanzi";
-import { Pinyin } from "@/components/ui/Pinyin";
+import { SetToggleList } from "@/components/word/SetToggleList";
+import { ToggleCard } from "@/components/word/ToggleCard";
+import { WordHeader } from "@/components/word/WordHeader";
+import { WordLocationRow } from "@/components/word/WordLocationRow";
 import { WritingDots } from "@/components/writing/home/WritingDots";
 import type { Word } from "@/content/flashcards/types";
-import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
-import { useCustomSetsStore } from "@/store/customSetsStore";
+import { interopIconColor } from "@/lib/interopIcon";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
-import { colors } from "@/theme/colors";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { SetTitleModal } from "./SetTitleModal";
+import { View } from "react-native";
+
+interopIconColor(ReviewIcon);
 
 interface WordSheetProps {
   /** Слово; null — панель закрыта. */
@@ -38,14 +36,6 @@ interface WordSheetProps {
   onClose: () => void;
 }
 
-/** Крупно для коротких слов; длинные фразы мельче и переносятся. */
-function sheetHanziSize(hanzi: string): number | "lg" {
-  const length = Array.from(hanzi).length;
-  if (length <= 4) return "lg";
-  if (length <= 6) return 44;
-  return 36;
-}
-
 export function WordSheet({
   word,
   location,
@@ -54,10 +44,7 @@ export function WordSheet({
   onClose,
 }: WordSheetProps) {
   const { t } = useTranslation();
-  const { speakForced } = useSpeakHanzi();
 
-  const sets = useCustomSetsStore((state) => state.sets);
-  const toggleWord = useCustomSetsStore((state) => state.toggleWord);
   const readingReview = useWordProgressStore((state) => state.readingReview);
   const toggleReadingReview = useWordProgressStore(
     (state) => state.toggleReadingReview,
@@ -70,202 +57,63 @@ export function WordSheet({
     (state) => state.removeFromWritingReview,
   );
   const isWriting = skill === "writing";
-  const createSet = useCustomSetsStore((state) => state.createSet);
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
   const vocabularyWords = useWordProgressStore(
     (state) => state.vocabularyWords,
   );
 
-  // Слово, для которого создаём набор (окно с названием поверх панели)
-  const [creatingFor, setCreatingFor] = useState<Word | null>(null);
-
   return (
-    <>
-      <BottomSheet item={word} onClose={onClose}>
-        {(shown) => {
-          // Для письма отметка «знаю» из словаря не учитывается
-          const level = getWordLevel(
-            flashcardWords[shown.vocabularyId],
-            isWriting
-              ? false
-              : (vocabularyWords[shown.vocabularyId]?.isKnown ?? false),
-            [skill],
-          );
-          const inReview = isWriting
-            ? !!writingReview[shown.vocabularyId]
-            : !!readingReview[shown.vocabularyId];
-          const toggleReview = () => {
-            if (!isWriting) toggleReadingReview(shown.vocabularyId);
-            else if (inReview) removeFromWritingReview(shown.vocabularyId);
-            else toggleWritingReview(shown.vocabularyId);
-          };
+    <BottomSheet item={word} onClose={onClose}>
+      {(shown) => {
+        // Для письма отметка «знаю» из словаря не учитывается
+        const level = getWordLevel(
+          flashcardWords[shown.vocabularyId],
+          isWriting
+            ? false
+            : (vocabularyWords[shown.vocabularyId]?.isKnown ?? false),
+          [skill],
+        );
+        const inReview = isWriting
+          ? !!writingReview[shown.vocabularyId]
+          : !!readingReview[shown.vocabularyId];
+        const toggleReview = () => {
+          if (!isWriting) toggleReadingReview(shown.vocabularyId);
+          else if (inReview) removeFromWritingReview(shown.vocabularyId);
+          else toggleWritingReview(shown.vocabularyId);
+        };
 
-          return (
-            <>
-              {/* Шапка: слово и пиньинь (тап — озвучка), перевод, точки */}
-              <View className="items-center gap-1">
-                {/* Иероглиф и пиньинь: тап — озвучка */}
-                <Pressable
-                  onPress={() => speakForced(shown.hanzi)}
-                  className="active:opacity-60"
-                  accessibilityRole="button"
-                  accessibilityLabel={`${shown.hanzi}: послушать`}
-                >
-                  <Hanzi
-                    size={sheetHanziSize(shown.hanzi)}
-                    numberOfLines={2}
-                    className="text-center"
-                  >
-                    {shown.hanzi}
-                  </Hanzi>
-                </Pressable>
+        return (
+          <>
+            <WordHeader
+              hanzi={shown.hanzi}
+              pinyin={shown.pinyin}
+              translation={t(shown.translation)}
+            />
 
-                <Pressable
-                  onPress={() => speakForced(shown.hanzi)}
-                  className="flex-row items-center gap-2 active:opacity-60"
-                  accessibilityRole="button"
-                  accessibilityLabel="Послушать"
-                  hitSlop={8}
-                >
-                  <Pinyin size="md">{shown.pinyin}</Pinyin>
-                  <VolumeIcon width={20} height={20} color={colors.primary} />
-                </Pressable>
+            <View className="mt-3 items-center">
+              <WritingDots level={level} />
+            </View>
 
-                <Text className="text-center font-nunito text-lead text-text">
-                  {t(shown.translation)}
-                </Text>
+            {location && (
+              <WordLocationRow
+                className="mt-5"
+                location={location}
+                onShow={onShowInStep}
+              />
+            )}
 
-                <View className="mt-2">
-                  <WritingDots level={level} />
-                </View>
-              </View>
+            <ToggleCard
+              className="mt-4"
+              icon={<ReviewIcon width={26} height={26} className="text-primary" />}
+              label={inReview ? "В повторении" : "Добавить в повторение"}
+              checked={inReview}
+              onPress={toggleReview}
+            />
 
-              {/* Где лежит слово */}
-              {location && (
-                <View className="mt-5 min-h-12 flex-row items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-2">
-                  <Text className="flex-1 font-nunito text-body text-text">
-                    {location}
-                  </Text>
-                  {onShowInStep && (
-                    <Pressable
-                      onPress={onShowInStep}
-                      hitSlop={8}
-                      className="min-h-10 justify-center active:opacity-60"
-                      accessibilityRole="button"
-                      accessibilityLabel={`Показать: ${location}`}
-                    >
-                      <Text className="font-nunitoBold text-small text-primary">
-                        Показать
-                      </Text>
-                    </Pressable>
-                  )}
-                </View>
-              )}
-
-              {/* Повторение в карточках */}
-              <Pressable
-                onPress={toggleReview}
-                className={`mt-3 min-h-12 flex-row items-center gap-3 rounded-2xl border bg-surface px-4 py-3 active:opacity-70 ${
-                  inReview ? "border-primary" : "border-transparent"
-                }`}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: inReview }}
-              >
-                <ReviewIcon
-                  width={22}
-                  height={22}
-                  color={inReview ? colors.primary : colors.textSecondary}
-                />
-                <Text className="flex-1 font-nunito text-body text-text">
-                  {inReview ? "На повторении" : "Добавить в повторение"}
-                </Text>
-                {inReview ? (
-                  <CheckIcon width={22} height={22} color={colors.primary} />
-                ) : (
-                  <PlusIcon
-                    width={22}
-                    height={22}
-                    color={colors.textSecondary}
-                  />
-                )}
-              </Pressable>
-
-              {/* Свои наборы */}
-              <View className="mt-6 gap-2">
-                <Text className="font-nunitoBold text-body text-text">
-                  Добавить в набор
-                </Text>
-
-                {sets.map((set) => {
-                  const inSet = set.wordIds.includes(shown.vocabularyId);
-
-                  return (
-                    <Pressable
-                      key={set.id}
-                      onPress={() => toggleWord(set.id, shown.vocabularyId)}
-                      className={`min-h-12 flex-row items-center justify-between gap-3 rounded-2xl border bg-surface px-4 py-3 active:opacity-70 ${
-                        inSet ? "border-primary" : "border-transparent"
-                      }`}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: inSet }}
-                    >
-                      <Text
-                        numberOfLines={1}
-                        className="flex-1 font-nunito text-body text-text"
-                      >
-                        {set.title}
-                      </Text>
-                      {inSet ? (
-                        <CheckIcon
-                          width={22}
-                          height={22}
-                          color={colors.primary}
-                        />
-                      ) : (
-                        <PlusIcon
-                          width={22}
-                          height={22}
-                          color={colors.textSecondary}
-                        />
-                      )}
-                    </Pressable>
-                  );
-                })}
-
-                {/* Новый набор сразу с этим словом */}
-                <Pressable
-                  onPress={() => setCreatingFor(shown)}
-                  className="min-h-12 flex-row items-center justify-between gap-3 rounded-2xl border border-dashed border-primary px-4 py-3 active:opacity-70"
-                  accessibilityRole="button"
-                >
-                  <Text className="flex-1 font-nunitoBold text-body text-primary">
-                    Новый набор
-                  </Text>
-                  <PlusIcon width={22} height={22} color={colors.primary} />
-                </Pressable>
-              </View>
-            </>
-          );
-        }}
-      </BottomSheet>
-
-      {/* Поверх панели: название нового набора */}
-      <SetTitleModal
-        visible={!!creatingFor}
-        heading="Новый набор"
-        message={
-          creatingFor ? `${creatingFor.hanzi} сразу попадёт в него` : undefined
-        }
-        confirmLabel="Создать"
-        onClose={() => setCreatingFor(null)}
-        onConfirm={(title) => {
-          if (creatingFor) {
-            const setId = createSet(title);
-            toggleWord(setId, creatingFor.vocabularyId);
-          }
-          setCreatingFor(null);
-        }}
-      />
-    </>
+            <SetToggleList word={shown} className="mt-6" />
+          </>
+        );
+      }}
+    </BottomSheet>
   );
 }

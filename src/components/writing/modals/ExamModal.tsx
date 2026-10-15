@@ -10,7 +10,7 @@ import InfoIcon from "@/assets/images/icons/info.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { TOOLTIP_RAISED, Tooltip } from "@/components/ui/Tooltip";
 import type { Word } from "@/content/flashcards/types";
 import { interopIconColor } from "@/lib/interopIcon";
 import { formatExamWait } from "@/utils/writing/labels";
@@ -99,7 +99,10 @@ export function ExamModal({
             </View>
 
             {/* Правила */}
-            <View className="mt-3 self-center">
+            <View
+              className="mt-3 self-center"
+              style={showRules ? TOOLTIP_RAISED : undefined}
+            >
               <Tooltip
                 visible={showRules}
                 onClose={() => setShowRules(false)}
