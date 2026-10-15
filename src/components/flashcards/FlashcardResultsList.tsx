@@ -9,6 +9,9 @@
 //   закладка — «Повторение» сразу, без панели;
 //   плюс — панель слова (onOpenWord): наборы, новый набор, озвучка.
 // Тап по самому слову открывает ту же панель.
+//
+// Самопроверка (selfCheck): разделы «Не знаю», «Сомневаюсь» (у обоих —
+// «Все в повторение») и «Знаю».
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
@@ -22,6 +25,8 @@ import { SetWordRow } from "./SetWordRow";
 
 interface FlashcardResultsListProps {
   results: FlashcardQuestionResult[];
+  /** Итоги самопроверки: разделы по ответам. */
+  selfCheck?: boolean;
   onOpenWord: (word: Word) => void;
 }
 
@@ -38,6 +43,7 @@ function toWord(item: FlashcardQuestionResult): Word {
 
 export function FlashcardResultsList({
   results,
+  selfCheck = false,
   onOpenWord,
 }: FlashcardResultsListProps) {
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
@@ -60,9 +66,9 @@ export function FlashcardResultsList({
   const mistakes = unique.filter((item) => !item.isCorrect);
   const correct = unique.filter((item) => item.isCorrect);
 
-  const mistakesToAdd = mistakes
-    .map((item) => item.vocabularyId)
-    .filter((id) => !readingReview[id]);
+  /** Слова раздела, которых ещё нет в «Повторении». */
+  const notInReview = (items: FlashcardQuestionResult[]) =>
+    items.map((item) => item.vocabularyId).filter((id) => !readingReview[id]);
 
   const renderRow = (item: FlashcardQuestionResult) => {
     const inReview = !!readingReview[item.vocabularyId];
@@ -118,61 +124,93 @@ export function FlashcardResultsList({
     );
   };
 
+  /** Заголовок раздела с «Все в повторение». */
+  const reviewSection = (title: string, items: FlashcardQuestionResult[]) => {
+    const toAdd = notInReview(items);
+
+    return (
+      <View className="gap-3">
+        <View className="min-h-10 flex-row items-center justify-between gap-3">
+          <Text className="font-nunitoBold text-title text-text">
+            {title} · {items.length}
+          </Text>
+          {/* Ширина фиксирована: смена текста не сдвигает ничего вокруг */}
+          <Pressable
+            onPress={() => addToReadingReview(toAdd)}
+            disabled={toAdd.length === 0}
+            className={`min-h-10 w-44 flex-row items-center justify-center gap-1.5 rounded-full px-3 ${
+              toAdd.length > 0
+                ? "border border-primary active:bg-primary/10"
+                : "border border-transparent bg-primary/15"
+            }`}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: toAdd.length === 0 }}
+          >
+            <ReviewIcon width={16} height={16} color={colors.primary} />
+            <Text className="font-nunitoBold text-small text-primary">
+              {toAdd.length > 0 ? "Все в повторение" : "Все в повторении"}
+            </Text>
+          </Pressable>
+        </View>
+        {items.map(renderRow)}
+      </View>
+    );
+  };
+
+  const plainSection = (title: string, items: FlashcardQuestionResult[]) =>
+    items.length > 0 && (
+      <View className="gap-3">
+        <Text className="font-nunitoBold text-title text-text">
+          {title} · {items.length}
+        </Text>
+        {items.map(renderRow)}
+      </View>
+    );
+
+  const praise = (title: string, text: string) => (
+    <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
+      <Text className="font-nunitoBold text-title text-primary">{title}</Text>
+      <Text className="text-center font-nunito text-body text-text">
+        {text}
+      </Text>
+    </View>
+  );
+
+  const footer = (
+    <Text className="text-center font-nunito text-small text-textSecondary">
+      Закладка — в повторение, плюс — в любой набор.
+    </Text>
+  );
+
+  if (selfCheck) {
+    const dont = unique.filter((item) => item.selfCheck === "dont");
+    const unsure = unique.filter((item) => item.selfCheck === "unsure");
+    const know = unique.filter((item) => item.selfCheck === "know");
+
+    return (
+      <View className="gap-8">
+        {dont.length === 0 && unsure.length === 0
+          ? praise("Всё знакомо!", "Ни одного сомнения.")
+          : null}
+        {dont.length > 0 && reviewSection("Не знаю", dont)}
+        {unsure.length > 0 && reviewSection("Сомневаюсь", unsure)}
+        {plainSection("Знаю", know)}
+        {footer}
+      </View>
+    );
+  }
+
   return (
     <View className="gap-8">
       {/* Ошибки или похвала */}
-      {mistakes.length > 0 ? (
-        <View className="gap-3">
-          <View className="min-h-10 flex-row items-center justify-between gap-3">
-            <Text className="font-nunitoBold text-title text-text">
-              Ошибки · {mistakes.length}
-            </Text>
-            {/* Ширина фиксирована: смена текста не сдвигает ничего вокруг */}
-            <Pressable
-              onPress={() => addToReadingReview(mistakesToAdd)}
-              disabled={mistakesToAdd.length === 0}
-              className={`min-h-10 w-44 flex-row items-center justify-center gap-1.5 rounded-full px-3 ${
-                mistakesToAdd.length > 0
-                  ? "border border-primary active:bg-primary/10"
-                  : "border border-transparent bg-primary/15"
-              }`}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: mistakesToAdd.length === 0 }}
-            >
-              <ReviewIcon width={16} height={16} color={colors.primary} />
-              <Text className="font-nunitoBold text-small text-primary">
-                {mistakesToAdd.length > 0
-                  ? "Все в повторение"
-                  : "Все в повторении"}
-              </Text>
-            </Pressable>
-          </View>
-          {mistakes.map(renderRow)}
-        </View>
-      ) : (
-        <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
-          <Text className="font-nunitoBold text-title text-primary">
-            Без ошибок!
-          </Text>
-          <Text className="text-center font-nunito text-body text-text">
-            Все слова узнаны верно.
-          </Text>
-        </View>
-      )}
+      {mistakes.length > 0
+        ? reviewSection("Ошибки", mistakes)
+        : praise("Без ошибок!", "Все слова узнаны верно.")}
 
       {/* Верно */}
-      {correct.length > 0 && (
-        <View className="gap-3">
-          <Text className="font-nunitoBold text-title text-text">
-            Верно · {correct.length}
-          </Text>
-          {correct.map(renderRow)}
-        </View>
-      )}
+      {plainSection("Верно", correct)}
 
-      <Text className="text-center font-nunito text-small text-textSecondary">
-        Закладка — в повторение, плюс — в любой набор.
-      </Text>
+      {footer}
     </View>
   );
 }
