@@ -30,6 +30,11 @@ interface WordSheetProps {
   location?: string;
   /** Если передан — у строки с местом есть кнопка «Показать». */
   onShowInStep?: () => void;
+  /**
+   * Чей навык: точки и «Повторение» — чтения (карточки) или письма.
+   * У письма своё повторение: убрать оттуда = «чувствую, что знаю» (очередь на экзамен).
+   */
+  skill?: "reading" | "writing";
   onClose: () => void;
 }
 
@@ -45,6 +50,7 @@ export function WordSheet({
   word,
   location,
   onShowInStep,
+  skill = "reading",
   onClose,
 }: WordSheetProps) {
   const { t } = useTranslation();
@@ -56,6 +62,14 @@ export function WordSheet({
   const toggleReadingReview = useWordProgressStore(
     (state) => state.toggleReadingReview,
   );
+  const writingReview = useWordProgressStore((state) => state.writingReview);
+  const toggleWritingReview = useWordProgressStore(
+    (state) => state.toggleWritingReview,
+  );
+  const removeFromWritingReview = useWordProgressStore(
+    (state) => state.removeFromWritingReview,
+  );
+  const isWriting = skill === "writing";
   const createSet = useCustomSetsStore((state) => state.createSet);
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
   const vocabularyWords = useWordProgressStore(
@@ -69,12 +83,22 @@ export function WordSheet({
     <>
       <BottomSheet item={word} onClose={onClose}>
         {(shown) => {
+          // Для письма отметка «знаю» из словаря не учитывается
           const level = getWordLevel(
             flashcardWords[shown.vocabularyId],
-            vocabularyWords[shown.vocabularyId]?.isKnown ?? false,
-            ["reading"],
+            isWriting
+              ? false
+              : (vocabularyWords[shown.vocabularyId]?.isKnown ?? false),
+            [skill],
           );
-          const inReview = !!readingReview[shown.vocabularyId];
+          const inReview = isWriting
+            ? !!writingReview[shown.vocabularyId]
+            : !!readingReview[shown.vocabularyId];
+          const toggleReview = () => {
+            if (!isWriting) toggleReadingReview(shown.vocabularyId);
+            else if (inReview) removeFromWritingReview(shown.vocabularyId);
+            else toggleWritingReview(shown.vocabularyId);
+          };
 
           return (
             <>
@@ -140,7 +164,7 @@ export function WordSheet({
 
               {/* Повторение в карточках */}
               <Pressable
-                onPress={() => toggleReadingReview(shown.vocabularyId)}
+                onPress={toggleReview}
                 className={`mt-3 min-h-12 flex-row items-center gap-3 rounded-2xl border bg-surface px-4 py-3 active:opacity-70 ${
                   inReview ? "border-primary" : "border-transparent"
                 }`}

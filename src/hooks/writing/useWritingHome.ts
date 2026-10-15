@@ -1,7 +1,7 @@
 // src/hooks/writing/useWritingHome.ts
 //
 // Данные и действия экрана «Написание» (WritingHomeScreen):
-// разделы HSK и ступени, поиск, «Повторение», очередь экзаменов,
+// поиск, «Повторение», очередь экзаменов,
 // открытые окна и переходы в тренировки. Экран только раскладывает это по местам.
 
 import type { Word } from "@/content/flashcards/types";
@@ -14,11 +14,8 @@ import {
 } from "@/store/wordProgressStore";
 import type { FreeFormat } from "@/utils/writing/plans";
 import { searchWritingWords } from "@/utils/writing/search";
-import { getLevelStepsProgress } from "@/utils/writing/steps";
 import {
-  NO_HSK_LEVEL,
   findPracticeWords,
-  getAvailableLevels,
   getWordCharacters,
   getWordWritingDots,
 } from "@/utils/writing/words";
@@ -46,49 +43,10 @@ export function useWritingHome() {
     }, []),
   );
 
-  // ── Разделы и ступени ──────────────────────────────────────────────────────
-
-  const levels = useMemo(() => getAvailableLevels(), []);
-  const hskLevels = levels.filter((level) => level !== NO_HSK_LEVEL);
-  const hasOtherWords = levels.includes(NO_HSK_LEVEL);
-
-  // Пока финалов ступеней нет, открыт только первый раздел HSK
-  const currentLevel = hskLevels[0];
-  const lockedLevels = hskLevels.slice(1);
-
-  const stepsProgress =
-    currentLevel !== undefined
-      ? getLevelStepsProgress(currentLevel, flashcardWords)
-      : null;
-
-  // Сводка по разделу: изучено / всего по всем ступеням
-  const levelLearned =
-    stepsProgress?.steps.reduce((sum, step) => sum + step.learned, 0) ?? 0;
-  const levelTotal =
-    stepsProgress?.steps.reduce((sum, step) => sum + step.words.length, 0) ??
-    0;
-
-  // Развёрнутые блоки: «step-3» или «other». Сначала — текущая ступень
-  const [expanded, setExpanded] = useState<Set<string>>(
-    () =>
-      new Set(stepsProgress ? [`step-${stepsProgress.currentIndex}`] : []),
-  );
-
-  const toggleExpanded = (key: string) =>
-    setExpanded((previous) => {
-      const next = new Set(previous);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-
   // ── Поиск ──────────────────────────────────────────────────────────────────
 
   const [query, setQuery] = useState("");
-  const searchResults = useMemo(
-    () => searchWritingWords(query, t),
-    [query, t],
-  );
+  const searchResults = useMemo(() => searchWritingWords(query, t), [query, t]);
   const isSearching = query.trim().length > 0;
 
   // ── «Повторение» и экзамены ────────────────────────────────────────────────
@@ -171,16 +129,6 @@ export function useWritingHome() {
 
   return {
     now,
-
-    // разделы и ступени
-    currentLevel,
-    lockedLevels,
-    hasOtherWords,
-    stepsProgress,
-    levelLearned,
-    levelTotal,
-    expanded,
-    toggleExpanded,
 
     // поиск
     query,

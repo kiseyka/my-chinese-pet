@@ -273,3 +273,25 @@ export function createClassicPlan(level: WritingLevel): LessonItem[] {
     1,
   );
 }
+
+// ── Тренировка по одной ступени (маршрут /games/writing/step) ───────────────
+
+/**
+ * Тренировка по ступени: как классическая, но только из слов этой ступени.
+ * 1 слово для изучения (полный формат, строго по порядку) и 2 повторения
+ * (быстрый формат); если повторять нечего — новые слова в лёгком формате.
+ */
+export function createStepPlan(
+  level: WritingLevel,
+  index: number,
+): LessonItem[] {
+  const words = getLevelSteps(level)[index] ?? [];
+  const order = new Map(words.map((word, i) => [word.vocabularyId, i]));
+
+  return composeClassicPlan(
+    groupByWritingLevel(words),
+    shuffle,
+    (word) => order.get(word.vocabularyId) ?? Number.MAX_SAFE_INTEGER,
+    1,
+  );
+}
