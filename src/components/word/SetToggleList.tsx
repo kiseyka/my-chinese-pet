@@ -17,10 +17,16 @@ interopIconColor(PlusIcon);
 
 interface SetToggleListProps {
   word: Word;
+  /** Заголовок «Добавить в набор» над списком (в раскрывающейся строке не нужен). */
+  showTitle?: boolean;
   className?: string;
 }
 
-export function SetToggleList({ word, className = "" }: SetToggleListProps) {
+export function SetToggleList({
+  word,
+  showTitle = true,
+  className = "",
+}: SetToggleListProps) {
   const sets = useCustomSetsStore((state) => state.sets);
   const toggleWord = useCustomSetsStore((state) => state.toggleWord);
   const createSet = useCustomSetsStore((state) => state.createSet);
@@ -29,9 +35,11 @@ export function SetToggleList({ word, className = "" }: SetToggleListProps) {
 
   return (
     <View className={`gap-2 ${className}`}>
-      <Text className="font-nunitoBold text-lead text-text">
-        Добавить в набор
-      </Text>
+      {showTitle && (
+        <Text className="font-nunitoBold text-lead text-text">
+          Добавить в набор
+        </Text>
+      )}
 
       {sets.map((set) => (
         <ToggleCard

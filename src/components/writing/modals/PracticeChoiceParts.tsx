@@ -15,7 +15,7 @@ import InfoIcon from "@/assets/images/icons/info.svg";
 import FastPracticeIcon from "@/assets/images/icons/zap.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { TOOLTIP_RAISED, Tooltip } from "@/components/ui/Tooltip";
 import { IconSlot, ToggleCard } from "@/components/word/ToggleCard";
 import type { Word } from "@/content/flashcards/types";
 import { interopIconColor } from "@/lib/interopIcon";
@@ -54,7 +54,10 @@ export function LevelPill({
   onCloseHint: () => void;
 }) {
   return (
-    <View className="mt-3 self-center">
+    <View
+      className="mt-3 self-center"
+      style={hintVisible ? TOOLTIP_RAISED : undefined}
+    >
       <Tooltip visible={hintVisible} onClose={onCloseHint} text={LEVEL_HINT}>
         <Pressable
           onPress={onToggleHint}
@@ -231,7 +234,7 @@ export function ExamStatusCard({
   // Сдано или пока закрыто: справа «i» с подсказкой.
   // Тултип привязан ко всей карточке, чтобы вставал по центру и не вылезал за края экрана.
   return (
-    <View className="mt-3">
+    <View className="mt-3" style={hintVisible ? TOOLTIP_RAISED : undefined}>
       <Tooltip
         visible={hintVisible}
         onClose={onCloseHint}

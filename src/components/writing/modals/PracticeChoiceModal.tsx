@@ -4,12 +4,14 @@
 // (тап по иероглифу или пиньиню — озвучка) и уровнем изучения;
 // для слова из поиска — где оно лежит и «Показать» ступень;
 // выбор, что писать (у двусложного слова — слово целиком или один из иероглифов),
-// переключатель «Повторение», экзамен по выбранному слову и выбор формата
+// переключатель «Повторение», свои наборы (раскрывающаяся строка),
+// экзамен по выбранному слову и выбор формата
 // (быстрая или полная тренировка).
 //
 // Панель, анимации и свайп — в BottomSheet; блоки окна — в PracticeChoiceParts.
 
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { SetsAccordion } from "@/components/word/SetsAccordion";
 import { WordHeader } from "@/components/word/WordHeader";
 import { WordLocationRow } from "@/components/word/WordLocationRow";
 import type { Word } from "@/content/flashcards/types";
@@ -26,7 +28,7 @@ import {
 } from "./PracticeChoiceParts";
 
 /** Какой тултип открыт (одновременно — только один). */
-type OpenHint = "level" | "exam" | null;
+type OpenHint = "translation" | "level" | "exam" | null;
 
 interface PracticeChoiceModalProps {
   /** Слово из сетки; null — окно закрыто. */
@@ -75,6 +77,8 @@ export function PracticeChoiceModal({
   // Что тренировать: при открытии — слово целиком
   const [target, setTarget] = useState<Word | null>(word);
   const [openHint, setOpenHint] = useState<OpenHint>(null);
+  // «Добавить в набор» раскрыта (при каждом открытии окна — свёрнута)
+  const [setsOpen, setSetsOpen] = useState(false);
 
   const toggleHint = (hint: Exclude<OpenHint, null>) =>
     setOpenHint((current) => (current === hint ? null : hint));
@@ -92,6 +96,7 @@ export function PracticeChoiceModal({
       onClose={onClose}
       onOpen={(opened) => {
         setTarget(opened.word);
+        setSetsOpen(false);
         closeHint();
       }}
       onBackgroundTap={closeHint}
@@ -110,6 +115,9 @@ export function PracticeChoiceModal({
               hanzi={selected.hanzi}
               pinyin={selected.pinyin}
               translation={t(selected.translation)}
+              translationHintVisible={openHint === "translation"}
+              onToggleTranslationHint={() => toggleHint("translation")}
+              onCloseTranslationHint={closeHint}
             />
 
             <LevelPill
@@ -143,6 +151,17 @@ export function PracticeChoiceModal({
             <ReviewToggleCard
               inReview={isInReview(selected)}
               onToggle={() => onToggleReview(selected)}
+            />
+
+            {/* Свои наборы — строка раскрывается */}
+            <SetsAccordion
+              className="mt-3"
+              word={selected}
+              expanded={setsOpen}
+              onToggle={() => {
+                setSetsOpen((value) => !value);
+                closeHint();
+              }}
             />
 
             {/* Экзамен по выбранному слову или иероглифу — всегда на месте */}
