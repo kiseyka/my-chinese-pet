@@ -1,16 +1,13 @@
 // src/components/writing/home/ReviewCard.tsx
 //
-// Карточка-вход «Повторение» на экране «Написание»: иконка, название и сколько слов отмечено.
-// Сами слова и кнопка старта — в ReviewModal.
+// Вход в «Повторение» (карточки и «Написание»): компактная строка — значок,
+// название и сколько слов отмечено. Сами слова и кнопка старта — в панели.
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
-import ArrowRight from "@/assets/images/icons/chevron-right.svg";
-import { interopIconColor } from "@/lib/interopIcon";
+import { EntryRow } from "@/components/ui/EntryRow";
 import { colors } from "@/theme/colors";
 import { pluralWords } from "@/utils/writing/labels";
-import { Pressable, Text, View } from "react-native";
-
-interopIconColor(ArrowRight);
+import { View } from "react-native";
 
 interface ReviewCardProps {
   /** Сколько слов отмечено для повтора. */
@@ -20,23 +17,15 @@ interface ReviewCardProps {
 
 export function ReviewCard({ total, onPress }: ReviewCardProps) {
   return (
-    <Pressable
+    <EntryRow
+      icon={
+        <View className="h-8 w-8 items-center justify-center rounded-lg bg-primary/15">
+          <ReviewIcon width={18} height={18} color={colors.primary} />
+        </View>
+      }
+      title="Повторение"
+      value={`${total} ${pluralWords(total)}`}
       onPress={onPress}
-      className="flex-row items-center gap-4 rounded-2xl bg-surface px-4 py-4 active:opacity-70"
-      accessibilityRole="button"
-    >
-      <View className="h-11 w-11 items-center justify-center rounded-xl bg-primary/15">
-        <ReviewIcon width={22} height={22} color={colors.primary} />
-      </View>
-
-      <View className="flex-1 gap-0.5">
-        <Text className="font-nunitoBold text-lead text-text">Повторение</Text>
-        <Text className="font-nunito text-small text-text opacity-70">
-          {total} {pluralWords(total)}
-        </Text>
-      </View>
-
-      <ArrowRight width={20} height={20} className="text-text" />
-    </Pressable>
+    />
   );
 }

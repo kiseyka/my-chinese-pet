@@ -2,7 +2,7 @@
 //
 // Главный экран режима «Написание» — устроен так же, как экран карточек:
 //   - сверху закреплены поиск (иероглиф, пиньинь без тонов, перевод) и вкладки;
-//   - «Ступени»: «Экзамен» и «Повторение», чипсы разделов HSK и ступени
+//   - «Ступени»: строки «Экзамен» и «Повторение», чипсы разделов HSK и ступени
 //     с кнопкой «Тренировать» (WritingStepsTab);
 //   - «Мои наборы»: те же наборы, что в карточках, — «Открыть», «Тренировать»,
 //     создание и редактирование (редактор общий с карточками).
@@ -34,7 +34,7 @@ import { useCustomSetsStore } from "@/store/customSetsStore";
 import { REPEAT_LESSON_SIZE } from "@/utils/writing/plans";
 import type { WritingLevel } from "@/utils/writing/words";
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 
 /** Отступы Screen по бокам: от них считается ширина ячеек сетки. */
@@ -78,6 +78,22 @@ export default function WritingHomeScreen() {
     />
   );
 
+  // Сетка ступени — стабильная функция: иначе тап по чипсу перерисовывает все ступени
+  const { getLevel, isInReview, getExamMark, setSelected } = home;
+  const renderStepGrid = useCallback(
+    (words: Word[], inset: number) => (
+      <WordGrid
+        words={words}
+        getLevel={getLevel}
+        onSelect={setSelected}
+        isMarked={isInReview}
+        getExamMark={getExamMark}
+        horizontalInset={inset}
+      />
+    ),
+    [getLevel, isInReview, getExamMark, setSelected],
+  );
+
   const startStep = useCallback(
     (level: WritingLevel, index: number) =>
       router.push({
@@ -105,25 +121,28 @@ export default function WritingHomeScreen() {
     });
   };
 
-  // «Экзамен» и «Повторение» над чипсами — отделены от них крупным отступом
-  const hasExam = examQueue.ready.length > 0 || examQueue.upcoming.length > 0;
-  const hasTopCards = hasExam || repeatWords.length > 0;
-  const topCards = hasTopCards ? (
-    <View className="mb-8 gap-3">
-      <ExamEntryCard
-        readyCount={examQueue.ready.length}
-        nextAvailableAt={examQueue.upcoming[0]?.availableAt}
-        now={home.now}
-        onPress={() => home.setExamOpen(true)}
-      />
-      {repeatWords.length > 0 && (
-        <ReviewCard
-          total={repeatWords.length}
-          onPress={() => home.setReviewOpen(true)}
+  // «Экзамен» и «Повторение» над чипсами — компактные строки, как в карточках
+  const readyCount = examQueue.ready.length;
+  const nextExamAt = examQueue.upcoming[0]?.availableAt;
+  const repeatCount = repeatWords.length;
+  const { now, setExamOpen, setReviewOpen } = home;
+  const topCards = useMemo(() => {
+    const hasExam = readyCount > 0 || nextExamAt !== undefined;
+    if (!hasExam && repeatCount === 0) return null;
+    return (
+      <View className="mb-4 gap-2">
+        <ExamEntryCard
+          readyCount={readyCount}
+          nextAvailableAt={nextExamAt}
+          now={now}
+          onPress={() => setExamOpen(true)}
         />
-      )}
-    </View>
-  ) : null;
+        {repeatCount > 0 && (
+          <ReviewCard total={repeatCount} onPress={() => setReviewOpen(true)} />
+        )}
+      </View>
+    );
+  }, [readyCount, nextExamAt, repeatCount, now, setExamOpen, setReviewOpen]);
 
   return (
     <Screen>
@@ -241,7 +260,7 @@ export default function WritingHomeScreen() {
         }}
       >
         <WritingStepsTab
-          renderGrid={(words, inset) => grid(words, inset)}
+          renderGrid={renderStepGrid}
           topCards={topCards}
           onStartStep={startStep}
           outerInset={SCREEN_INSET}

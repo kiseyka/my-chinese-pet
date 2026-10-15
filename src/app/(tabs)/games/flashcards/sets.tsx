@@ -6,7 +6,6 @@
 //   - «Мои наборы» — наборы, которые пользователь собирает сам.
 // У карточки набора две кнопки: «Открыть» (страница набора) и «Тренировать».
 
-import BookIcon from "@/assets/images/icons/vocabulary.svg";
 import { CustomSetCard } from "@/components/flashcards/CustomSetCard";
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
@@ -24,7 +23,6 @@ import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Title } from "@/components/ui/Title";
 import { allWords, findWords } from "@/content/words/vocabulary";
 import { useCustomSetsStore } from "@/store/customSetsStore";
-import { colors } from "@/theme/colors";
 import { READING_REVIEW_ID } from "@/utils/flashcards/source";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import {
@@ -142,15 +140,8 @@ export default function FlashcardsHomeScreen() {
 
         <Title>Карточки</Title>
 
-        <Pressable
-          onPress={() => router.push("/vocabulary")}
-          hitSlop={8}
-          className="h-10 w-10 items-center justify-center active:opacity-60"
-          accessibilityRole="button"
-          accessibilityLabel="Словарь"
-        >
-          <BookIcon width={26} height={26} color={colors.text} />
-        </Pressable>
+        {/* Пустое место под размер кнопки «назад»: заголовок по центру */}
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Сверху закреплены только поиск и вкладки — как в «Написании», поиск первым */}

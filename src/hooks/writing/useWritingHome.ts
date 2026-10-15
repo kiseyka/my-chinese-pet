@@ -76,18 +76,33 @@ export function useWritingHome() {
 
   // ── Состояние слова (для сетки и окна слова) ───────────────────────────────
 
-  const getLevel = (word: Word) => getWordWritingDots(word, flashcardWords);
-  const isInReview = (word: Word) => !!writingReview[word.vocabularyId];
-  const getExamStatus = (word: Word) =>
-    getWritingExamStatus(
-      flashcardWords[word.vocabularyId],
-      writingExams[word.vocabularyId],
-      now,
-    );
-  const getExamMark = (word: Word): ExamMark => {
-    const { status } = getExamStatus(word);
-    return status === "ready" || status === "passed" ? status : null;
-  };
+  // Стабильные функции (useCallback): от них зависит, перерисуются ли сетки ступеней.
+  // Новая функция на каждый рендер перерисовывала все ступени всех разделов —
+  // из-за этого чипсы HSK переключались с задержкой.
+  const getLevel = useCallback(
+    (word: Word) => getWordWritingDots(word, flashcardWords),
+    [flashcardWords],
+  );
+  const isInReview = useCallback(
+    (word: Word) => !!writingReview[word.vocabularyId],
+    [writingReview],
+  );
+  const getExamStatus = useCallback(
+    (word: Word) =>
+      getWritingExamStatus(
+        flashcardWords[word.vocabularyId],
+        writingExams[word.vocabularyId],
+        now,
+      ),
+    [flashcardWords, writingExams, now],
+  );
+  const getExamMark = useCallback(
+    (word: Word): ExamMark => {
+      const { status } = getExamStatus(word);
+      return status === "ready" || status === "passed" ? status : null;
+    },
+    [getExamStatus],
+  );
 
   // ── Окна ───────────────────────────────────────────────────────────────────
 

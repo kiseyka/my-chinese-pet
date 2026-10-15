@@ -1,25 +1,31 @@
 // src/components/flashcards/LevelSteps.tsx
 //
-// Ступени одного раздела HSK: сводка «освоено из» и список ступеней (FlatList).
+// Ступени одного раздела HSK списком (FlatList).
 // Список раздела, в который уже заходили, не размонтируется, а просто прячется
 // (StepsTab) — поэтому повторное переключение на раздел мгновенное, а
 // развёрнутые ступени и прокрутка сохраняются.
 //
 // jump — «показать ступень»: развернуть её и прокрутить к ней (из поиска).
+// shared — общая прокрутка всех разделов: показанный раздел встаёт туда же,
+// где был предыдущий, и шапка с чипсами не скачет.
 
 import type { Word } from "@/content/flashcards/types";
+import {
+  useSyncedScroll,
+  type SharedScroll,
+} from "@/hooks/useSharedLevelScroll";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { getReadingSteps, type ReadingLevel } from "@/utils/flashcards/steps";
 import {
   memo,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
+  type ReactElement,
   type ReactNode,
 } from "react";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, View } from "react-native";
 import { ReadingStepCard } from "./ReadingStepCard";
 
 export interface StepJump {
@@ -36,8 +42,13 @@ interface LevelStepsProps {
   jump: StepJump | null;
   onStartStep: (level: ReadingLevel, index: number) => void;
   onSelectWord: (word: Word) => void;
-  /** Блок над ступенями, который прокручивается вместе с ними (повторение, чипсы HSK). */
-  header?: ReactNode;
+  /**
+   * Блок над ступенями, который прокручивается вместе с ними (повторение, чипсы HSK).
+   * visible — этот раздел сейчас на экране (чипсам нужно для общей прокрутки).
+   */
+  renderHeader?: (visible: boolean) => ReactElement;
+  /** Общая прокрутка всех разделов вкладки. */
+  shared?: SharedScroll;
 }
 
 function dotsOf(word: Word): number {
@@ -64,33 +75,10 @@ export const LevelSteps = memo(function LevelSteps({
   jump,
   onStartStep,
   onSelectWord,
-  header,
+  renderHeader,
+  shared,
 }: LevelStepsProps) {
   const steps = getReadingSteps(level);
-
-  const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
-  const vocabularyWords = useWordProgressStore(
-    (state) => state.vocabularyWords,
-  );
-
-  // Сводка раздела. Пока раздел спрятан, не пересчитываем
-  const summary = useMemo(() => {
-    if (!visible) return null;
-    let learned = 0;
-    let total = 0;
-    for (const words of steps) {
-      for (const word of words) {
-        total += 1;
-        const dots = getWordLevel(
-          flashcardWords[word.vocabularyId],
-          vocabularyWords[word.vocabularyId]?.isKnown ?? false,
-          ["reading"],
-        );
-        if (dots === 3) learned += 1;
-      }
-    }
-    return { learned, total };
-  }, [visible, steps, flashcardWords, vocabularyWords]);
 
   // Сначала развёрнута текущая ступень
   const [expanded, setExpanded] = useState<Set<number>>(
@@ -116,6 +104,7 @@ export const LevelSteps = memo(function LevelSteps({
   // ── Прыжок к ступени ───────────────────────────────────────────────────────
 
   const listRef = useRef<FlatList<Word[]>>(null);
+  const scroll = useSyncedScroll(listRef, visible, shared, "y");
 
   useEffect(() => {
     if (!jump) return;
@@ -135,6 +124,7 @@ export const LevelSteps = memo(function LevelSteps({
   return (
     <FlatList
       ref={listRef}
+      {...scroll}
       data={steps}
       keyExtractor={(_, index) => `${level}-${index}`}
       extraData={expanded}
@@ -160,16 +150,7 @@ export const LevelSteps = memo(function LevelSteps({
           });
         }, 150);
       }}
-      ListHeaderComponent={
-        <View>
-          {header}
-          {summary && (
-            <Text className="font-nunito text-small text-textSecondary">
-              Освоено {summary.learned} из {summary.total}
-            </Text>
-          )}
-        </View>
-      }
+      ListHeaderComponent={renderHeader?.(visible)}
       renderItem={({ item, index }) => (
         <ReadingStepCard
           index={index}
