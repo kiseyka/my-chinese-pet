@@ -58,12 +58,18 @@ export function WordHeader({
     ? (onCloseTranslationHint ?? (() => {}))
     : () => setOwnHint(false);
 
-  // Влез ли перевод в одну строку. Пока не измерен — считаем, что влез
-  const [truncated, setTruncated] = useState(false);
+  // Влез ли перевод в одну строку: сравниваем ширину строки перевода без переносов
+  // (невидимая копия в очень широком блоке) с шириной места под перевод.
+  // Пока не измерено (null) — тап всё равно открывает полный перевод.
+  const [boxWidth, setBoxWidth] = useState<number | null>(null);
+  const [textWidth, setTextWidth] = useState<number | null>(null);
   useEffect(() => {
-    setTruncated(false);
+    setTextWidth(null);
     setOwnHint(false);
   }, [translation]);
+  const fits =
+    boxWidth !== null && textWidth !== null ? textWidth <= boxWidth + 1 : null;
+  const canExpand = fits !== true;
 
   return (
     <View
@@ -96,32 +102,43 @@ export function WordHeader({
         <VolumeIcon width={20} height={20} color={colors.primary} />
       </Pressable>
 
-      <View className="self-stretch">
+      <View
+        className="self-stretch"
+        onLayout={(event) => setBoxWidth(event.nativeEvent.layout.width)}
+      >
+        {/* Невидимая копия в одну строку без ограничения ширины: её ширина —
+            сколько места нужно переводу целиком */}
+        <View
+          style={{ position: "absolute", left: 0, top: 0, width: 10000, opacity: 0 }}
+          pointerEvents="none"
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Text
+            className="self-start font-nunito text-body"
+            numberOfLines={1}
+            onTextLayout={(event) =>
+              setTextWidth(event.nativeEvent.lines[0]?.width ?? 0)
+            }
+          >
+            {translation}
+          </Text>
+        </View>
+
         <Tooltip
-          visible={hintVisible && truncated}
+          visible={hintVisible && canExpand}
           onClose={closeHint}
           text={translation}
         >
           <Pressable
             onPress={toggleHint}
-            disabled={!truncated}
+            disabled={!canExpand}
             className="active:opacity-60"
-            accessibilityRole={truncated ? "button" : "text"}
+            accessibilityRole={canExpand ? "button" : "text"}
             accessibilityLabel={translation}
-            accessibilityHint={truncated ? "Показать перевод целиком" : undefined}
+            accessibilityHint={
+              canExpand ? "Показать перевод целиком" : undefined
+            }
           >
-            {/* Невидимая копия без ограничения строк: по ней видно, влез ли перевод */}
-            <Text
-              className="absolute left-0 right-0 text-center font-nunito text-body opacity-0"
-              onTextLayout={(event) =>
-                setTruncated(event.nativeEvent.lines.length > 1)
-              }
-              accessible={false}
-              importantForAccessibility="no-hide-descendants"
-              pointerEvents="none"
-            >
-              {translation}
-            </Text>
             <Text
               className="text-center font-nunito text-body text-text"
               numberOfLines={1}
