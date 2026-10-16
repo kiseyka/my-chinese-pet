@@ -25,7 +25,11 @@ import {
   type SharedScroll,
 } from "@/hooks/useSharedLevelScroll";
 import { useWordProgressStore } from "@/store/wordProgressStore";
-import { getLevelSteps, getLevelStepsProgress } from "@/utils/writing/steps";
+import {
+  getLevelStepTitles,
+  getLevelSteps,
+  getLevelStepsProgress,
+} from "@/utils/writing/steps";
 import {
   LEARNED_DOTS,
   NO_HSK_LEVEL,
@@ -172,6 +176,7 @@ const WritingLevelSteps = memo(function WritingLevelSteps({
 }: WritingLevelStepsProps) {
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
   const steps = getLevelSteps(level);
+  const titles = getLevelStepTitles(level);
 
   // Изучено по ступеням (3 точки письма) — для шкалы в шапке ступени
   const learnedPerStep = useMemo(
@@ -226,6 +231,7 @@ const WritingLevelSteps = memo(function WritingLevelSteps({
     ({ item: words, index }: { item: Word[]; index: number }) => (
       <WritingStepItem
         index={index}
+        title={titles[index] ?? `Ступень ${index + 1}`}
         words={words}
         learned={learnedPerStep[index] ?? 0}
         expanded={expanded.has(index)}
@@ -235,7 +241,7 @@ const WritingLevelSteps = memo(function WritingLevelSteps({
         onStart={start}
       />
     ),
-    [learnedPerStep, expanded, outerInset, renderGrid, toggle, start],
+    [learnedPerStep, titles, expanded, outerInset, renderGrid, toggle, start],
   );
 
   return (
@@ -277,6 +283,8 @@ const WritingLevelSteps = memo(function WritingLevelSteps({
 
 interface WritingStepItemProps {
   index: number;
+  /** «Семья», «Еда · 2» или «Ступень 3». */
+  title: string;
   words: Word[];
   learned: number;
   expanded: boolean;
@@ -288,6 +296,7 @@ interface WritingStepItemProps {
 
 const WritingStepItem = memo(function WritingStepItem({
   index,
+  title,
   words,
   learned,
   expanded,
@@ -298,7 +307,7 @@ const WritingStepItem = memo(function WritingStepItem({
 }: WritingStepItemProps) {
   return (
     <StepAccordion
-      title={`Ступень ${index + 1}`}
+      title={title}
       learned={learned}
       total={words.length}
       expanded={expanded}
