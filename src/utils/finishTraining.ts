@@ -17,6 +17,8 @@ interface FinishTrainingParams {
   rewards: TrainingRewards;
   /** Что передать панде для комментария. Не все тренировки её пока зовут. */
   pandaResult?: PandaTrainingResult;
+  /** Режим тренировки для экрана итогов (например, самопроверка карточек). */
+  mode?: string;
 }
 
 /** Точность в процентах (0–100), целое число. */
@@ -35,6 +37,7 @@ export function finishTraining({
   gameId,
   rewards,
   pandaResult,
+  mode,
 }: FinishTrainingParams) {
   const game = useGameStore.getState();
 
@@ -47,5 +50,8 @@ export function finishTraining({
     usePandaStore.getState().setPendingTrainingResult(pandaResult);
   }
 
-  router.replace({ pathname: "/games/stats", params: { gameId } });
+  router.replace({
+    pathname: "/games/stats",
+    params: mode ? { gameId, mode } : { gameId },
+  });
 }

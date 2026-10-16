@@ -13,7 +13,10 @@
 // Что считать правильным, что делать с прогрессом слова и какую давать награду,
 // решает конкретная тренировка через колбэки.
 
-import { useGameStore } from "@/store/gameStore";
+import {
+  useGameStore,
+  type FlashcardQuestionResult,
+} from "@/store/gameStore";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -40,6 +43,13 @@ interface UseQuizSessionOptions<Q extends QuizQuestionBase, A> {
   onFinish: (questions: Q[]) => void;
   /** Сколько мс показывать результат ответа перед следующим вопросом. */
   advanceDelayMs?: number;
+  /**
+   * false — после ответа не переходим сами: экран зовёт next()
+   * (самопроверка: нужно время прочитать перевод).
+   */
+  autoAdvance?: boolean;
+  /** Дополнительные поля ответа для экрана итогов (например, ответ самопроверки). */
+  resultExtra?: (question: Q, answer: A) => Partial<FlashcardQuestionResult>;
 }
 
 export function useQuizSession<Q extends QuizQuestionBase, A>({
@@ -49,6 +59,8 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
   onAnswer,
   onFinish,
   advanceDelayMs = 600,
+  autoAdvance = true,
+  resultExtra,
 }: UseQuizSessionOptions<Q, A>) {
   const [questions, setQuestions] = useState<Q[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,12 +68,26 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
   const [isAnswered, setIsAnswered] = useState(false);
 
   const isProcessingAnswer = useRef(false);
+  /** Последний вопрос пройден, onFinish уже вызван — повторные next() не нужны. */
+  const isFinished = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Колбэки держим в ref, чтобы сессия не пересобиралась на каждом рендере,
   // а таймер всегда вызывал свежие версии.
-  const callbacks = useRef({ buildQuestions, isCorrect, onAnswer, onFinish });
-  callbacks.current = { buildQuestions, isCorrect, onAnswer, onFinish };
+  const callbacks = useRef({
+    buildQuestions,
+    isCorrect,
+    onAnswer,
+    onFinish,
+    resultExtra,
+  });
+  callbacks.current = {
+    buildQuestions,
+    isCorrect,
+    onAnswer,
+    onFinish,
+    resultExtra,
+  };
 
   const clearTimer = () => {
     if (timeoutRef.current) {
@@ -80,6 +106,7 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
       setSelected(null);
       setIsAnswered(false);
       isProcessingAnswer.current = false;
+      isFinished.current = false;
 
       // Ушли с экрана посреди паузы — не переходим к следующему вопросу за кадром
       return clearTimer;
@@ -95,6 +122,7 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
 
     if (currentIndex >= questions.length - 1) {
       // На последнем вопросе клики так и остаются заблокированными
+      isFinished.current = true;
       callbacks.current.onFinish(questions);
       return;
     }
@@ -121,11 +149,18 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
       pinyin: currentQuestion.pinyin,
       translation: currentQuestion.translation,
       isCorrect: correct,
+      ...callbacks.current.resultExtra?.(currentQuestion, answer),
     });
 
     callbacks.current.onAnswer?.(currentQuestion, answer, correct);
 
-    timeoutRef.current = setTimeout(goToNext, advanceDelayMs);
+    if (autoAdvance) timeoutRef.current = setTimeout(goToNext, advanceDelayMs);
+  };
+
+  /** Следующий вопрос вручную (при autoAdvance: false). */
+  const next = () => {
+    if (!isAnswered || timeoutRef.current || isFinished.current) return;
+    goToNext();
   };
 
   const progressPercent =
@@ -140,5 +175,6 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
     isAnswered,
     progressPercent,
     select,
+    next,
   };
 }

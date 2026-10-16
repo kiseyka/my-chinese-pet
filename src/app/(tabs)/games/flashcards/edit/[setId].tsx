@@ -11,6 +11,7 @@
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
 import { StepPickerSheet } from "@/components/flashcards/StepPickerSheet";
+import { TrainingModeSheet } from "@/components/flashcards/TrainingModeSheet";
 import { WordSheet } from "@/components/flashcards/WordSheet";
 import type { Word } from "@/content/flashcards/types";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
@@ -66,6 +67,8 @@ export default function EditSetScreen() {
 
   const [query, setQuery] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
+  // «Начать тренировку» сначала спрашивает режим
+  const [modeFor, setModeFor] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPicking, setIsPicking] = useState(false);
   // Слово, открытое в панели (тап по строке в списке набора)
@@ -150,6 +153,11 @@ export default function EditSetScreen() {
             : undefined
         }
         onClose={() => setOpenedWord(null)}
+      />
+
+      <TrainingModeSheet
+        setId={modeFor}
+        onClose={() => setModeFor(null)}
       />
 
       <StepPickerSheet
@@ -296,12 +304,7 @@ export default function EditSetScreen() {
             </Text>
           ) : (
             <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: "/games/flashcards/[setId]",
-                  params: { setId: set.id },
-                })
-              }
+              onPress={() => setModeFor(set.id)}
               className="min-h-14 items-center justify-center rounded-2xl bg-primary px-5 py-4 active:opacity-80"
               accessibilityRole="button"
             >

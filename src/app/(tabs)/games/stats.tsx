@@ -22,6 +22,7 @@ import { colors } from "@/theme/colors";
 import { describeStep, findWordStep } from "@/utils/flashcards/steps";
 import type { GameId } from "@/utils/finishTraining";
 import { formatDuration } from "@/utils/formatDuration";
+import { SELF_CHECK_MODE } from "@/hooks/useSelfCheckGame";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useState, type ReactNode } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
@@ -39,7 +40,12 @@ export default function GeneralStatsScreen() {
   const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
   const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
 
-  const { gameId } = useLocalSearchParams<{ gameId?: GameId }>();
+  const { gameId, mode } = useLocalSearchParams<{
+    gameId?: GameId;
+    mode?: string;
+  }>();
+  // Самопроверка карточек: без точек и наград, слова по ответам «знаю / сомневаюсь / не знаю»
+  const isSelfCheck = gameId === "flashcards" && mode === SELF_CHECK_MODE;
 
   // После письма показываем все написанные слова, а не только ошибки
   const writingResults = useGameStore((s) => s.writingResults);
@@ -85,7 +91,7 @@ export default function GeneralStatsScreen() {
         {/* Заголовок и сводка */}
         <View className="gap-5">
           <Text className="text-center font-nunitoBold text-heading text-text">
-            Тренировка завершена
+            {isSelfCheck ? "Самопроверка завершена" : "Тренировка завершена"}
           </Text>
 
           <View className="flex-row items-center gap-5 rounded-2xl bg-surface p-4">
@@ -95,22 +101,31 @@ export default function GeneralStatsScreen() {
               strokeWidth={10}
               progressColor={colors.primary}
               backgroundColor={colors.progress.inactive}
-              label="Точность"
+              label={isSelfCheck ? "Знаю" : "Точность"}
             />
 
             <View className="flex-1">
-              <StatRow label="Опыт" value={`+${rewards.xp} XP`} />
-              <StatRow
-                label="Монеты"
-                value={`+${rewards.coins}`}
-                icon={
-                  <Image
-                    className="h-5 w-5"
-                    source={require("@/assets/images/paw-coin.png")}
-                    resizeMode="contain"
+              {isSelfCheck ? (
+                <>
+                  <StatRow label="Слов" value={`${totalCount}`} />
+                  <StatRow label="Знаю" value={`${score}`} />
+                </>
+              ) : (
+                <>
+                  <StatRow label="Опыт" value={`+${rewards.xp} XP`} />
+                  <StatRow
+                    label="Монеты"
+                    value={`+${rewards.coins}`}
+                    icon={
+                      <Image
+                        className="h-5 w-5"
+                        source={require("@/assets/images/paw-coin.png")}
+                        resizeMode="contain"
+                      />
+                    }
                   />
-                }
-              />
+                </>
+              )}
               <StatRow label="Время" value={formatDuration(duration)} last />
             </View>
           </View>
@@ -120,7 +135,11 @@ export default function GeneralStatsScreen() {
         {isWriting ? (
           <WritingResultsList results={writingResults} onOpenWord={setOpened} />
         ) : isFlashcards ? (
-          <FlashcardResultsList results={results} onOpenWord={setOpened} />
+          <FlashcardResultsList
+            results={results}
+            selfCheck={isSelfCheck}
+            onOpenWord={setOpened}
+          />
         ) : wrongAnswers.length > 0 ? (
           <View className="gap-3">
             <Text className="font-nunitoBold text-title text-text">

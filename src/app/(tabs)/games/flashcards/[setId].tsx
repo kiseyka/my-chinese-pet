@@ -1,26 +1,42 @@
 // app/(tabs)/games/flashcards/[setId].tsx
 //
-// Тренировка карточками: свой набор или ступень HSK.
+// Тренировка карточками: свой набор, ступень HSK или «Повторение».
+// Режим (mode) выбирают в панели «Как будем тренироваться?»:
+//   по умолчанию — выбор перевода (даёт точки чтения);
+//   mode=self — самопроверка «Знаю / Сомневаюсь / Не знаю» (без точек).
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
 import { GameHeader } from "@/components/game/GameHeader";
+import { SelfCheckQuestion } from "@/components/game/SelfCheckQuestion";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useFlashcardGame } from "@/hooks/useFlashcardGame";
+import { SELF_CHECK_MODE, useSelfCheckGame } from "@/hooks/useSelfCheckGame";
 import { MIN_SET_WORDS } from "@/store/customSetsStore";
 import { useSettingsStore } from "@/store/settingsStore";
+import { useWordProgressStore } from "@/store/wordProgressStore";
+import type { FlashcardSource } from "@/utils/flashcards/source";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Text, View } from "react-native";
 
-export default function LevelGameScreen() {
-  const router = useRouter();
-  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
-  const { setId } = useLocalSearchParams<{
+export default function FlashcardTrainingScreen() {
+  const { setId, mode } = useLocalSearchParams<{
     setId: string;
+    mode?: string;
   }>();
 
+  return mode === SELF_CHECK_MODE ? (
+    <SelfCheckTraining setId={setId} />
+  ) : (
+    <ChoiceTraining setId={setId} />
+  );
+}
+
+// ── Выбор перевода ───────────────────────────────────────────────────────────
+
+function ChoiceTraining({ setId }: { setId: string }) {
   const showPinyin = useSettingsStore((s) => s.showPinyin);
 
   const {
@@ -30,25 +46,78 @@ export default function LevelGameScreen() {
     isAnswered,
     progressPercent,
     handleSelect,
-  } = useFlashcardGame({
-    setId,
-  });
+  } = useFlashcardGame({ setId });
 
-  // Набор удалили или в нём не хватает слов (вопросов нет)
-  if (!source || !currentQuestion) {
-    return (
-      <Screen>
-        <View className="flex-row items-center">
-          <BackButton href="/games/flashcards/sets" />
-        </View>
-        <Text className="mt-6 font-nunito text-body text-text">
-          {source
-            ? `Для тренировки в наборе нужно хотя бы ${MIN_SET_WORDS} слова.`
-            : "Набор не найден."}
-        </Text>
-      </Screen>
-    );
-  }
+  if (!source || !currentQuestion) return <NoWords source={source} />;
+
+  return (
+    <TrainingFrame progress={progressPercent}>
+      <FlashcardQuestion
+        hanzi={currentQuestion.hanzi}
+        pinyin={currentQuestion.pinyin}
+        options={currentQuestion.options}
+        correctAnswer={currentQuestion.correctAnswer}
+        selected={selected}
+        isAnswered={isAnswered}
+        showPinyin={showPinyin}
+        onSelect={handleSelect}
+      />
+    </TrainingFrame>
+  );
+}
+
+// ── Самопроверка ─────────────────────────────────────────────────────────────
+
+function SelfCheckTraining({ setId }: { setId: string }) {
+  const showPinyin = useSettingsStore((s) => s.showPinyin);
+  const readingReview = useWordProgressStore((s) => s.readingReview);
+  const toggleReadingReview = useWordProgressStore(
+    (s) => s.toggleReadingReview,
+  );
+
+  const {
+    source,
+    currentWord,
+    answer,
+    isLast,
+    progressPercent,
+    choose,
+    next,
+  } = useSelfCheckGame({ setId });
+
+  if (!source || !currentWord) return <NoWords source={source} />;
+
+  return (
+    <TrainingFrame progress={progressPercent}>
+      <SelfCheckQuestion
+        key={currentWord.vocabularyId}
+        hanzi={currentWord.hanzi}
+        pinyin={currentWord.pinyin}
+        translation={currentWord.translation}
+        showPinyin={showPinyin}
+        answer={answer}
+        isLast={isLast}
+        inReview={!!readingReview[currentWord.vocabularyId]}
+        onToggleReview={() => toggleReadingReview(currentWord.vocabularyId)}
+        onAnswer={choose}
+        onNext={next}
+      />
+    </TrainingFrame>
+  );
+}
+
+// ── Общее ────────────────────────────────────────────────────────────────────
+
+/** Экран тренировки: шкала прогресса, выход с подтверждением. */
+function TrainingFrame({
+  progress,
+  children,
+}: {
+  progress: number;
+  children: ReactNode;
+}) {
+  const router = useRouter();
+  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
 
   return (
     <Screen>
@@ -62,20 +131,27 @@ export default function LevelGameScreen() {
       />
 
       <GameHeader
-        progress={progressPercent}
+        progress={progress}
         onExit={() => setIsExitModalVisible(true)}
       />
 
-      <FlashcardQuestion
-        hanzi={currentQuestion.hanzi}
-        pinyin={currentQuestion.pinyin}
-        options={currentQuestion.options}
-        correctAnswer={currentQuestion.correctAnswer}
-        selected={selected}
-        isAnswered={isAnswered}
-        showPinyin={showPinyin}
-        onSelect={handleSelect}
-      />
+      {children}
+    </Screen>
+  );
+}
+
+/** Набор удалили или в нём не хватает слов (вопросов нет). */
+function NoWords({ source }: { source: FlashcardSource | null }) {
+  return (
+    <Screen>
+      <View className="flex-row items-center">
+        <BackButton href="/games/flashcards/sets" />
+      </View>
+      <Text className="mt-6 font-nunito text-body text-text">
+        {source
+          ? `Для тренировки в наборе нужно хотя бы ${MIN_SET_WORDS} слова.`
+          : "Набор не найден."}
+      </Text>
     </Screen>
   );
 }

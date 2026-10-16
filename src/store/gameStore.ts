@@ -2,12 +2,18 @@
 
 import { create } from "zustand";
 
+/** Ответ в самопроверке карточек. */
+export type SelfCheckAnswer = "know" | "unsure" | "dont";
+
 export interface FlashcardQuestionResult {
   vocabularyId: string;
   hanzi: string;
   pinyin: string;
   translation: string;
+  /** В самопроверке — «знаю». */
   isCorrect: boolean;
+  /** Только в самопроверке: что ответил пользователь. */
+  selfCheck?: SelfCheckAnswer;
 }
 
 /** Точка линии пользователя в системе 1024×1024 (как в hanziData.json). */

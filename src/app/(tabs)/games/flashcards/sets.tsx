@@ -5,10 +5,12 @@
 //   - «Ступени» — поиск, разделы HSK чипсами и ступени по 10 слов (StepsTab);
 //   - «Мои наборы» — наборы, которые пользователь собирает сам.
 // У карточки набора две кнопки: «Открыть» (страница набора) и «Тренировать».
+// «Тренировать» (ступень, набор, «Повторение») открывает выбор режима (TrainingModeSheet).
 
 import { CustomSetCard } from "@/components/flashcards/CustomSetCard";
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
+import { TrainingModeSheet } from "@/components/flashcards/TrainingModeSheet";
 import type { WordLevel } from "@/components/ui/LevelDots";
 import {
   StepsTab,
@@ -56,23 +58,16 @@ export default function FlashcardsHomeScreen() {
   const sets = useCustomSetsStore((state) => state.sets);
   const createSet = useCustomSetsStore((state) => state.createSet);
 
+  // «Тренировать» сначала спрашивает режим: выбор перевода или самопроверка
+  const [modeFor, setModeFor] = useState<string | null>(null);
+
   const startStep = useCallback(
     (level: ReadingLevel, index: number) =>
-      router.push({
-        pathname: "/games/flashcards/[setId]",
-        params: { setId: stepTrainingId(level, index) },
-      }),
-    [router],
+      setModeFor(stepTrainingId(level, index)),
+    [],
   );
 
-  const startReview = useCallback(
-    () =>
-      router.push({
-        pathname: "/games/flashcards/[setId]",
-        params: { setId: READING_REVIEW_ID },
-      }),
-    [router],
-  );
+  const startReview = useCallback(() => setModeFor(READING_REVIEW_ID), []);
 
   // ── Поиск и панель слова ───────────────────────────────────────────────────
 
@@ -203,6 +198,11 @@ export default function FlashcardsHomeScreen() {
         />
       )}
 
+      <TrainingModeSheet
+        setId={modeFor}
+        onClose={() => setModeFor(null)}
+      />
+
       <SetTitleModal
         visible={isCreating}
         heading="Новый набор"
@@ -256,12 +256,7 @@ export default function FlashcardsHomeScreen() {
               title={set.title}
               words={findWords(set.wordIds)}
               onOpen={() => openEditor(set.id)}
-              onStart={() =>
-                router.push({
-                  pathname: "/games/flashcards/[setId]",
-                  params: { setId: set.id },
-                })
-              }
+              onStart={() => setModeFor(set.id)}
             />
           ))}
 
