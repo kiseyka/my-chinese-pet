@@ -1,24 +1,18 @@
 // src/components/writing/home/WritingStepsTab.tsx
 //
-// Вкладка «Ступени» на экране «Написание» — в том же виде, что в карточках:
-//   - сверху строки «Экзамен» и «Повторение» (если есть), затем чипсы разделов HSK;
-//   - ступени раздела списком (FlatList — рисуются только видимые),
-//     у каждой — «Тренировать» (1 новое слово + 2 повторения из этой ступени);
+// Вкладка «Ступени» на экране «Написание» — карта пути:
+//   - сверху строки «Экзамен» и «Повторение» (если есть), чипсы разделов HSK
+//     и карточка «Продолжить» — она сразу запускает тренировку текущей ступени;
+//   - ниже тропинка: каждая ступень (тема) — кружок с её иероглифом (PathNode).
+//     Пройденные залиты, текущая крупнее и с кольцом, следующие — пунктиром.
+//     Ничего не закрыто: тап по любой точке открывает экран темы (/games/writing/theme),
+//     там сетка слов с точками и «Тренировать».
 //   - всё прокручивается вместе: сверху на экране закреплены только поиск и вкладки.
 // Все разделы открыты сразу. Разделы, в которые уже заходили, остаются в памяти
 // и только прячутся. Прокрутка у всех разделов общая (useSharedScroll), поэтому
 // шапка с чипсами при переключении стоит на месте.
-//
-// Сетку слов рисует экран (renderGrid): там точки письма, рамки «Повторения»
-// и печати экзамена. renderGrid должен быть стабильным (useCallback) —
-// иначе при каждом тапе по чипсу перерисовываются все ступени всех разделов.
 
 import { LevelChips } from "@/components/flashcards/LevelChips";
-import {
-  STEP_ACCORDION_INSET,
-  StepAccordion,
-} from "@/components/ui/StepAccordion";
-import type { Word } from "@/content/flashcards/types";
 import {
   useSharedScroll,
   useSyncedScroll,
@@ -29,13 +23,12 @@ import {
   getLevelStepTitles,
   getLevelSteps,
   getLevelStepsProgress,
+  getStepGlyph,
 } from "@/utils/writing/steps";
 import {
-  LEARNED_DOTS,
   NO_HSK_LEVEL,
   describeLevel,
   getAvailableLevels,
-  getWordWritingDots,
   type WritingLevel,
 } from "@/utils/writing/words";
 import {
@@ -49,36 +42,31 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { FlatList, View } from "react-native";
-
-type RenderGrid = (words: Word[], inset: number) => ReactNode;
-
-/** «Показать ступень» (из поиска): раздел, ступень и метка прыжка. */
-export interface WritingStepJump {
-  level: WritingLevel;
-  index: number;
-  /** Меняется при каждом прыжке, даже к той же ступени. */
-  nonce: number;
-}
+import {
+  FlatList,
+  Pressable,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { PathNode, type PathNodeState } from "./PathNode";
 
 interface WritingStepsTabProps {
-  /** Сетка слов ступени; inset — сколько ширины экрана не достаётся сетке. */
-  renderGrid: RenderGrid;
   /** Блок над чипсами: «Экзамен» и «Повторение». */
   topCards: ReactNode;
+  /** Запустить тренировку ступени («Продолжить»). */
   onStartStep: (level: WritingLevel, index: number) => void;
+  /** Открыть экран темы (тап по точке на карте). */
+  onOpenStep: (level: WritingLevel, index: number) => void;
   /** Отступы экрана по бокам. */
   outerInset: number;
-  /** Прыжок к ступени: переключить раздел, развернуть ступень и прокрутить к ней. */
-  jump?: WritingStepJump | null;
 }
 
 export function WritingStepsTab({
-  renderGrid,
   topCards,
   onStartStep,
+  onOpenStep,
   outerInset,
-  jump = null,
 }: WritingStepsTabProps) {
   const levels = useMemo(() => getAvailableLevels(), []);
 
@@ -88,12 +76,7 @@ export function WritingStepsTab({
   const [level, setLevel] = useState<WritingLevel>(() => firstHsk ?? levels[0]);
   const shownLevel = useDeferredValue(level);
 
-  // Прыжок из поиска — сначала переключаем раздел
-  useEffect(() => {
-    if (jump) setLevel(jump.level);
-  }, [jump]);
-
-  // Разделы, в которые уже заходили: их списки держим смонтированными
+  // Разделы, в которые уже заходили: их карты держим смонтированными
   const [visited, setVisited] = useState<WritingLevel[]>(() => [level]);
   useEffect(() => {
     setVisited((previous) =>
@@ -115,7 +98,6 @@ export function WritingStepsTab({
 
   const shared = useSharedScroll();
 
-  // Чипсы ближе к ступеням (12); отступ под «Экзаменом» и «Повторением» — в topCards
   const renderHeader = useCallback(
     (visible: boolean) => (
       <View className="pb-3">
@@ -135,186 +117,184 @@ export function WritingStepsTab({
   return (
     <View className="flex-1">
       {mounted.map((item) => (
-        <WritingLevelSteps
+        <WritingLevelPath
           key={item}
           level={item}
           visible={item === shownLevel}
           renderHeader={renderHeader}
-          renderGrid={renderGrid}
           onStartStep={onStartStep}
+          onOpenStep={onOpenStep}
           outerInset={outerInset}
           shared={shared}
-          jump={jump?.level === item ? jump : null}
         />
       ))}
     </View>
   );
 }
 
-// ── Ступени одного раздела ───────────────────────────────────────────────────
+// ── Карта одного раздела ─────────────────────────────────────────────────────
 
-interface WritingLevelStepsProps {
+interface WritingLevelPathProps {
   level: WritingLevel;
   visible: boolean;
   renderHeader: (visible: boolean) => ReactElement;
-  renderGrid: RenderGrid;
   onStartStep: (level: WritingLevel, index: number) => void;
+  onOpenStep: (level: WritingLevel, index: number) => void;
   outerInset: number;
   shared: SharedScroll;
-  jump: WritingStepJump | null;
 }
 
-const WritingLevelSteps = memo(function WritingLevelSteps({
+interface PathItem {
+  index: number;
+  glyph: string;
+  title: string;
+  state: PathNodeState;
+  started: number;
+  total: number;
+}
+
+const WritingLevelPath = memo(function WritingLevelPath({
   level,
   visible,
   renderHeader,
-  renderGrid,
   onStartStep,
+  onOpenStep,
   outerInset,
   shared,
-  jump,
-}: WritingLevelStepsProps) {
+}: WritingLevelPathProps) {
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
+  const { width } = useWindowDimensions();
+  const rowWidth = width - outerInset;
+
   const steps = getLevelSteps(level);
   const titles = getLevelStepTitles(level);
 
-  // Изучено по ступеням (3 точки письма) — для шкалы в шапке ступени
-  const learnedPerStep = useMemo(
+  const progress = useMemo(
+    () => getLevelStepsProgress(level, flashcardWords),
+    [level, flashcardWords],
+  );
+
+  const items = useMemo<PathItem[]>(
     () =>
-      steps.map(
-        (words) =>
-          words.filter(
-            (word) => getWordWritingDots(word, flashcardWords) >= LEARNED_DOTS,
-          ).length,
-      ),
-    [steps, flashcardWords],
-  );
-
-  // Сначала развёрнута текущая ступень
-  const [expanded, setExpanded] = useState<Set<number>>(
-    () => new Set([getLevelStepsProgress(level).currentIndex]),
-  );
-  const toggle = useCallback(
-    (index: number) =>
-      setExpanded((previous) => {
-        const next = new Set(previous);
-        if (next.has(index)) next.delete(index);
-        else next.add(index);
-        return next;
+      steps.map((words, index) => {
+        const state = progress.steps[index];
+        return {
+          index,
+          glyph: getStepGlyph(words),
+          title: titles[index] ?? `Ступень ${index + 1}`,
+          state:
+            !progress.completed && index === progress.currentIndex
+              ? "current"
+              : state?.passed
+                ? "passed"
+                : "upcoming",
+          started: state?.started ?? 0,
+          total: words.length,
+        };
       }),
-    [],
-  );
-  const start = useCallback(
-    (index: number) => onStartStep(level, index),
-    [level, onStartStep],
+    [steps, titles, progress],
   );
 
-  const listRef = useRef<FlatList<Word[]>>(null);
+  const open = useCallback(
+    (index: number) => onOpenStep(level, index),
+    [level, onOpenStep],
+  );
+
+  const listRef = useRef<FlatList<PathItem>>(null);
   const scroll = useSyncedScroll(listRef, visible, shared, "y");
 
-  // Прыжок к ступени: развернуть её и прокрутить к ней
-  useEffect(() => {
-    if (!jump) return;
-    setExpanded((previous) => new Set(previous).add(jump.index));
-    // Ждём, пока список покажется и развернёт ступень
-    const timer = setTimeout(() => {
-      listRef.current?.scrollToIndex({
-        index: jump.index,
-        viewPosition: 0,
-        animated: true,
-      });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [jump]);
+  const current = items[progress.currentIndex];
+
+  const header = (
+    <View>
+      {renderHeader(visible)}
+      <ContinueCard
+        title={current?.title}
+        completed={progress.completed}
+        levelLabel={describeLevel(level)}
+        onContinue={() => onStartStep(level, progress.currentIndex)}
+      />
+    </View>
+  );
 
   const renderItem = useCallback(
-    ({ item: words, index }: { item: Word[]; index: number }) => (
-      <WritingStepItem
-        index={index}
-        title={titles[index] ?? `Ступень ${index + 1}`}
-        words={words}
-        learned={learnedPerStep[index] ?? 0}
-        expanded={expanded.has(index)}
-        gridInset={outerInset + STEP_ACCORDION_INSET}
-        renderGrid={renderGrid}
-        onToggle={toggle}
-        onStart={start}
+    ({ item }: { item: PathItem }) => (
+      <PathNode
+        index={item.index}
+        count={items.length}
+        width={rowWidth}
+        glyph={item.glyph}
+        title={item.title}
+        state={item.state}
+        started={item.started}
+        total={item.total}
+        onPress={open}
       />
     ),
-    [learnedPerStep, titles, expanded, outerInset, renderGrid, toggle, start],
+    [items.length, rowWidth, open],
   );
 
   return (
     <FlatList
       ref={listRef}
       {...scroll}
-      data={steps}
-      keyExtractor={(_, index) => `${level}-${index}`}
-      extraData={renderItem}
+      data={items}
+      keyExtractor={(item) => `${level}-${item.index}`}
       style={{ display: visible ? "flex" : "none" }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ paddingVertical: 12, gap: 12 }}
-      initialNumToRender={5}
-      maxToRenderPerBatch={5}
-      windowSize={5}
-      onScrollToIndexFailed={(info) => {
-        // Ступень ещё не измерена: прокручиваем примерно, потом точно
-        listRef.current?.scrollToOffset({
-          offset: info.averageItemLength * info.index,
-          animated: false,
-        });
-        setTimeout(() => {
-          listRef.current?.scrollToIndex({
-            index: info.index,
-            viewPosition: 0,
-            animated: true,
-          });
-        }, 150);
-      }}
-      ListHeaderComponent={renderHeader(visible)}
+      contentContainerStyle={{ paddingTop: 12, paddingBottom: 32 }}
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      windowSize={7}
+      ListHeaderComponent={header}
       renderItem={renderItem}
     />
   );
 });
 
-// ── Одна ступень ─────────────────────────────────────────────────────────────
-// memo: при тапе по чипсу или развороте другой ступени эта не перерисовывается.
+// ── «Продолжить» ─────────────────────────────────────────────────────────────
 
-interface WritingStepItemProps {
-  index: number;
-  /** «Семья», «Еда · 2» или «Ступень 3». */
-  title: string;
-  words: Word[];
-  learned: number;
-  expanded: boolean;
-  gridInset: number;
-  renderGrid: RenderGrid;
-  onToggle: (index: number) => void;
-  onStart: (index: number) => void;
+interface ContinueCardProps {
+  title?: string;
+  completed: boolean;
+  levelLabel: string;
+  onContinue: () => void;
 }
 
-const WritingStepItem = memo(function WritingStepItem({
-  index,
+function ContinueCard({
   title,
-  words,
-  learned,
-  expanded,
-  gridInset,
-  renderGrid,
-  onToggle,
-  onStart,
-}: WritingStepItemProps) {
+  completed,
+  levelLabel,
+  onContinue,
+}: ContinueCardProps) {
+  if (!title) return null;
+
   return (
-    <StepAccordion
-      title={title}
-      learned={learned}
-      total={words.length}
-      expanded={expanded}
-      onToggle={() => onToggle(index)}
-      onStart={() => onStart(index)}
-    >
-      {expanded ? renderGrid(words, gridInset) : null}
-    </StepAccordion>
+    <View className="mb-2 flex-row items-center gap-3 rounded-2xl bg-surface px-4 py-3">
+      <View className="flex-1">
+        <Text className="font-nunito text-caption text-textSecondary">
+          {completed ? `${levelLabel} пройден` : "Сейчас"}
+        </Text>
+        <Text
+          numberOfLines={1}
+          className="font-nunitoBold text-lead text-text"
+        >
+          {completed ? "Все темы начаты" : title}
+        </Text>
+      </View>
+      {!completed && (
+        <Pressable
+          onPress={onContinue}
+          className="rounded-full bg-primary px-5 py-2.5 active:opacity-80"
+          accessibilityRole="button"
+          accessibilityLabel={`Продолжить: ${title}`}
+        >
+          <Text className="font-nunitoBold text-body text-white">
+            Продолжить
+          </Text>
+        </Pressable>
+      )}
+    </View>
   );
-});
+}

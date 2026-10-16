@@ -286,6 +286,15 @@ export function getLevelStepTitles(level: WritingLevel): string[] {
   return getLevelPath(level).titles;
 }
 
+/**
+ * Иероглиф ступени для карты пути: первое односложное слово ступени,
+ * а если таких нет — первый иероглиф первого слова.
+ */
+export function getStepGlyph(words: Word[]): string {
+  const single = words.find((word) => Array.from(word.hanzi).length === 1);
+  return single?.hanzi ?? Array.from(words[0]?.hanzi ?? "")[0] ?? "";
+}
+
 /** Название одной ступени. */
 export function getStepTitle(level: WritingLevel, index: number): string {
   return getLevelStepTitles(level)[index] ?? `Ступень ${index + 1}`;

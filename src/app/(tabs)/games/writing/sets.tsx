@@ -2,13 +2,13 @@
 //
 // Главный экран режима «Написание» — устроен так же, как экран карточек:
 //   - сверху закреплены поиск (иероглиф, пиньинь без тонов, перевод) и вкладки;
-//   - «Ступени»: строки «Экзамен» и «Повторение», чипсы разделов HSK и ступени
-//     с кнопкой «Тренировать» (WritingStepsTab);
+//   - «Ступени»: строки «Экзамен» и «Повторение», чипсы разделов HSK, «Продолжить»
+//     и карта пути из тем (WritingStepsTab); тап по теме открывает её экран (theme.tsx);
 //   - «Мои наборы»: те же наборы, что в карточках, — «Открыть», «Тренировать»,
 //     создание и редактирование (редактор общий с карточками).
 // Нажатие на слово открывает выбор: что писать, в каком формате, «Повторять» и экзамен.
 // Поиск — списком (иероглиф, пиньинь, перевод), как в карточках; у найденного слова
-// в окне видно, где оно лежит, и есть «Показать» ступень.
+// в окне видно, где оно лежит, и «Показать» открывает экран его темы.
 //
 // Данные и действия — в useWritingHome; здесь только раскладка.
 
@@ -24,10 +24,7 @@ import { Title } from "@/components/ui/Title";
 import { ExamEntryCard } from "@/components/writing/home/ExamEntryCard";
 import { ReviewCard } from "@/components/writing/home/ReviewCard";
 import { WordGrid } from "@/components/writing/home/WordGrid";
-import {
-  WritingStepsTab,
-  type WritingStepJump,
-} from "@/components/writing/home/WritingStepsTab";
+import { WritingStepsTab } from "@/components/writing/home/WritingStepsTab";
 import { ExamModal } from "@/components/writing/modals/ExamModal";
 import { PracticeChoiceModal } from "@/components/writing/modals/PracticeChoiceModal";
 import { ReviewModal } from "@/components/writing/modals/ReviewModal";
@@ -92,26 +89,19 @@ export default function WritingHomeScreen() {
     />
   );
 
-  // Сетка ступени — стабильная функция: иначе тап по чипсу перерисовывает все ступени
-  const { getLevel, isInReview, getExamMark, setSelected } = home;
-  const renderStepGrid = useCallback(
-    (words: Word[], inset: number) => (
-      <WordGrid
-        words={words}
-        getLevel={getLevel}
-        onSelect={setSelected}
-        isMarked={isInReview}
-        getExamMark={getExamMark}
-        horizontalInset={inset}
-      />
-    ),
-    [getLevel, isInReview, getExamMark, setSelected],
-  );
-
   const startStep = useCallback(
     (level: WritingLevel, index: number) =>
       router.push({
         pathname: "/games/writing/step" as any,
+        params: { level: String(level), index: String(index) },
+      }),
+    [router],
+  );
+
+  const openStep = useCallback(
+    (level: WritingLevel, index: number) =>
+      router.push({
+        pathname: "/games/writing/theme" as any,
         params: { level: String(level), index: String(index) },
       }),
     [router],
@@ -123,13 +113,10 @@ export default function WritingHomeScreen() {
     home.selected && home.selectedFromSearch
       ? findWritingWordStep(home.selected.vocabularyId)
       : null;
-  const [jump, setJump] = useState<WritingStepJump | null>(null);
   const showInStep = () => {
     if (!selectedStep) return;
     home.setSelected(null);
-    home.setQuery("");
-    setTab("steps");
-    setJump({ ...selectedStep, nonce: Date.now() });
+    openStep(selectedStep.level, selectedStep.index);
   };
 
   const createSet = useCustomSetsStore((state) => state.createSet);
@@ -305,11 +292,10 @@ export default function WritingHomeScreen() {
         }}
       >
         <WritingStepsTab
-          renderGrid={renderStepGrid}
           topCards={topCards}
           onStartStep={startStep}
+          onOpenStep={openStep}
           outerInset={SCREEN_INSET}
-          jump={jump}
         />
       </View>
 

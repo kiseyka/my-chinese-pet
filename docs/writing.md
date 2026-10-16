@@ -11,7 +11,8 @@
 
 | Файл | Что открывает |
 |---|---|
-| `sets.tsx` | главный экран «Написание»: сетка ступеней, поиск, входы в «Экзамен» и «Повторение», окна |
+| `sets.tsx` | главный экран «Написание»: карта пути из тем, «Продолжить», поиск, входы в «Экзамен» и «Повторение», окна |
+| `theme.tsx` | экран одной темы с карты: «Тренировать» и сетка слов с точками |
 | `exam.tsx` | экзамен: только по памяти, вердикт, итоги |
 | `free.tsx` | урок по одному слову из сетки (быстрый или полный) → `WritingLessonScreen` |
 | `review.tsx` | урок по списку «Повторение» → `WritingLessonScreen` |
@@ -42,7 +43,7 @@
 - `canvas/` — всё, что рисует иероглиф: `WritingCanvas` (письмо пальцем), `DemoCanvas` (показ порядка черт), `HanziView` (маленькое превью), `hanziSvg` (цвета холста, сетка «тянь цзы гэ», линия).
 - `lesson/WritingLessonScreen` — экран урока: показ → контур → по памяти, сравнение в конце слова.
 - `lesson/LessonParts` — общие куски урока и экзамена: шапка, слово, «Напиши …», написанные иероглифы, «Эталон / Твоё», кнопки.
-- `home/` — главный экран: `WordGrid` (сетка слов), `WritingDots`, `StepCard`, `ReviewCard`, `ExamEntryCard`, `LevelSections`.
+- `home/` — главный экран: `WritingStepsTab` (карта пути и «Продолжить»), `PathNode` (точка на карте с куском тропинки), `WordGrid` (сетка слов), `WritingDots`, `StepCard`, `ReviewCard`, `ExamEntryCard`, `LevelSections`.
 - `modals/` — нижние окна: `PracticeChoiceModal` (окно слова, его блоки — в `PracticeChoiceParts`), `ExamModal`, `ReviewModal`.
 - `results/` — итоги: `WritingResultsList` (на экране статистики), `ExamResultsList`.
 - `SealMark` — печать 印, общая для всех.
