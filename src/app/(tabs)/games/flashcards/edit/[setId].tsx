@@ -3,7 +3,7 @@
 // Редактирование своего набора:
 //   - поиск по всей базе слов (иероглиф, пиньинь без тонов, перевод);
 //     в результатах слово добавляется или убирается одним нажатием;
-//   - без поиска — «Добавить из ступеней HSK» (StepPickerSheet) и список слов набора
+//   - без поиска — «Добавить из тем» (StepPickerSheet) и список слов набора
 //     с точками чтения, «✕» убирает слово;
 //   - в шапке: тап по названию или карандаш — переименовать, корзина — удалить;
 //   - внизу «Начать», когда в наборе хватает слов.
@@ -257,14 +257,14 @@ export default function EditSetScreen() {
         ListHeaderComponent={
           isSearching ? null : (
             <View className="gap-2">
-              {/* Добавить слова из ступеней HSK */}
+              {/* Добавить слова из тем (тех же, что в «Словаре» и на пути) */}
               <Pressable
                 onPress={() => setIsPicking(true)}
                 className="min-h-12 flex-row items-center justify-between gap-3 rounded-2xl border border-dashed border-primary px-4 py-3 active:opacity-70"
                 accessibilityRole="button"
               >
                 <Text className="flex-1 font-nunitoBold text-body text-primary">
-                  Добавить из ступеней HSK
+                  Добавить из тем
                 </Text>
                 <PlusIcon width={22} height={22} color={colors.primary} />
               </Pressable>
@@ -272,7 +272,7 @@ export default function EditSetScreen() {
               {total === 0 ? (
                 <Text className="mt-2 font-nunito text-body text-text">
                   В наборе пока нет слов. Найди слово через поиск или выбери из
-                  ступеней.
+                  тем.
                 </Text>
               ) : (
                 /* Подпись над списком: «Слова в наборе · 12» */

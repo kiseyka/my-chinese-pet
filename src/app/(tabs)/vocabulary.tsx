@@ -2,7 +2,8 @@
 //
 // «Словарь» — все слова приложения в одном месте:
 //   - поиск по иероглифу, пиньиню без тонов и переводу (результаты — списком);
-//   - сверху «Экзамен» (если есть что сдавать) и «Повторение» (если в нём есть слова);
+//   - сверху одной строкой «Экзамен» (если есть что сдавать) и «Повторение»
+//     (если в нём есть слова);
 //   - чипсы: «Избранное», «Наборы», разделы HSK, «Другие слова»;
 //   - слова раздела сгруппированы по темам — тем же, что этапы пути;
 //     у каждого слова две строки точек: перевод (зелёные) и письмо (тёмные);
@@ -22,12 +23,11 @@ import { SetWordRow } from "@/components/flashcards/SetWordRow";
 import { Screen } from "@/components/layout/Screen";
 import { PathWordGrid } from "@/components/path/PathWordGrid";
 import { TrainingChoiceSheet } from "@/components/training/TrainingChoiceSheet";
-import type { WordLevel } from "@/components/ui/LevelDots";
 import { BackButton } from "@/components/ui/BackButton";
 import { SearchField } from "@/components/ui/SearchField";
 import { Title } from "@/components/ui/Title";
-import { ExamEntryCard } from "@/components/writing/home/ExamEntryCard";
-import { ReviewCard } from "@/components/writing/home/ReviewCard";
+import ReviewIcon from "@/assets/images/icons/bookmark.svg";
+import { SealMark } from "@/components/writing/SealMark";
 import { ExamModal } from "@/components/writing/modals/ExamModal";
 import type { Word } from "@/content/flashcards/types";
 import { allWords, findWords } from "@/content/words/vocabulary";
@@ -43,6 +43,7 @@ import {
 } from "@/utils/dictionary";
 import { getTrackDots, type TrackId } from "@/utils/path/stages";
 import { searchWords } from "@/utils/searchWords";
+import { formatExamWait, pluralWords } from "@/utils/writing/labels";
 import { colors } from "@/theme/colors";
 import {
   FAVORITES_SOURCE,
@@ -62,6 +63,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, Pressable, Text, View } from "react-native";
@@ -268,7 +270,6 @@ export default function DictionaryScreen() {
             <SetWordRow
               word={item}
               action="open"
-              level={getTrackDots(item, "reading", flashcardWords) as WordLevel}
               onPress={noop}
               onOpenWord={setOpened}
             />
@@ -289,16 +290,29 @@ export default function DictionaryScreen() {
         {(reviewWords.length > 0 ||
           exams.ready.length > 0 ||
           exams.upcoming.length > 0) && (
-          <View className="mt-3 gap-2">
-            <ExamEntryCard
-              readyCount={exams.ready.length}
-              nextAvailableAt={exams.upcoming[0]?.availableAt}
-              now={exams.now}
-              onPress={() => setExamOpen(true)}
-            />
+          // Одной строкой: слева экзамен, справа повторение
+          <View className="mt-3 flex-row gap-2">
+            {(exams.ready.length > 0 || exams.upcoming.length > 0) && (
+              <EntryTile
+                icon={<SealMark size={26} />}
+                title="Экзамен"
+                caption={
+                  exams.ready.length > 0
+                    ? `письмо · ${exams.ready.length} ${pluralWords(exams.ready.length)}`
+                    : `письмо · ${formatExamWait(exams.upcoming[0].availableAt, exams.now)}`
+                }
+                onPress={() => setExamOpen(true)}
+              />
+            )}
             {reviewWords.length > 0 && (
-              <ReviewCard
-                total={reviewWords.length}
+              <EntryTile
+                icon={
+                  <View className="h-7 w-7 items-center justify-center rounded-lg bg-primary/15">
+                    <ReviewIcon width={16} height={16} color={colors.primary} />
+                  </View>
+                }
+                title="Повторение"
+                caption={`${reviewWords.length} ${pluralWords(reviewWords.length)}`}
                 onPress={() => setReviewOpen(true)}
               />
             )}
@@ -516,3 +530,39 @@ const GroupCard = memo(function GroupCard({
     </View>
   );
 });
+
+// ── Вход в экзамен или повторение (половина строки) ─────────────────────────
+
+function EntryTile({
+  icon,
+  title,
+  caption,
+  onPress,
+}: {
+  icon: ReactNode;
+  title: string;
+  caption: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="min-h-14 flex-1 flex-row items-center gap-2.5 rounded-2xl bg-surface px-3 py-2 active:opacity-70"
+      accessibilityRole="button"
+      accessibilityLabel={`${title}: ${caption}`}
+    >
+      {icon}
+      <View className="min-w-0 flex-1">
+        <Text numberOfLines={1} className="font-nunitoBold text-body text-text">
+          {title}
+        </Text>
+        <Text
+          numberOfLines={1}
+          className="font-nunito text-caption text-textSecondary"
+        >
+          {caption}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}

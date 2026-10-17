@@ -9,7 +9,7 @@
 | `src/components/dictionary/ReviewSheet.tsx` | панель «Повторения»: сетка слов и «Тренировать» |
 | `src/hooks/useExamQueue.ts` | очередь экзаменов по письму (готовые и «скоро») |
 | `src/utils/dictionary.ts` | разделы, группы раздела (этапы пути), этап, где лежит слово |
-| `src/components/dictionary/DictionaryWordSheet.tsx` | панель слова: точки навыков, «Избранное», место на пути и «Показать», наборы |
+| `src/components/dictionary/DictionaryWordSheet.tsx` | панель слова: слово; строка «Повторение · Избранное · В набор» (наборы — вторая страница панели); «Написать» (у двусложных — выбор: слово или один знак), мелко точки и «Показать на пути» |
 | `src/components/training/TrainingChoiceSheet.tsx` | «Как будем тренироваться?»: выбор перевода, самопроверка, письмо — для любого источника слов |
 | `src/utils/wordSource.ts` | источники слов, общие для карточек и письма: этап пути (`path:1:0`), `favorites`, `dict:other`, `review`, свой набор (`set-…`) |
 | `src/app/(tabs)/games/writing/path.tsx` | урок письма по источнику (`?source=`) или этапу пути (`?stage=`) |
