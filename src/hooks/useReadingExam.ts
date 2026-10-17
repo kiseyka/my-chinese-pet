@@ -56,14 +56,15 @@ export function useReadingExam(words: Word[]) {
     if (!current || chosen) return;
     setChosen(option);
     const passed = option.vocabularyId === current.word.vocabularyId;
-    setOutcomes((previous) => [
-      ...previous,
-      {
-        word: current.word,
-        chosen: option,
-        verdict: recordVerdict(current.word.vocabularyId, passed),
-      },
-    ]);
+    // Запись в стор — здесь, в обработчике нажатия, а не внутри setOutcomes:
+    // функция-обновление выполняется во время отрисовки (и в dev — дважды),
+    // а менять стор во время отрисовки React не даёт
+    const outcome: ReadingExamOutcome = {
+      word: current.word,
+      chosen: option,
+      verdict: recordVerdict(current.word.vocabularyId, passed),
+    };
+    setOutcomes((previous) => [...previous, outcome]);
   };
 
   const next = () => {
