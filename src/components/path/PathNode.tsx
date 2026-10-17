@@ -220,20 +220,20 @@ export const PathNode = memo(function PathNode({
           style={{ width: labelWidth, marginHorizontal: LABEL_GAP }}
           className={labelOnRight ? "items-start" : "items-end"}
         >
-          {/* Полупрозрачная подложка: подпись читается и поверх рисунка фона */}
+          {/* Карточка подписи: непрозрачная, чтобы текст читался поверх рисунка фона */}
           <View
-            className={`rounded-xl bg-background/85 px-2 py-1 ${
+            className={`rounded-2xl border border-border bg-surface px-3 py-1.5 ${
               labelOnRight ? "items-start" : "items-end"
             }`}
           >
-            <Text
+          <Text
               numberOfLines={2}
               className={`${labelOnRight ? "text-left" : "text-right"} ${
                 state === "current"
                   ? "font-nunitoBold text-lead text-text"
                   : state === "passed"
                     ? "font-nunitoBold text-body text-text"
-                    : "font-nunito text-body text-textSecondary"
+                    : "font-nunito text-body text-text"
               }`}
             >
               {title}

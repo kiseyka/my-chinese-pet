@@ -9,14 +9,15 @@
 //   - Внизу «Продолжить» (или «Начать») — сразу запускает нужную тренировку
 //     текущего этапа: сначала перевод, когда он пройден — письмо.
 //   - При открытии карта прокручена к текущему этапу.
-//   - Фон — пейзаж (assets/images/backgrounds/path.jpg). Он стоит на месте, а тропинка
-//     прокручивается поверх: рисунок по краям, середина пустая — там идёт тропинка.
+//   - Фон — повторяющийся пейзаж (ScrollingBackground): едет за прокруткой медленнее
+//     тропинки. Рисунок по краям, середина пустая — там идёт тропинка.
 
 import {
   PathNode,
   PATH_ROW_HEIGHT,
   pathOffset,
 } from "@/components/path/PathNode";
+import { ScrollingBackground } from "@/components/path/ScrollingBackground";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { Title } from "@/components/ui/Title";
@@ -28,10 +29,9 @@ import {
   type StageProgress,
 } from "@/utils/path/stages";
 import { useRouter } from "expo-router";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
-  FlatList,
-  Image,
+  Animated,
   Pressable,
   Text,
   View,
@@ -93,6 +93,20 @@ export default function PathScreen() {
 
   const currentRow = rows.findIndex(
     (row) => row.type === "stage" && row.item.stage.index === currentIndex,
+  );
+  const initialIndex = Math.max(currentRow - 1, 0);
+
+  // Прокрутка для фона. Начинаем с того места, куда список откроется,
+  // иначе фон дёрнется при первой прокрутке
+  const scrollY = useRef(
+    new Animated.Value(layout[initialIndex]?.offset ?? 0),
+  ).current;
+  const onScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: true,
+      }),
+    [scrollY],
   );
 
   const open = useCallback(
@@ -165,12 +179,7 @@ export default function PathScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <Image
-        source={require("@/assets/images/backgrounds/path.jpg")}
-        resizeMode="cover"
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-        accessibilityIgnoresInvertColors
-      />
+      <ScrollingBackground scrollY={scrollY} />
       <Screen>
         <View className="flex-row items-center justify-between">
           <BackButton href="/games" />
@@ -178,12 +187,14 @@ export default function PathScreen() {
           <View style={{ width: 28 }} />
         </View>
 
-        <FlatList
+        <Animated.FlatList
           data={rows}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           keyExtractor={(row) => row.key}
           renderItem={renderItem}
           getItemLayout={(_, index) => ({ ...layout[index], index })}
-          initialScrollIndex={Math.max(currentRow - 1, 0)}
+          initialScrollIndex={initialIndex}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingTop: 8, paddingBottom: BOTTOM_SPACE }}
           initialNumToRender={10}
