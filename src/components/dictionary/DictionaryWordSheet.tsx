@@ -6,6 +6,8 @@
 //     которые нельзя писать — длиннее 2 иероглифов или без данных о чертах);
 //   - «Повторение» — рабочий список: слова, которые хочется отработать;
 //   - «Избранное» — личная коллекция слов, без цели повторять;
+//   - «Написать»: быстро (контур → по памяти) или полностью (по частям, с показом) —
+//     урок письма по одному этому слову (только у слов, которые можно писать);
 //   - где слово на пути («HSK 1 · Семья») и «Показать» — экран этого этапа;
 //   - свои наборы переключателями.
 //   - «Повторение» — один рабочий список на все навыки.
@@ -27,19 +29,23 @@ import { getTrackDots, type TrackId } from "@/utils/path/stages";
 import { getWritableWords } from "@/utils/writing/words";
 import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
+import type { FreeFormat } from "@/utils/writing/plans";
+import { Pressable, Text, View } from "react-native";
 
 interface DictionaryWordSheetProps {
   /** Слово; null — панель закрыта. */
   word: Word | null;
   /** «Показать» — открыть этап пути, где лежит слово. */
   onShowStage: (stageId: string) => void;
+  /** «Написать» — урок письма по слову в выбранном формате. */
+  onWrite: (word: Word, format: FreeFormat) => void;
   onClose: () => void;
 }
 
 export function DictionaryWordSheet({
   word,
   onShowStage,
+  onWrite,
   onClose,
 }: DictionaryWordSheetProps) {
   const { t } = useTranslation();
@@ -84,6 +90,24 @@ export function DictionaryWordSheet({
               )}
             </View>
 
+            {writable && (
+              <View className="mt-5 flex-row items-center gap-2">
+                <PencilIcon width={20} height={20} color={colors.primary} />
+                <Text className="flex-1 font-nunitoBold text-body text-text">
+                  Написать
+                </Text>
+                <WriteButton
+                  label="Быстро"
+                  onPress={() => onWrite(shown, "quick")}
+                />
+                <WriteButton
+                  label="Полностью"
+                  primary
+                  onPress={() => onWrite(shown, "full")}
+                />
+              </View>
+            )}
+
             {stage && (
               <WordLocationRow
                 className="mt-5"
@@ -125,6 +149,35 @@ export function DictionaryWordSheet({
         );
       }}
     </BottomSheet>
+  );
+}
+
+function WriteButton({
+  label,
+  primary = false,
+  onPress,
+}: {
+  label: string;
+  primary?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`min-h-10 justify-center rounded-full px-4 active:opacity-80 ${
+        primary ? "bg-primary" : "border border-primary"
+      }`}
+      accessibilityRole="button"
+      accessibilityLabel={`Написать: ${label.toLowerCase()}`}
+    >
+      <Text
+        className={`font-nunitoBold text-small ${
+          primary ? "text-white" : "text-primary"
+        }`}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

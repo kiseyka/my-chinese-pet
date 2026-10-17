@@ -119,8 +119,8 @@ function TrainingFrame({
 }) {
   const router = useRouter();
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
-  // Выход — туда, откуда запустили: на путь (returnTo) или к карточкам
-  const exitTo = useGameStore((state) => state.returnTo) ?? "/games/flashcards/sets";
+  // Выход — туда, откуда запустили: на путь (returnTo) или в «Словарь»
+  const exitTo = useGameStore((state) => state.returnTo) ?? "/vocabulary";
 
   return (
     <Screen>
@@ -145,7 +145,7 @@ function TrainingFrame({
 
 /** Набор удалили или в нём не хватает слов (вопросов нет). */
 function NoWords({ source }: { source: FlashcardSource | null }) {
-  const exitTo = useGameStore((state) => state.returnTo) ?? "/games/flashcards/sets";
+  const exitTo = useGameStore((state) => state.returnTo) ?? "/vocabulary";
 
   return (
     <Screen>

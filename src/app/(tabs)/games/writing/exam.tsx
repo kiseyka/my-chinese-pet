@@ -115,7 +115,7 @@ function WritingExam({ buildWords }: WritingExamProps) {
             // Не router.back(): в табах он уводит на панду. Туда, откуда запускали
             onPress={() =>
               router.replace(
-                useGameStore.getState().returnTo ?? "/games/writing/sets",
+                useGameStore.getState().returnTo ?? "/vocabulary",
               )
             }
             className="mt-6 min-h-12 items-center justify-center rounded-full bg-primary px-8 py-3"

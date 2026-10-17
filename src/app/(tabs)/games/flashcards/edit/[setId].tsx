@@ -45,18 +45,9 @@ import { FlatList, Pressable, Text, View } from "react-native";
 export default function EditSetScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  // from — куда вернуться (по умолчанию карточки; из «Написания» или «Словаря» — туда)
-  const { setId, from } = useLocalSearchParams<{
-    setId: string;
-    from?: string;
-  }>();
-  const backHref = (
-    from === "writing"
-      ? "/games/writing/sets"
-      : from === "dictionary"
-        ? "/vocabulary"
-        : "/games/flashcards/sets"
-  ) as Href;
+  // Наборы живут в «Словаре» — туда и возвращаемся
+  const { setId } = useLocalSearchParams<{ setId: string }>();
+  const backHref = "/vocabulary" as Href;
 
   const set = useCustomSet(setId);
   const toggleWord = useCustomSetsStore((state) => state.toggleWord);

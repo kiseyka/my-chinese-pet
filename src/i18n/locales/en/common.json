@@ -5,6 +5,10 @@
             "title": "Path",
             "description": "Topics in order: translation and writing in one place"
         },
+        "dictionary": {
+            "title": "Dictionary",
+            "description": "All words, your own trainings, sets and review"
+        },
         "tones": {
             "title": "Tones",
             "description": "Writing characters"

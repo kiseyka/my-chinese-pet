@@ -190,6 +190,14 @@ export default function DictionaryScreen() {
       <DictionaryWordSheet
         word={opened}
         onShowStage={showStage}
+        onWrite={(word, format) => {
+          setOpened(null);
+          useGameStore.getState().setReturnTo("/vocabulary");
+          router.push({
+            pathname: "/games/writing/free" as any,
+            params: { wordId: word.vocabularyId, format },
+          });
+        }}
         onClose={() => setOpened(null)}
       />
 
