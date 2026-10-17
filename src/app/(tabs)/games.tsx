@@ -12,6 +12,15 @@ import { Pressable, View } from "react-native";
 
 const games = [
   {
+    id: "path",
+    title: "games.path.title",
+    description: "games.path.description",
+    route: "/games/path",
+    locked: false,
+    // Своей картинки у пути пока нет
+    imageSource: require("@/assets/images/games/hanzi.png"),
+  },
+  {
     id: "flashcards",
     title: "games.flashcards.title",
     description: "games.flashcards.description",

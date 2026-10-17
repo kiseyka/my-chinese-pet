@@ -5,6 +5,7 @@
 // открытые окна и переходы в тренировки. Экран только раскладывает это по местам.
 
 import type { Word } from "@/content/flashcards/types";
+import { useGameStore } from "@/store/gameStore";
 import type { ExamMark } from "@/components/writing/home/WordGrid";
 import type { UpcomingExamWord } from "@/components/writing/modals/ExamModal";
 import {
@@ -35,11 +36,13 @@ export function useWritingHome() {
     (s) => s.toggleWritingReview,
   );
 
-  // Время для очереди экзаменов: обновляем при каждом возвращении на экран
+  // Время для очереди экзаменов: обновляем при каждом возвращении на экран.
+  // Тренировки отсюда возвращаются сюда же, а не на путь
   const [now, setNow] = useState(() => Date.now());
   useFocusEffect(
     useCallback(() => {
       setNow(Date.now());
+      useGameStore.getState().setReturnTo(null);
     }, []),
   );
 

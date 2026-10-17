@@ -1,15 +1,14 @@
 // app/(tabs)/games/writing/sets.tsx
 //
-// Главный экран режима «Написание». Почти всё место отдано карте пути:
-//   - шапка (WritingHeader): назад, название, кнопка поиска; ниже раздел «HSK 1 ▾»,
-//     «Экзамен» и «Наборы» (переключает экран на «Мои наборы» и обратно);
-//   - карта пути из тем (WritingStepsTab) с кнопками «Повторение» и «Продолжить» внизу;
-//     тап по теме открывает её экран (theme.tsx);
+// Главный экран режима «Написание» — устроен так же, как экран карточек:
+//   - сверху закреплены поиск (иероглиф, пиньинь без тонов, перевод) и вкладки;
+//   - «Ступени»: строки «Экзамен» и «Повторение», чипсы разделов HSK и ступени
+//     с кнопкой «Тренировать» (WritingStepsTab);
 //   - «Мои наборы»: те же наборы, что в карточках, — «Открыть», «Тренировать»,
 //     создание и редактирование (редактор общий с карточками).
 // Нажатие на слово открывает выбор: что писать, в каком формате, «Повторять» и экзамен.
 // Поиск — списком (иероглиф, пиньинь, перевод), как в карточках; у найденного слова
-// в окне видно, где оно лежит, и «Показать» открывает экран его темы.
+// в окне видно, где оно лежит, и есть «Показать» ступень.
 //
 // Данные и действия — в useWritingHome; здесь только раскладка.
 
@@ -17,13 +16,18 @@ import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
 import type { WordLevel } from "@/components/ui/LevelDots";
 import { Screen } from "@/components/layout/Screen";
-import {
-  BottomSheet,
-  SHEET_HORIZONTAL_INSET,
-} from "@/components/ui/BottomSheet";
+import { BackButton } from "@/components/ui/BackButton";
+import { SHEET_HORIZONTAL_INSET } from "@/components/ui/BottomSheet";
+import { SearchField } from "@/components/ui/SearchField";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { Title } from "@/components/ui/Title";
+import { ExamEntryCard } from "@/components/writing/home/ExamEntryCard";
+import { ReviewCard } from "@/components/writing/home/ReviewCard";
 import { WordGrid } from "@/components/writing/home/WordGrid";
-import { WritingHeader } from "@/components/writing/home/WritingHeader";
-import { WritingStepsTab } from "@/components/writing/home/WritingStepsTab";
+import {
+  WritingStepsTab,
+  type WritingStepJump,
+} from "@/components/writing/home/WritingStepsTab";
 import { ExamModal } from "@/components/writing/modals/ExamModal";
 import { PracticeChoiceModal } from "@/components/writing/modals/PracticeChoiceModal";
 import { ReviewModal } from "@/components/writing/modals/ReviewModal";
@@ -39,15 +43,10 @@ import {
   describeWritingStep,
   findWritingWordStep,
 } from "@/utils/writing/steps";
-import {
-  NO_HSK_LEVEL,
-  describeLevel,
-  getAvailableLevels,
-  type WritingLevel,
-} from "@/utils/writing/words";
+import type { WritingLevel } from "@/utils/writing/words";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { FlatList, Text, View } from "react-native";
 
 /** Отступы Screen по бокам: от них считается ширина ячеек сетки. */
 const SCREEN_INSET = 32;
@@ -57,24 +56,17 @@ type WritingTab = "steps" | "sets";
 /** Строке результата поиска действие «добавить/убрать» не нужно. */
 const noop = () => {};
 
+const TABS = [
+  { key: "steps" as const, label: "Ступени" },
+  { key: "sets" as const, label: "Мои наборы" },
+];
+
 export default function WritingHomeScreen() {
   const home = useWritingHome();
   const router = useRouter();
   const { examQueue, repeatWords } = home;
 
   const [tab, setTab] = useState<WritingTab>("steps");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const closeSearch = () => {
-    home.setQuery("");
-    setSearchOpen(false);
-  };
-
-  // Раздел HSK карты пути (сначала первый раздел HSK)
-  const levels = useMemo(() => getAvailableLevels(), []);
-  const [level, setLevel] = useState<WritingLevel>(
-    () => levels.find((item) => item !== NO_HSK_LEVEL) ?? levels[0],
-  );
-  const [levelPickerOpen, setLevelPickerOpen] = useState(false);
 
   // «Мои наборы» — те же, что в карточках
   const customSets = useCustomSetsStore((state) => state.sets);
@@ -100,19 +92,26 @@ export default function WritingHomeScreen() {
     />
   );
 
+  // Сетка ступени — стабильная функция: иначе тап по чипсу перерисовывает все ступени
+  const { getLevel, isInReview, getExamMark, setSelected } = home;
+  const renderStepGrid = useCallback(
+    (words: Word[], inset: number) => (
+      <WordGrid
+        words={words}
+        getLevel={getLevel}
+        onSelect={setSelected}
+        isMarked={isInReview}
+        getExamMark={getExamMark}
+        horizontalInset={inset}
+      />
+    ),
+    [getLevel, isInReview, getExamMark, setSelected],
+  );
+
   const startStep = useCallback(
     (level: WritingLevel, index: number) =>
       router.push({
         pathname: "/games/writing/step" as any,
-        params: { level: String(level), index: String(index) },
-      }),
-    [router],
-  );
-
-  const openStep = useCallback(
-    (level: WritingLevel, index: number) =>
-      router.push({
-        pathname: "/games/writing/theme" as any,
         params: { level: String(level), index: String(index) },
       }),
     [router],
@@ -124,13 +123,13 @@ export default function WritingHomeScreen() {
     home.selected && home.selectedFromSearch
       ? findWritingWordStep(home.selected.vocabularyId)
       : null;
+  const [jump, setJump] = useState<WritingStepJump | null>(null);
   const showInStep = () => {
     if (!selectedStep) return;
     home.setSelected(null);
-    closeSearch();
+    home.setQuery("");
     setTab("steps");
-    setLevel(selectedStep.level);
-    openStep(selectedStep.level, selectedStep.index);
+    setJump({ ...selectedStep, nonce: Date.now() });
   };
 
   const createSet = useCustomSetsStore((state) => state.createSet);
@@ -151,61 +150,36 @@ export default function WritingHomeScreen() {
     });
   };
 
+  // «Экзамен» и «Повторение» над чипсами — компактные строки, как в карточках
+  const readyCount = examQueue.ready.length;
+  const nextExamAt = examQueue.upcoming[0]?.availableAt;
+  const repeatCount = repeatWords.length;
   const { now, setExamOpen, setReviewOpen } = home;
-  const openReview = useCallback(() => setReviewOpen(true), [setReviewOpen]);
+  const topCards = useMemo(() => {
+    const hasExam = readyCount > 0 || nextExamAt !== undefined;
+    if (!hasExam && repeatCount === 0) return null;
+    return (
+      <View className="mb-4 gap-2">
+        <ExamEntryCard
+          readyCount={readyCount}
+          nextAvailableAt={nextExamAt}
+          now={now}
+          onPress={() => setExamOpen(true)}
+        />
+        {repeatCount > 0 && (
+          <ReviewCard total={repeatCount} onPress={() => setReviewOpen(true)} />
+        )}
+      </View>
+    );
+  }, [readyCount, nextExamAt, repeatCount, now, setExamOpen, setReviewOpen]);
 
   return (
     <Screen>
-      <WritingHeader
-        searchOpen={searchOpen}
-        query={home.query}
-        onChangeQuery={home.setQuery}
-        onOpenSearch={() => setSearchOpen(true)}
-        onCloseSearch={closeSearch}
-        levelLabel={describeLevel(level)}
-        onPickLevel={() => setLevelPickerOpen(true)}
-        setsOpen={tab === "sets"}
-        onToggleSets={() => setTab(tab === "sets" ? "steps" : "sets")}
-        examReady={examQueue.ready.length}
-        nextExamAt={examQueue.upcoming[0]?.availableAt}
-        now={now}
-        onOpenExam={() => setExamOpen(true)}
-      />
-
-      <BottomSheet
-        item={levelPickerOpen ? true : null}
-        onClose={() => setLevelPickerOpen(false)}
-      >
-        {() => (
-          <View className="gap-2 pb-2">
-            <Text className="mb-1 font-nunitoBold text-title text-text">
-              Раздел
-            </Text>
-            {levels.map((item) => (
-              <Pressable
-                key={item}
-                onPress={() => {
-                  setLevel(item);
-                  setLevelPickerOpen(false);
-                }}
-                className={`rounded-2xl px-4 py-3.5 active:opacity-70 ${
-                  item === level ? "bg-primary" : "bg-background"
-                }`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: item === level }}
-              >
-                <Text
-                  className={`font-nunitoBold text-body ${
-                    item === level ? "text-white" : "text-text"
-                  }`}
-                >
-                  {describeLevel(item)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-      </BottomSheet>
+      <View className="flex-row items-center justify-between">
+        <BackButton href="/games" />
+        <Title>Написание</Title>
+        <View style={{ width: 40 }} />
+      </View>
 
       <PracticeChoiceModal
         word={home.selected}
@@ -279,6 +253,24 @@ export default function WritingHomeScreen() {
         }}
       />
 
+      {/* Сверху закреплены только поиск и вкладки */}
+      <SearchField
+        value={home.query}
+        onChangeText={home.setQuery}
+        placeholder="Иероглиф, пиньинь или перевод"
+        accessibilityLabel="Поиск слова"
+        className="mt-3"
+      />
+
+      {!home.isSearching && (
+        <SegmentedTabs
+          tabs={TABS}
+          value={tab}
+          onChange={setTab}
+          className="mt-3"
+        />
+      )}
+
       {/* Результаты поиска — списком: иероглиф, пиньинь и перевод, точки письма */}
       {home.isSearching && (
         <FlatList
@@ -313,13 +305,11 @@ export default function WritingHomeScreen() {
         }}
       >
         <WritingStepsTab
-          level={level}
-          onChangeLevel={setLevel}
+          renderGrid={renderStepGrid}
+          topCards={topCards}
           onStartStep={startStep}
-          onOpenStep={openStep}
-          repeatCount={repeatWords.length}
-          onOpenReview={openReview}
           outerInset={SCREEN_INSET}
+          jump={jump}
         />
       </View>
 

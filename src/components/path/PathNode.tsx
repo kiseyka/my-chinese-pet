@@ -1,14 +1,15 @@
-// src/components/writing/home/PathNode.tsx
+// src/components/path/PathNode.tsx
 //
-// Одна точка на карте пути «Написания»: кружок с иероглифом темы, кольцо прогресса
-// вокруг него, подпись сбоку и кусок тропинки от предыдущей точки к следующей.
+// Одна точка на карте пути: кружок с иероглифом этапа, кольца прогресса вокруг него
+// (по одному на дорожку: снаружи перевод, внутри письмо), подпись сбоку и кусок
+// тропинки от предыдущей точки к следующей.
 //
 // Состояния:
-//   пройдена  — кружок залит primary, иероглиф белый, под названием «изучено N из M»;
-//   текущая   — крупнее, рамка primary и мягкий пульс вокруг, «начато N из M»;
-//   впереди   — светлый кружок с бледным иероглифом (открыть тоже можно).
-// Кольцо вокруг кружка заполняется по изученным словам (3 точки): видно, какие темы
-// уже освоены целиком, а какие только начаты.
+//   пройден  — кружок залит primary, иероглиф белый;
+//   текущий  — крупнее, рамка primary и мягкий пульс вокруг;
+//   впереди  — светлый кружок с бледным иероглифом (открыть тоже можно);
+//   освоен   — как пройден, плюс маленькая печать в углу.
+// Кольцо дорожки заполняется по словам с хотя бы 1 точкой: полное кольцо = дорожка пройдена.
 //
 // Тропинка: строка рисует линию от середины между прошлой и своей точкой (верх строки)
 // через свою точку до середины между своей и следующей (низ строки) — соседние строки
@@ -23,18 +24,24 @@ import Svg, { Circle, Path } from "react-native-svg";
 
 export type PathNodeState = "passed" | "current" | "upcoming";
 
+export interface PathRing {
+  /** Доля заполнения (0–1). */
+  share: number;
+  color: string;
+}
+
 /** Высота строки карты; центр кружка — посередине строки. */
-export const PATH_ROW_HEIGHT = 104;
+export const PATH_ROW_HEIGHT = 112;
 
 /** Насколько точки отходят от центра влево-вправо. */
 const SWING = 64;
 
-const NODE_SIZE = 56;
-const CURRENT_SIZE = 68;
-/** Кольцо прогресса: зазор от кружка и толщина. */
-const RING_GAP = 5;
+const NODE_SIZE = 54;
+const CURRENT_SIZE = 64;
+/** Кольца прогресса: зазор от кружка (и между кольцами) и толщина. */
+const RING_GAP = 3;
 const RING_WIDTH = 4;
-/** Отступ подписи от кольца. */
+/** Отступ подписи от колец. */
 const LABEL_GAP = 10;
 
 /** Сдвиг точки от центра: плавная змейка (0, вправо, ещё вправо, обратно, влево…). */
@@ -50,12 +57,14 @@ interface PathNodeProps {
   width: number;
   glyph: string;
   title: string;
+  /** Строка под названием: «перевод 5/8 · письмо 2/8». */
+  caption?: string;
   state: PathNodeState;
+  mastered: boolean;
   /** Следующая точка уже достигнута (пройдена или текущая): хвост вниз цветной. */
   nextReached: boolean;
-  started: number;
-  learned: number;
-  total: number;
+  /** Кольца от внутреннего к внешнему. */
+  rings: PathRing[];
   onPress: (index: number) => void;
 }
 
@@ -65,11 +74,11 @@ export const PathNode = memo(function PathNode({
   width,
   glyph,
   title,
+  caption,
   state,
+  mastered,
   nextReached,
-  started,
-  learned,
-  total,
+  rings,
   onPress,
 }: PathNodeProps) {
   const center = width / 2;
@@ -80,23 +89,15 @@ export const PathNode = memo(function PathNode({
 
   const reached = state !== "upcoming";
   const size = state === "current" ? CURRENT_SIZE : NODE_SIZE;
-  const ringRadius = size / 2 + RING_GAP + RING_WIDTH / 2;
-  const ringLength = 2 * Math.PI * ringRadius;
-  const share = total > 0 ? learned / total : 0;
-  const outer = ringRadius + RING_WIDTH / 2;
+  const ringRadius = (i: number) =>
+    size / 2 + RING_GAP + RING_WIDTH / 2 + i * (RING_WIDTH + RING_GAP);
+  const outer = ringRadius(rings.length - 1) + RING_WIDTH / 2;
 
   // Подпись — с той стороны, где больше места
   const labelOnRight = x <= center;
   const labelWidth = labelOnRight
     ? width - (x + outer + LABEL_GAP)
     : x - outer - LABEL_GAP;
-
-  const caption =
-    state === "current"
-      ? `начато ${started} из ${total}`
-      : state === "passed"
-        ? `изучено ${learned} из ${total}`
-        : null;
 
   return (
     <View style={{ height: PATH_ROW_HEIGHT, width }}>
@@ -119,35 +120,46 @@ export const PathNode = memo(function PathNode({
           />
         )}
 
-        {/* Кольцо прогресса: дорожка и изученная часть (начинается сверху) */}
-        <Circle
-          cx={x}
-          cy={y}
-          r={ringRadius}
-          stroke={colors.progress.inactive}
-          strokeWidth={RING_WIDTH}
-          fill={colors.background}
-        />
-        {share > 0 && (
-          <Circle
-            cx={x}
-            cy={y}
-            r={ringRadius}
-            stroke={colors.primary}
-            strokeWidth={RING_WIDTH}
-            strokeLinecap="round"
-            strokeDasharray={`${ringLength * share} ${ringLength}`}
-            fill="none"
-            transform={`rotate(-90 ${x} ${y})`}
-          />
-        )}
+        {/* Фон под кольцами, чтобы тропинка не просвечивала */}
+        <Circle cx={x} cy={y} r={outer} fill={colors.background} />
+
+        {/* Кольца: дорожка и заполненная часть (начинается сверху) */}
+        {rings.map((ring, i) => {
+          const r = ringRadius(i);
+          const length = 2 * Math.PI * r;
+          return [
+            <Circle
+              key={`track-${i}`}
+              cx={x}
+              cy={y}
+              r={r}
+              stroke={colors.progress.inactive}
+              strokeWidth={RING_WIDTH}
+              fill="none"
+            />,
+            ring.share > 0 ? (
+              <Circle
+                key={`fill-${i}`}
+                cx={x}
+                cy={y}
+                r={r}
+                stroke={ring.color}
+                strokeWidth={RING_WIDTH}
+                strokeLinecap="round"
+                strokeDasharray={`${length * Math.min(ring.share, 1)} ${length}`}
+                fill="none"
+                transform={`rotate(-90 ${x} ${y})`}
+              />
+            ) : null,
+          ];
+        })}
       </Svg>
 
-      {state === "current" && <Pulse x={x} y={y} size={size} />}
+      {state === "current" && <Pulse x={x} y={y} size={outer * 2} />}
 
       <Pressable
         onPress={() => onPress(index)}
-        className="absolute flex-row items-center active:opacity-70"
+        className="absolute items-center active:opacity-70"
         style={{
           top: y - outer,
           height: outer * 2,
@@ -156,7 +168,7 @@ export const PathNode = memo(function PathNode({
           flexDirection: labelOnRight ? "row" : "row-reverse",
         }}
         accessibilityRole="button"
-        accessibilityLabel={`${title}: изучено ${learned} из ${total}`}
+        accessibilityLabel={`${title}${caption ? `: ${caption}` : ""}`}
       >
         <View
           style={{ width: outer * 2, height: outer * 2 }}
@@ -173,7 +185,7 @@ export const PathNode = memo(function PathNode({
             style={{ width: size, height: size }}
           >
             <Hanzi
-              size={state === "current" ? 32 : 26}
+              size={state === "current" ? 30 : 26}
               weight={state === "upcoming" ? "regular" : "medium"}
               className={
                 state === "passed"
@@ -187,6 +199,15 @@ export const PathNode = memo(function PathNode({
               {glyph}
             </Hanzi>
           </View>
+
+          {mastered && (
+            <View
+              className="absolute items-center justify-center rounded-md border-2 border-seal bg-surface"
+              style={{ right: 0, top: 0, width: 22, height: 22 }}
+            >
+              <Text className="font-nunitoBold text-caption text-seal">印</Text>
+            </View>
+          )}
         </View>
 
         <View
@@ -206,7 +227,10 @@ export const PathNode = memo(function PathNode({
             {title}
           </Text>
           {caption && (
-            <Text className="font-nunito text-caption text-textSecondary">
+            <Text
+              numberOfLines={1}
+              className="font-nunito text-caption text-textSecondary"
+            >
               {caption}
             </Text>
           )}
@@ -247,26 +271,24 @@ function Pulse({ x, y, size }: { x: number; y: number; size: number }) {
     return () => loop.stop();
   }, [progress]);
 
-  const pulseSize = size + RING_GAP * 2 + RING_WIDTH * 2;
-
   return (
     <Animated.View
       pointerEvents="none"
       className="absolute rounded-full bg-primary"
       style={{
-        left: x - pulseSize / 2,
-        top: y - pulseSize / 2,
-        width: pulseSize,
-        height: pulseSize,
+        left: x - size / 2,
+        top: y - size / 2,
+        width: size,
+        height: size,
         opacity: progress.interpolate({
           inputRange: [0, 1],
-          outputRange: [0.28, 0],
+          outputRange: [0.25, 0],
         }),
         transform: [
           {
             scale: progress.interpolate({
               inputRange: [0, 1],
-              outputRange: [1, 1.45],
+              outputRange: [1, 1.35],
             }),
           },
         ],

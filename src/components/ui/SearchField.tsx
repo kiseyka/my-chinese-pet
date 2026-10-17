@@ -16,8 +16,6 @@ interface SearchFieldProps {
   accessibilityLabel?: string;
   /** Внешние отступы и прочее: добавляются к базовым классам. */
   className?: string;
-  /** Сразу открыть клавиатуру (поле, которое появляется по кнопке поиска). */
-  autoFocus?: boolean;
 }
 
 export function SearchField({
@@ -26,7 +24,6 @@ export function SearchField({
   placeholder,
   accessibilityLabel = "Поиск",
   className = "",
-  autoFocus = false,
 }: SearchFieldProps) {
   const hasValue = value.length > 0;
 
@@ -48,7 +45,6 @@ export function SearchField({
         autoCorrect={false}
         autoCapitalize="none"
         returnKeyType="search"
-        autoFocus={autoFocus}
         className="flex-1 py-3 font-nunito text-body text-text"
         accessibilityLabel={accessibilityLabel}
       />

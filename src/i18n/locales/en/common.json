@@ -1,6 +1,10 @@
 {
     "games": {
         "title": "Trainings",
+        "path": {
+            "title": "Path",
+            "description": "Topics in order: translation and writing in one place"
+        },
         "tones": {
             "title": "Tones",
             "description": "Writing characters"
