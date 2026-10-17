@@ -1,196 +1,238 @@
+// app/(tabs)/vocabulary.tsx
+//
+// «Словарь» — все слова приложения в одном месте:
+//   - поиск по иероглифу, пиньиню без тонов и переводу (результаты — списком);
+//   - чипсы: «Избранное», разделы HSK, «Другие слова»;
+//   - слова раздела сгруппированы по темам — тем же, что этапы пути;
+//     у каждого слова две строки точек: перевод (зелёные) и письмо (тёмные);
+//   - тап по слову — панель слова (DictionaryWordSheet): точки навыков, избранное,
+//     где слово на пути и «Показать», наборы.
+// Тренировки из словаря — следующий шаг (кнопка у темы, набора и «Повторения»).
+
+import { DictionaryWordSheet } from "@/components/dictionary/DictionaryWordSheet";
+import { LevelChips } from "@/components/flashcards/LevelChips";
+import { SetWordRow } from "@/components/flashcards/SetWordRow";
 import { Screen } from "@/components/layout/Screen";
+import { PathWordGrid } from "@/components/path/PathWordGrid";
+import type { WordLevel } from "@/components/ui/LevelDots";
 import { BackButton } from "@/components/ui/BackButton";
+import { SearchField } from "@/components/ui/SearchField";
 import { Title } from "@/components/ui/Title";
-import { VocabularyWordItem } from "@/components/VocabularyWordItem";
+import type { Word } from "@/content/flashcards/types";
 import { allWords } from "@/content/words/vocabulary";
+import { useWordProgressStore } from "@/store/wordProgressStore";
 import {
-  getMasteryBucket,
-  getWordLevel,
-  useWordProgressStore,
-} from "@/store/wordProgressStore";
-import { colors } from "@/theme/colors";
-import { useCallback, useMemo, useState } from "react";
+  describeDictionaryLevel,
+  getDictionaryGroups,
+  getDictionaryLevels,
+  type DictionaryGroup,
+} from "@/utils/dictionary";
+import { getTrackDots, type TrackId } from "@/utils/path/stages";
+import { searchWords } from "@/utils/searchWords";
+import { getWritableWords, LEARNED_DOTS } from "@/utils/writing/words";
+import { useRouter } from "expo-router";
+import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FlatList, Pressable, Text, TextInput, View } from "react-native";
-type WordFilter = "all" | "favorites" | "learned" | "inProgress";
+import { FlatList, Text, View } from "react-native";
 
-export default function VocabularyScreen() {
-  const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
-  const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
-  const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
+/** Отступы экрана (32) и карточки темы (2 × 12): на столько сетке меньше места. */
+const GRID_INSET = 32 + 24;
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<WordFilter>("all");
+/** Чипс «Избранное» (разделы HSK — числа от 0). */
+const FAVORITES = -1;
+
+/** Строке результата поиска действие «добавить/убрать» не нужно. */
+const noop = () => {};
+
+export default function DictionaryScreen() {
+  const router = useRouter();
   const { t } = useTranslation(["sets"]);
 
-  const filteredWords = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
+  const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
 
-    if (!query && filter === "all") {
-      return allWords;
-    }
-
-    return allWords.filter((word) => {
-      const vocabWordProgress = vocabularyWords[word.vocabularyId];
-
-      if (filter === "favorites" && !vocabWordProgress?.isFavorite) {
-        return false;
-      }
-
-      if (filter === "learned" || filter === "inProgress") {
-        const skillProgress = flashcardWords[word.vocabularyId];
-
-        const bucket = getMasteryBucket(
-          skillProgress,
-          vocabWordProgress?.isKnown ?? false,
-          ["reading"],
-        );
-
-        if (filter === "learned" && bucket !== "learned") {
-          return false;
-        }
-
-        if (
-          filter === "inProgress" &&
-          bucket !== "seen" &&
-          bucket !== "recognizing"
-        ) {
-          return false;
-        }
-      }
-
-      if (query) {
-        const matchesSearch =
-          word.hanzi.toLowerCase().includes(query) ||
-          word.pinyin.toLowerCase().includes(query) ||
-          t(word.translation).toLowerCase().includes(query);
-
-        if (!matchesSearch) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [search, filter, flashcardWords, vocabularyWords, t]);
-
-  const handleToggleFavorite = useCallback(
-    (wordId: string) => {
-      toggleFavorite(wordId);
-    },
-    [toggleFavorite],
+  const [query, setQuery] = useState("");
+  const isSearching = query.trim().length > 0;
+  const results = useMemo(
+    () => (isSearching ? searchWords(allWords, query, (key) => t(key)) : []),
+    [isSearching, query, t],
   );
+
+  const levels = getDictionaryLevels();
+  const [chip, setChip] = useState<number>(() => levels[0]);
+  // Чипс выделяется сразу, а тяжёлый показ раздела идёт следом
+  const shownChip = useDeferredValue(chip);
+
+  const chips = useMemo(
+    () => [
+      { key: FAVORITES, label: "Избранное" },
+      ...levels.map((level) => ({
+        key: level,
+        label: describeDictionaryLevel(level),
+      })),
+    ],
+    [levels],
+  );
+
+  const groups = useMemo<DictionaryGroup[]>(() => {
+    if (shownChip !== FAVORITES) return getDictionaryGroups(shownChip);
+    const favorites = allWords.filter(
+      (word) => vocabularyWords[word.vocabularyId]?.isFavorite,
+    );
+    return [{ key: "favorites", title: "Избранное", words: favorites }];
+  }, [shownChip, vocabularyWords]);
+
+  // Какие слова можно писать — один раз на всю базу
+  const writableIds = useMemo(
+    () => new Set(getWritableWords(allWords).map((w) => w.vocabularyId)),
+    [],
+  );
+  const getDots = useCallback(
+    (word: Word, track: TrackId) =>
+      track === "writing" && !writableIds.has(word.vocabularyId)
+        ? undefined
+        : getTrackDots(word, track, flashcardWords),
+    [writableIds, flashcardWords],
+  );
+
+  const [opened, setOpened] = useState<Word | null>(null);
+
+  const showStage = (stageId: string) => {
+    setOpened(null);
+    router.push({
+      pathname: "/games/path/stage" as any,
+      params: { id: stageId, from: "dictionary" },
+    });
+  };
+
+  const renderGroup = useCallback(
+    ({ item }: { item: DictionaryGroup }) => (
+      <GroupCard group={item} getDots={getDots} onSelect={setOpened} />
+    ),
+    [getDots],
+  );
+
+  const favoritesEmpty =
+    shownChip === FAVORITES && (groups[0]?.words.length ?? 0) === 0;
 
   return (
     <Screen>
-      {/* Header */}
-      <View className="flex-row justify-between">
+      <DictionaryWordSheet
+        word={opened}
+        onShowStage={showStage}
+        onClose={() => setOpened(null)}
+      />
+
+      <View className="flex-row items-center justify-between">
         <BackButton href="/games" />
         <Title>Словарь</Title>
-
-        <View className="w-10" />
+        <View style={{ width: 28 }} />
       </View>
 
-      {/* Search + filters */}
-      <View className="my-4">
-        <TextInput
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Найти слово..."
-          placeholderTextColor={colors.textSecondary}
-          className="rounded-2xl bg-surface/60 px-4 py-3 mb-3 text-text"
-        />
-
-        <View className="flex-row gap-2">
-          <FilterButton
-            title="Все"
-            active={filter === "all"}
-            onPress={() => setFilter("all")}
-          />
-
-          <FilterButton
-            title="Избранное"
-            active={filter === "favorites"}
-            onPress={() => setFilter("favorites")}
-          />
-
-          <FilterButton
-            title="Изучено"
-            active={filter === "learned"}
-            onPress={() => setFilter("learned")}
-          />
-
-          <FilterButton
-            title="В процессе"
-            active={filter === "inProgress"}
-            onPress={() => setFilter("inProgress")}
-          />
-        </View>
-      </View>
-
-      {/* Words */}
-      <FlatList
-        data={filteredWords}
-        keyExtractor={(item) => item.vocabularyId}
-        initialNumToRender={12}
-        maxToRenderPerBatch={8}
-        windowSize={5}
-        removeClippedSubviews
-        renderItem={({ item }) => {
-          const wordProgress = vocabularyWords[item.vocabularyId];
-
-          return (
-            <VocabularyWordItem
-              word={item}
-              isFavorite={wordProgress?.isFavorite ?? false}
-              level={getWordLevel(
-                flashcardWords[item.vocabularyId],
-                wordProgress?.isKnown ?? false,
-                ["reading"],
-              )}
-              onToggleFavorite={handleToggleFavorite}
-            />
-          );
-        }}
-        contentContainerStyle={{
-          paddingBottom: 30,
-        }}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View className="h-3" />}
-        keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={
-          <View className="items-center py-10">
-            <Text className="text-text text-lg text-center">
-              {filter === "favorites"
-                ? "У тебя пока нет избранных слов ⭐"
-                : search
-                  ? "Ничего не найдено"
-                  : "Словарь пока пуст"}
-            </Text>
-          </View>
-        }
+      <SearchField
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Иероглиф, пиньинь или перевод"
+        accessibilityLabel="Поиск слова"
+        className="mt-3"
       />
+
+      {isSearching ? (
+        <FlatList
+          data={results}
+          keyExtractor={(word) => word.vocabularyId}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 16, gap: 8 }}
+          initialNumToRender={10}
+          renderItem={({ item }) => (
+            <SetWordRow
+              word={item}
+              action="open"
+              level={getTrackDots(item, "reading", flashcardWords) as WordLevel}
+              onPress={noop}
+              onOpenWord={setOpened}
+            />
+          )}
+          ListEmptyComponent={
+            <Text className="font-nunito text-body text-text">
+              Ничего не нашлось. Пиньинь можно писать без тонов: «nihao».
+            </Text>
+          }
+        />
+      ) : (
+        <>
+          <View className="mt-3">
+            <LevelChips chips={chips} value={chip} onChange={setChip} />
+          </View>
+
+          {favoritesEmpty ? (
+            <View className="mt-4 gap-2 rounded-2xl bg-surface p-5">
+              <Text className="font-nunitoBold text-lead text-text">
+                Здесь будут твои любимые слова
+              </Text>
+              <Text className="font-nunito text-body text-textSecondary">
+                Открой слово и нажми «Добавить в избранное».
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              key={shownChip}
+              data={groups}
+              keyExtractor={(group) => group.key}
+              renderItem={renderGroup}
+              extraData={renderGroup}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingVertical: 12, gap: 12 }}
+              initialNumToRender={4}
+              maxToRenderPerBatch={4}
+              windowSize={5}
+            />
+          )}
+        </>
+      )}
     </Screen>
   );
 }
 
-function FilterButton({
-  title,
-  active = false,
-  onPress,
+// ── Тема ─────────────────────────────────────────────────────────────────────
+
+const GroupCard = memo(function GroupCard({
+  group,
+  getDots,
+  onSelect,
 }: {
-  title: string;
-  active?: boolean;
-  onPress: () => void;
+  group: DictionaryGroup;
+  getDots: (word: Word, track: TrackId) => number | undefined;
+  onSelect: (word: Word) => void;
 }) {
+  // Освоено: слово на 3 точках во всех своих навыках
+  const learned = group.words.filter((word) => {
+    const reading = getDots(word, "reading") ?? 0;
+    const writing = getDots(word, "writing");
+    return (
+      reading >= LEARNED_DOTS &&
+      (writing === undefined || writing >= LEARNED_DOTS)
+    );
+  }).length;
+
   return (
-    <Pressable
-      onPress={onPress}
-      className={`rounded-full px-4 py-2 ${
-        active ? "bg-primaryDark" : "bg-surface/60"
-      }`}
-    >
-      <Text className={active ? "text-white" : "text-text"}>{title}</Text>
-    </Pressable>
+    <View className="rounded-2xl bg-surface p-3">
+      <View className="mb-1 flex-row items-baseline justify-between px-1">
+        <Text className="font-nunitoBold text-lead text-text">
+          {group.title}
+        </Text>
+        <Text className="font-nunito text-caption text-textSecondary">
+          освоено {learned} из {group.words.length}
+        </Text>
+      </View>
+      <PathWordGrid
+        words={group.words}
+        getDots={getDots}
+        onSelect={onSelect}
+        horizontalInset={GRID_INSET}
+      />
+    </View>
   );
-}
+});
