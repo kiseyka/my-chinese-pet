@@ -12,8 +12,9 @@
 //
 // «Написать» есть только у слов, которые можно писать: из 1–2 иероглифов, у каждого
 // из которых есть данные о чертах. У слова из двух иероглифов сначала выбирается,
-// что писать: всё слово или один из знаков (например, 你好, 你 или 好); под выбором —
-// пиньинь и перевод выбранного (у знака, которого нет в базе отдельно, — «из слова …»).
+// что писать: всё слово или один из знаков (например, 你好, 你 или 好). Выбор меняет
+// шапку панели: в ней иероглиф, пиньинь и перевод выбранного (у знака, которого нет
+// в базе отдельно, — «из слова …»); к нему же относятся кнопки «отложить» и точки.
 
 import ArrowLeft from "@/assets/images/icons/arrow-left.svg";
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
@@ -22,7 +23,6 @@ import PencilIcon from "@/assets/images/icons/pencil.svg";
 import StarIcon from "@/assets/images/icons/star.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Hanzi } from "@/components/ui/Hanzi";
-import { Pinyin } from "@/components/ui/Pinyin";
 import { SetToggleList } from "@/components/word/SetToggleList";
 import { WordHeader } from "@/components/word/WordHeader";
 import type { Word } from "@/content/flashcards/types";
@@ -93,11 +93,11 @@ export function DictionaryWordSheet({
                 <Text className="font-nunito text-small text-text">Назад</Text>
               </Pressable>
               <WordHeader
-                hanzi={shown.hanzi}
-                pinyin={shown.pinyin}
-                translation={t(shown.translation)}
+                hanzi={(part ?? shown).hanzi}
+                pinyin={(part ?? shown).pinyin}
+                translation={t((part ?? shown).translation)}
               />
-              <SetToggleList word={shown} className="mt-5" />
+              <SetToggleList word={part ?? shown} className="mt-5" />
             </>
           );
         }
@@ -105,19 +105,24 @@ export function DictionaryWordSheet({
         const stage = findWordStage(shown.vocabularyId);
         const writable = getWritableWords([shown]).length > 0;
         const characters = writable ? getWordCharacters(shown) : [];
+        // Выбранная часть (или всё слово): её показывает шапка, к ней относятся
+        // кнопки «отложить», точки и «Написать»
         const target = part ?? shown;
-        const isFavorite = !!vocabularyWords[shown.vocabularyId]?.isFavorite;
-        const inReview = !!review[shown.vocabularyId];
+        // Знак, которого нет в базе отдельным словом (char:么), можно только
+        // повторять и писать: в избранное и наборы попадают слова базы
+        const isCharOnly = target.vocabularyId.startsWith("char:");
+        const isFavorite = !!vocabularyWords[target.vocabularyId]?.isFavorite;
+        const inReview = !!review[target.vocabularyId];
         const setCount = sets.filter((set) =>
-          set.wordIds.includes(shown.vocabularyId),
+          set.wordIds.includes(target.vocabularyId),
         ).length;
 
         return (
           <>
             <WordHeader
-              hanzi={shown.hanzi}
-              pinyin={shown.pinyin}
-              translation={t(shown.translation)}
+              hanzi={target.hanzi}
+              pinyin={target.pinyin}
+              translation={t(target.translation)}
             />
 
             {/* Отложить: одна строка компактных кнопок */}
@@ -126,20 +131,24 @@ export function DictionaryWordSheet({
                 Icon={ReviewIcon}
                 label="Повторение"
                 active={inReview}
-                onPress={() => toggleReview(shown.vocabularyId)}
+                onPress={() => toggleReview(target.vocabularyId)}
               />
-              <ActionChip
-                Icon={StarIcon}
-                label="Избранное"
-                active={isFavorite}
-                onPress={() => toggleFavorite(shown.vocabularyId)}
-              />
-              <ActionChip
-                Icon={LayersIcon}
-                label={setCount > 0 ? `Наборы · ${setCount}` : "В набор"}
-                active={setCount > 0}
-                onPress={() => setPage("sets")}
-              />
+              {!isCharOnly && (
+                <ActionChip
+                  Icon={StarIcon}
+                  label="Избранное"
+                  active={isFavorite}
+                  onPress={() => toggleFavorite(target.vocabularyId)}
+                />
+              )}
+              {!isCharOnly && (
+                <ActionChip
+                  Icon={LayersIcon}
+                  label={setCount > 0 ? `Наборы · ${setCount}` : "В набор"}
+                  active={setCount > 0}
+                  onPress={() => setPage("sets")}
+                />
+              )}
             </View>
 
             {/* Потренировать письмо */}
@@ -183,13 +192,6 @@ export function DictionaryWordSheet({
                         );
                       })}
                     </View>
-                    {/* Что именно пишем: пиньинь и перевод выбранного */}
-                    <View className="flex-row flex-wrap items-baseline gap-x-2">
-                      <Pinyin size="sm">{target.pinyin}</Pinyin>
-                      <Text className="shrink font-nunito text-body text-text">
-                        {t(target.translation)}
-                      </Text>
-                    </View>
                   </>
                 )}
 
@@ -211,13 +213,13 @@ export function DictionaryWordSheet({
             <View className="mt-5 flex-row flex-wrap items-center justify-center gap-x-5 gap-y-2">
               <SkillDots
                 label="перевод"
-                level={getTrackDots(shown, "reading", flashcardWords)}
+                level={getTrackDots(target, "reading", flashcardWords)}
                 track="reading"
               />
               {writable && (
                 <SkillDots
                   label="письмо"
-                  level={getTrackDots(shown, "writing", flashcardWords)}
+                  level={getTrackDots(target, "writing", flashcardWords)}
                   track="writing"
                 />
               )}
