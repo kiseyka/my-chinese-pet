@@ -63,6 +63,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       // Берём актуальные значения из стора: последний ответ уже записан
       const { score, startTime, results } = useGameStore.getState();
       const total = questions.length;
+      useGameStore.getState().setLastSourceId(setId);
 
       useWordProgressStore.getState().completeFlashcardSet({
         setId,
