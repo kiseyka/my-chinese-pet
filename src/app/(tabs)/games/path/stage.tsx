@@ -8,7 +8,10 @@
 //   - сетка слов этапа: под иероглифом две строки точек — перевод и письмо;
 //     тап по слову открывает панель слова (перевод, звук, «Повторение», наборы).
 
+import BookIcon from "@/assets/images/icons/book-open.svg";
+import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { PathWordGrid, TRACK_DOT_CLASSES } from "@/components/path/PathWordGrid";
+import { colors } from "@/theme/colors";
 import { WordSheet } from "@/components/flashcards/WordSheet";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
@@ -150,6 +153,7 @@ function TrackRow({
   highlighted: boolean;
   onStart: () => void;
 }) {
+  const Icon = track.id === "reading" ? BookIcon : PencilIcon;
   const status = track.mastered
     ? `освоено ${track.learned} из ${track.total}`
     : track.passed
@@ -162,13 +166,24 @@ function TrackRow({
         highlighted ? "border-2 border-primary" : "border-2 border-transparent"
       }`}
     >
-      <View
-        className={`h-3 w-3 rounded-full ${TRACK_DOT_CLASSES[track.id][0]}`}
-      />
+      <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
+        <Icon width={20} height={20} color={colors.primary} />
+      </View>
       <View className="flex-1">
-        <Text className="font-nunitoBold text-body text-text">
-          {track.title}
-        </Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="font-nunitoBold text-body text-text">
+            {track.title}
+          </Text>
+          {/* Какого цвета точки этого навыка в сетке ниже */}
+          <View className="flex-row gap-0.5">
+            {[0, 1, 2].map((i) => (
+              <View
+                key={i}
+                className={`h-1.5 w-1.5 rounded-full ${TRACK_DOT_CLASSES[track.id][0]}`}
+              />
+            ))}
+          </View>
+        </View>
         <Text className="font-nunito text-small text-textSecondary">
           {status}
         </Text>

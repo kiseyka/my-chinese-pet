@@ -1,21 +1,25 @@
 // src/components/path/PathNode.tsx
 //
-// Одна точка на карте пути: кружок с иероглифом этапа, кольца прогресса вокруг него
-// (по одному на дорожку: снаружи перевод, внутри письмо), подпись сбоку и кусок
-// тропинки от предыдущей точки к следующей.
+// Одна точка на карте пути: кружок с иероглифом этапа, одно кольцо общего прогресса
+// вокруг него, подпись сбоку (название и навыки иконками: 📖 перевод 5/8, ✎ письмо 2/8)
+// и кусок тропинки от предыдущей точки к следующей.
 //
 // Состояния:
-//   пройден  — кружок залит primary, иероглиф белый;
-//   текущий  — крупнее, рамка primary и мягкий пульс вокруг;
+//   пройден  — кружок залит primary, иероглиф белый, галочка в углу;
+//   текущий  — крупнее, мягкий пульс вокруг;
 //   впереди  — светлый кружок с бледным иероглифом (открыть тоже можно);
-//   освоен   — как пройден, плюс маленькая печать в углу.
-// Кольцо дорожки заполняется по словам с хотя бы 1 точкой: полное кольцо = дорожка пройдена.
+//   освоен   — как пройден, но в углу печать 印 вместо галочки.
+// Кольцо заполняется по всем дорожкам вместе (слова с хотя бы 1 точкой в каждом навыке).
+// Навыки различаются иконками, а не цветом: цвет у всего пути один — primary.
 //
 // Тропинка: строка рисует линию от середины между прошлой и своей точкой (верх строки)
 // через свою точку до середины между своей и следующей (низ строки) — соседние строки
 // стыкуются в одну змейку. Пройденный путь — сплошной цветной, дальше — пунктир.
 // Подпись стоит с той стороны, где больше места.
 
+import BookIcon from "@/assets/images/icons/book-open.svg";
+import CheckIcon from "@/assets/images/icons/circle-check.svg";
+import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { colors } from "@/theme/colors";
 import { memo, useEffect, useRef } from "react";
@@ -24,10 +28,11 @@ import Svg, { Circle, Path } from "react-native-svg";
 
 export type PathNodeState = "passed" | "current" | "upcoming";
 
-export interface PathRing {
-  /** Доля заполнения (0–1). */
-  share: number;
-  color: string;
+/** Навык этапа для подписи: иконка и «5/8». */
+export interface PathSkill {
+  id: "reading" | "writing";
+  started: number;
+  total: number;
 }
 
 /** Высота строки карты; центр кружка — посередине строки. */
@@ -36,10 +41,10 @@ export const PATH_ROW_HEIGHT = 112;
 /** Насколько точки отходят от центра влево-вправо. */
 const SWING = 64;
 
-const NODE_SIZE = 54;
-const CURRENT_SIZE = 64;
-/** Кольца прогресса: зазор от кружка (и между кольцами) и толщина. */
-const RING_GAP = 3;
+const NODE_SIZE = 56;
+const CURRENT_SIZE = 66;
+/** Кольцо прогресса: зазор от кружка и толщина. */
+const RING_GAP = 5;
 const RING_WIDTH = 4;
 /** Отступ подписи от колец. */
 const LABEL_GAP = 10;
@@ -57,14 +62,14 @@ interface PathNodeProps {
   width: number;
   glyph: string;
   title: string;
-  /** Строка под названием: «перевод 5/8 · письмо 2/8». */
-  caption?: string;
   state: PathNodeState;
   mastered: boolean;
   /** Следующая точка уже достигнута (пройдена или текущая): хвост вниз цветной. */
   nextReached: boolean;
-  /** Кольца от внутреннего к внешнему. */
-  rings: PathRing[];
+  /** Общий прогресс этапа (0–1) — заполнение кольца. */
+  share: number;
+  /** Навыки под названием; пусто — подписи нет (этап ещё не начат). */
+  skills: PathSkill[];
   onPress: (index: number) => void;
 }
 
@@ -74,11 +79,11 @@ export const PathNode = memo(function PathNode({
   width,
   glyph,
   title,
-  caption,
   state,
   mastered,
   nextReached,
-  rings,
+  share,
+  skills,
   onPress,
 }: PathNodeProps) {
   const center = width / 2;
@@ -89,9 +94,9 @@ export const PathNode = memo(function PathNode({
 
   const reached = state !== "upcoming";
   const size = state === "current" ? CURRENT_SIZE : NODE_SIZE;
-  const ringRadius = (i: number) =>
-    size / 2 + RING_GAP + RING_WIDTH / 2 + i * (RING_WIDTH + RING_GAP);
-  const outer = ringRadius(rings.length - 1) + RING_WIDTH / 2;
+  const ringRadius = size / 2 + RING_GAP + RING_WIDTH / 2;
+  const ringLength = 2 * Math.PI * ringRadius;
+  const outer = ringRadius + RING_WIDTH / 2;
 
   // Подпись — с той стороны, где больше места
   const labelOnRight = x <= center;
@@ -120,39 +125,31 @@ export const PathNode = memo(function PathNode({
           />
         )}
 
-        {/* Фон под кольцами, чтобы тропинка не просвечивала */}
+        {/* Фон под кольцом, чтобы тропинка не просвечивала */}
         <Circle cx={x} cy={y} r={outer} fill={colors.background} />
 
-        {/* Кольца: дорожка и заполненная часть (начинается сверху) */}
-        {rings.map((ring, i) => {
-          const r = ringRadius(i);
-          const length = 2 * Math.PI * r;
-          return [
-            <Circle
-              key={`track-${i}`}
-              cx={x}
-              cy={y}
-              r={r}
-              stroke={colors.progress.inactive}
-              strokeWidth={RING_WIDTH}
-              fill="none"
-            />,
-            ring.share > 0 ? (
-              <Circle
-                key={`fill-${i}`}
-                cx={x}
-                cy={y}
-                r={r}
-                stroke={ring.color}
-                strokeWidth={RING_WIDTH}
-                strokeLinecap="round"
-                strokeDasharray={`${length * Math.min(ring.share, 1)} ${length}`}
-                fill="none"
-                transform={`rotate(-90 ${x} ${y})`}
-              />
-            ) : null,
-          ];
-        })}
+        {/* Кольцо: дорожка и заполненная часть (начинается сверху) */}
+        <Circle
+          cx={x}
+          cy={y}
+          r={ringRadius}
+          stroke={colors.progress.inactive}
+          strokeWidth={RING_WIDTH}
+          fill="none"
+        />
+        {share > 0 && (
+          <Circle
+            cx={x}
+            cy={y}
+            r={ringRadius}
+            stroke={colors.primary}
+            strokeWidth={RING_WIDTH}
+            strokeLinecap="round"
+            strokeDasharray={`${ringLength * Math.min(share, 1)} ${ringLength}`}
+            fill="none"
+            transform={`rotate(-90 ${x} ${y})`}
+          />
+        )}
       </Svg>
 
       {state === "current" && <Pulse x={x} y={y} size={outer * 2} />}
@@ -168,7 +165,12 @@ export const PathNode = memo(function PathNode({
           flexDirection: labelOnRight ? "row" : "row-reverse",
         }}
         accessibilityRole="button"
-        accessibilityLabel={`${title}${caption ? `: ${caption}` : ""}`}
+        accessibilityLabel={`${title}${skills
+          .map(
+            (skill) =>
+              `, ${skill.id === "reading" ? "перевод" : "письмо"} ${skill.started} из ${skill.total}`,
+          )
+          .join("")}`}
       >
         <View
           style={{ width: outer * 2, height: outer * 2 }}
@@ -176,11 +178,7 @@ export const PathNode = memo(function PathNode({
         >
           <View
             className={`items-center justify-center rounded-full ${
-              state === "passed"
-                ? "bg-primary"
-                : state === "current"
-                  ? "border-[3px] border-primary bg-surface"
-                  : "border-2 border-border bg-surface"
+              state === "passed" ? "bg-primary" : "bg-surface"
             }`}
             style={{ width: size, height: size }}
           >
@@ -200,14 +198,22 @@ export const PathNode = memo(function PathNode({
             </Hanzi>
           </View>
 
-          {mastered && (
+          {/* Угол: печать — освоен, галочка — пройден */}
+          {mastered ? (
             <View
               className="absolute items-center justify-center rounded-md border-2 border-seal bg-surface"
               style={{ right: 0, top: 0, width: 22, height: 22 }}
             >
               <Text className="font-nunitoBold text-caption text-seal">印</Text>
             </View>
-          )}
+          ) : state === "passed" ? (
+            <View
+              className="absolute rounded-full bg-background"
+              style={{ right: 0, top: 0 }}
+            >
+              <CheckIcon width={22} height={22} color={colors.primary} />
+            </View>
+          ) : null}
         </View>
 
         <View
@@ -226,19 +232,38 @@ export const PathNode = memo(function PathNode({
           >
             {title}
           </Text>
-          {caption && (
-            <Text
-              numberOfLines={1}
-              className="font-nunito text-caption text-textSecondary"
-            >
-              {caption}
-            </Text>
+          {skills.length > 0 && (
+            <View className="mt-1 flex-row gap-3">
+              {skills.map((skill) => (
+                <SkillCount key={skill.id} skill={skill} />
+              ))}
+            </View>
           )}
         </View>
       </Pressable>
     </View>
   );
 });
+
+/** Навык под названием: иконка и «5/8»; пройденный — цветом primary. */
+function SkillCount({ skill }: { skill: PathSkill }) {
+  const done = skill.total > 0 && skill.started === skill.total;
+  const color = done ? colors.primary : colors.textSecondary;
+  const Icon = skill.id === "reading" ? BookIcon : PencilIcon;
+
+  return (
+    <View className="flex-row items-center gap-1">
+      <Icon width={14} height={14} color={color} />
+      <Text
+        className={`font-nunitoMedium text-caption ${
+          done ? "text-primary" : "text-textSecondary"
+        }`}
+      >
+        {skill.started}/{skill.total}
+      </Text>
+    </View>
+  );
+}
 
 function PathSegment({ d, active }: { d: string; active: boolean }) {
   return (

@@ -1,7 +1,7 @@
 // src/components/path/PathWordGrid.tsx
 //
 // Сетка слов этапа на экране этапа: иероглиф и под ним две строки точек —
-// перевод (зелёные) и письмо (красные, только у слов, которые можно писать).
+// перевод (зелёные) и письмо (тёмные, как тушь; только у слов, которые можно писать).
 // 4 колонки; слово из нескольких иероглифов занимает несколько колонок (до 4).
 
 import { Hanzi } from "@/components/ui/Hanzi";
@@ -15,7 +15,7 @@ const GAP = 6;
 /** Цвет точек дорожки (классы tailwind): заполненная и пустая. */
 export const TRACK_DOT_CLASSES: Record<TrackId, [string, string]> = {
   reading: ["bg-primary", "bg-primary/20"],
-  writing: ["bg-seal", "bg-seal/20"],
+  writing: ["bg-text", "bg-text/20"],
 };
 
 interface PathWordGridProps {

@@ -2,9 +2,9 @@
 //
 // Путь — одна карта изучения на всё приложение.
 //   - Тропинка из этапов (тем) всех разделов HSK подряд; между разделами — веха «HSK 2».
-//   - У каждой точки два кольца: снаружи перевод, внутри письмо (заполняются по словам
-//     с хотя бы 1 точкой). Пройденные этапы залиты, текущий крупнее и пульсирует,
-//     освоенный целиком — с печатью 印.
+//   - У каждой точки одно кольцо общего прогресса, рядом — название и навыки иконками
+//     (книга — перевод 5/8, карандаш — письмо 2/8). Пройденные этапы залиты и с галочкой,
+//     текущий крупнее и пульсирует, освоенный целиком — с печатью 印.
 //   - Ничего не закрыто: тап по любой точке открывает экран этапа (stage.tsx).
 //   - Внизу «Продолжить» (или «Начать») — сразу запускает нужную тренировку
 //     текущего этапа: сначала перевод, когда он пройден — письмо.
@@ -30,6 +30,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 /** Отступы Screen по бокам. */
@@ -39,12 +40,6 @@ const MILESTONE_HEIGHT = 64;
 /** Место под кнопкой внизу, чтобы последняя точка не пряталась за ней. */
 const BOTTOM_SPACE = 104;
 
-/** Цвет кольца дорожки на карте. */
-const RING_COLORS = {
-  reading: colors.primary,
-  writing: colors.seal,
-} as const;
-
 type Row =
   | { type: "milestone"; key: string; level: number; afterIndex: number }
   | { type: "stage"; key: string; item: StageProgress };
@@ -53,6 +48,8 @@ export default function PathScreen() {
   const router = useRouter();
   const { progress, startTraining } = usePath();
   const { width } = useWindowDimensions();
+  // Кнопка внизу — над системной панелью навигации
+  const insets = useSafeAreaInsets();
   const rowWidth = width - SCREEN_INSET;
 
   const { stages, currentIndex } = progress;
@@ -128,6 +125,10 @@ export default function PathScreen() {
     const next = stages[index + 1];
     const nextReached =
       !!next && (next.passed || next.stage.index === currentIndex);
+    // Общий прогресс: начатые слова по всем дорожкам вместе
+    const done = item.tracks.reduce((sum, t) => sum + t.started, 0);
+    const all = item.tracks.reduce((sum, t) => sum + t.total, 0);
+    const share = all > 0 ? done / all : 0;
 
     return (
       <PathNode
@@ -136,21 +137,20 @@ export default function PathScreen() {
         width={rowWidth}
         glyph={item.stage.glyph}
         title={item.stage.title}
-        caption={
-          state === "upcoming"
-            ? undefined
-            : item.tracks
-                .map((t) => `${t.title.toLowerCase()} ${t.started}/${t.total}`)
-                .join(" · ")
-        }
         state={state}
         mastered={item.mastered}
         nextReached={nextReached}
-        // Внутреннее кольцо — письмо, внешнее — перевод
-        rings={[...item.tracks].reverse().map((t) => ({
-          share: t.total > 0 ? t.started / t.total : 0,
-          color: RING_COLORS[t.id],
-        }))}
+        share={share}
+        // Навыки показываем, когда этап начат (или он текущий)
+        skills={
+          share > 0 || state === "current"
+            ? item.tracks.map((t) => ({
+                id: t.id,
+                started: t.started,
+                total: t.total,
+              }))
+            : []
+        }
         onPress={open}
       />
     );
@@ -162,11 +162,6 @@ export default function PathScreen() {
         <BackButton href="/games" />
         <Title>Путь</Title>
         <View style={{ width: 28 }} />
-      </View>
-
-      <View className="mt-2 flex-row justify-center gap-4">
-        <Legend color={colors.primary} label="перевод" />
-        <Legend color={colors.seal} label="письмо" />
       </View>
 
       <FlatList
@@ -183,7 +178,10 @@ export default function PathScreen() {
       />
 
       {target && targetTrack && (
-        <View className="absolute bottom-0 left-4 right-4 pb-4">
+        <View
+          className="absolute left-4 right-4"
+          style={{ bottom: insets.bottom + 12 }}
+        >
           <Pressable
             onPress={() => startTraining(target.stage, target.track)}
             className="h-16 justify-center rounded-full bg-primary px-5 active:opacity-80"
@@ -244,20 +242,6 @@ function Milestone({
           {label}
         </Text>
       </View>
-    </View>
-  );
-}
-
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <View className="flex-row items-center gap-1.5">
-      <View
-        className="h-2.5 w-2.5 rounded-full"
-        style={{ backgroundColor: color }}
-      />
-      <Text className="font-nunito text-caption text-textSecondary">
-        {label}
-      </Text>
     </View>
   );
 }
