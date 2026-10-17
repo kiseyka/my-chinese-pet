@@ -1,24 +1,30 @@
 // app/(tabs)/games/writing/path.tsx
 //
-// Тренировка письма по этапу пути (stage = «1:0»): 1 новое слово + 2 повторения
-// из слов этапа, которые можно писать.
+// Тренировка письма по списку слов из «Словаря» или пути:
+//   source = «path:1:0» (этап), «favorites», «dict:other» — см. utils/wordSource.ts;
+//   stage = «1:0» — то же, что source=path:1:0 (так запускает путь).
+// Из слов источника берутся те, что можно писать: 1 новое слово + 2 повторения.
 
 import { WritingLessonScreen } from "@/components/writing/lesson/WritingLessonScreen";
-import { findPathStage } from "@/utils/path/stages";
+import { PATH_TRAINING_PREFIX } from "@/utils/path/stages";
+import { resolveWordSource } from "@/utils/wordSource";
 import { createWordsPlan } from "@/utils/writing/plans";
+import { getWritableWords } from "@/utils/writing/words";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 
-export default function PathWritingRoute() {
-  const { stage: stageId } = useLocalSearchParams<{ stage?: string }>();
-  const stage = findPathStage(stageId ?? "");
+export default function WordsWritingRoute() {
+  const params = useLocalSearchParams<{ source?: string; stage?: string }>();
+  const sourceId =
+    params.source ?? (params.stage ? `${PATH_TRAINING_PREFIX}${params.stage}` : "");
+  const source = resolveWordSource(sourceId);
 
   const buildPlan = useCallback(
-    () => createWordsPlan(stage?.writable ?? []),
-    [stage],
+    () => createWordsPlan(getWritableWords(resolveWordSource(sourceId)?.words ?? [])),
+    [sourceId],
   );
 
   return (
-    <WritingLessonScreen title={stage?.title ?? "Путь"} buildPlan={buildPlan} />
+    <WritingLessonScreen title={source?.title ?? "Письмо"} buildPlan={buildPlan} />
   );
 }

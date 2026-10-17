@@ -7,6 +7,7 @@
 import { Hanzi } from "@/components/ui/Hanzi";
 import type { Word } from "@/content/flashcards/types";
 import type { TrackId } from "@/utils/path/stages";
+import { memo } from "react";
 import { Pressable, View, useWindowDimensions } from "react-native";
 
 const COLUMNS = 4;
@@ -27,7 +28,8 @@ interface PathWordGridProps {
   horizontalInset: number;
 }
 
-export function PathWordGrid({
+// memo: в «Словаре» сотни сеток — перерисовываются только те, у которых что-то поменялось
+export const PathWordGrid = memo(function PathWordGrid({
   words,
   getDots,
   onSelect,
@@ -68,7 +70,7 @@ export function PathWordGrid({
       })}
     </View>
   );
-}
+});
 
 function SkillDots({
   track,

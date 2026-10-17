@@ -7,7 +7,12 @@
 
 import type { Word } from "@/content/flashcards/types";
 import { allWords } from "@/content/words/vocabulary";
-import { getPathStages, type PathStage } from "@/utils/path/stages";
+import {
+  getPathStages,
+  pathTrainingId,
+  type PathStage,
+} from "@/utils/path/stages";
+import { OTHER_WORDS_SOURCE } from "@/utils/wordSource";
 import { getWordHskLevel, NO_HSK_LEVEL } from "@/utils/writing/words";
 
 /** Раздел словаря: уровень HSK или NO_HSK_LEVEL («Другие слова»). */
@@ -17,6 +22,8 @@ export interface DictionaryGroup {
   key: string;
   title: string;
   words: Word[];
+  /** Источник слов для тренировки (utils/wordSource.ts). */
+  sourceId: string;
   /** Этап пути, если группа — этап. */
   stage?: PathStage;
 }
@@ -52,6 +59,7 @@ export function getDictionaryGroups(level: DictionaryLevel): DictionaryGroup[] {
           {
             key: "other",
             title: "Другие слова",
+            sourceId: OTHER_WORDS_SOURCE,
             words: allWords.filter(
               (word) => getWordHskLevel(word) === NO_HSK_LEVEL,
             ),
@@ -63,6 +71,7 @@ export function getDictionaryGroups(level: DictionaryLevel): DictionaryGroup[] {
             key: stage.id,
             title: stage.title,
             words: stage.words,
+            sourceId: pathTrainingId(stage),
             stage,
           }));
 

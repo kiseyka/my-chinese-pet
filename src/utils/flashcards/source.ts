@@ -1,13 +1,14 @@
 // src/utils/flashcards/source.ts
 //
 // Откуда тренировка карточками берёт слова: свой набор (id «set-…»),
-// ступень раздела HSK (id «step:1:3»), этап пути (id «path:1:0») или «Повторение» (id «review»).
+// ступень раздела HSK (id «step:1:3»), «Повторение» (id «review») или общие с письмом
+// источники из utils/wordSource.ts: этап пути, избранное, «Другие слова».
 
 import type { Word } from "@/content/flashcards/types";
 import { findWords } from "@/content/words/vocabulary";
 import type { CustomSet } from "@/store/customSetsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
-import { findPathTraining } from "@/utils/path/stages";
+import { resolveWordSource } from "@/utils/wordSource";
 import { findStepTraining } from "./steps";
 
 /** id тренировки «Повторение» карточек. */
@@ -39,8 +40,9 @@ export function resolveFlashcardSource(
   const step = findStepTraining(id);
   if (step) return step;
 
-  const stage = findPathTraining(id);
-  if (stage) return stage;
+  // Этап пути, избранное, «Другие слова» — общие с письмом
+  const shared = resolveWordSource(id);
+  if (shared) return shared;
 
   const set = customSets.find((item) => item.id === id);
   if (!set) return null;
