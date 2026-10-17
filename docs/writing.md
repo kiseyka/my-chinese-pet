@@ -47,7 +47,7 @@
 - `canvas/` — всё, что рисует иероглиф: `WritingCanvas` (письмо пальцем), `DemoCanvas` (показ порядка черт), `HanziView` (маленькое превью), `hanziSvg` (цвета холста, сетка «тянь цзы гэ», линия).
 - `lesson/WritingLessonScreen` — экран урока: показ → контур → по памяти, сравнение в конце слова.
 - `lesson/LessonParts` — общие куски урока и экзамена: шапка, слово, «Напиши …», написанные иероглифы, «Эталон / Твоё», кнопки.
-- `home/` — главный экран: `WritingHeader` (шапка: поиск, раздел, экзамен, наборы), `WritingStepsTab` (карта пути, «Повторение» и «Продолжить»), `PathNode` (точка на карте: кольцо прогресса, подпись, кусок тропинки, пульс у текущей), `WordGrid` (сетка слов), `WritingDots`, `StepCard`, `ReviewCard`, `ExamEntryCard`, `LevelSections`.
+- `home/` — остатки бывшего главного экрана, которыми пользуется «Словарь»: `ReviewCard`, `ExamEntryCard`, `WritingDots`.
 - `modals/ExamModal` — окно перед экзаменом.
 - `results/` — итоги: `WritingResultsList` (на экране статистики), `ExamResultsList`.
 - `SealMark` — печать 印, общая для всех.
