@@ -94,10 +94,7 @@ interface WordProgressActions {
   addToReadingReview: (wordIds: string[]) => void;
   /** Добавляет слово в «Повторение» письма или убирает оттуда (без экзамена). */
   toggleWritingReview: (wordId: string) => void;
-  /**
-   * Убирает слово из «Повторения» как «чувствую, что знаю»:
-   * ставит его в очередь на экзамен (откроется через 24 часа).
-   */
+  /** Убирает слово из «Повторения» письма. На экзамен не ставит: для него нужны 3 точки. */
   removeFromWritingReview: (wordId: string) => void;
   /** Ставит слово в очередь на экзамен, если оно ещё не сдано и не ждёт. */
   queueWritingExam: (wordId: string) => void;
@@ -312,26 +309,15 @@ export const useWordProgressStore = create<WordProgressStore>()(
         });
       },
 
+      // Только убирает слово из «Повторения». На экзамен слово попадает одним путём —
+      // 3 точки письма (см. getWritingExamStatus).
       removeFromWritingReview: (wordId) => {
         set((state) => {
           if (!state.writingReview[wordId]) return state;
 
           const next = { ...state.writingReview };
           delete next[wordId];
-
-          const entry = state.writingExams[wordId];
-          if (entry) return { writingReview: next };
-
-          return {
-            writingReview: next,
-            writingExams: {
-              ...state.writingExams,
-              [wordId]: {
-                availableAt: Date.now() + WRITING_EXAM_COOLDOWN_MS,
-                failures: 0,
-              },
-            },
-          };
+          return { writingReview: next };
         });
       },
 
@@ -477,6 +463,19 @@ export function getWritingExamStatus(
   now: number = Date.now(),
 ): WritingExamStatus {
   if (entry?.passedAt) return { status: "passed", passedAt: entry.passedAt };
+
+  // Раньше слово вставало в очередь, когда его убирали из «Повторения», — даже без
+  // 3 точек. Такие записи (без попыток и не «ждёт точку» после провалов) больше
+  // не считаются: нужны 3 точки.
+  const hasThreeDots = progress?.writing.streak === 3;
+  if (
+    entry &&
+    entry.failures === 0 &&
+    entry.availableAt !== null &&
+    !hasThreeDots
+  ) {
+    return { status: "unavailable" };
+  }
 
   if (entry) {
     if (entry.availableAt === null) return { status: "locked" };
