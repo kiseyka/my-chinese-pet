@@ -1,20 +1,27 @@
 // src/components/path/ScrollingBackground.tsx
 //
-// Повторяющийся фон-пейзаж под картой пути. Картинка — бесшовная плитка
-// (assets/images/backgrounds/path.jpg): три панели пейзажа одна под другой,
-// стыки между ними и низ третьей с верхом первой плавно перетекают. Плитка повторяется
-// столько раз, сколько нужно, чтобы закрыть экран, и едет вместе с прокруткой,
-// но медленнее (PARALLAX) — так кажется, что пейзаж дальше тропинки.
-// Сдвиг считается по модулю высоты плитки, поэтому плиток всегда несколько,
-// сколько бы ни был длинным путь. Всё на нативном драйвере — прокрутка не тормозит.
+// Повторяющийся фон-пейзаж под картой пути.
+// Три панели пейзажа собраны в одну бесшовную петлю (стыки между ними и низ третьей
+// с верхом первой плавно перетекают) и разрезаны на три файла одинаковой высоты:
+// assets/images/backgrounds/path-1.jpg, -2, -3. Одна картинка на всю петлю была бы
+// выше 6000 пикселей — такие на части Android-телефонов не отрисовываются.
+//
+// Плитки идут подряд по кругу (1, 2, 3, 1, 2…), их столько, чтобы закрыть экран при любом
+// сдвиге. Фон едет вместе с прокруткой, но медленнее (PARALLAX) — кажется, что пейзаж
+// дальше тропинки. Сдвиг считается по модулю высоты петли, поэтому плиток всегда
+// несколько, сколько бы ни был длинным путь. Всё на нативном драйвере.
 
 import { useMemo } from "react";
 import { Animated, Image, View, useWindowDimensions } from "react-native";
 
-const TILE = require("@/assets/images/backgrounds/path.jpg");
-/** Размер плитки в пикселях (ширина × высота файла). */
-const TILE_WIDTH = 503;
-const TILE_HEIGHT = 2610;
+const TILES = [
+  require("@/assets/images/backgrounds/path-1.jpg"),
+  require("@/assets/images/backgrounds/path-2.jpg"),
+  require("@/assets/images/backgrounds/path-3.jpg"),
+];
+/** Размер одной плитки в пикселях (ширина × высота файла). */
+const TILE_WIDTH = 1080;
+const TILE_HEIGHT = 1836;
 
 /** Во сколько раз фон движется медленнее тропинки (1 — вместе с ней, 0 — стоит). */
 const PARALLAX = 0.6;
@@ -27,7 +34,9 @@ interface ScrollingBackgroundProps {
 export function ScrollingBackground({ scrollY }: ScrollingBackgroundProps) {
   const { width, height } = useWindowDimensions();
   const tileHeight = Math.round((width * TILE_HEIGHT) / TILE_WIDTH);
-  const count = Math.ceil(height / tileHeight) + 1;
+  const loopHeight = tileHeight * TILES.length;
+  // Петля целиком плюс столько плиток, чтобы закрыть экран в конце сдвига
+  const count = TILES.length + Math.ceil(height / tileHeight) + 1;
 
   const translateY = useMemo(
     () =>
@@ -39,11 +48,11 @@ export function ScrollingBackground({ scrollY }: ScrollingBackgroundProps) {
             outputRange: [0, PARALLAX],
             extrapolateLeft: "clamp",
           }),
-          tileHeight,
+          loopHeight,
         ),
         -1,
       ),
-    [scrollY, tileHeight],
+    [scrollY, loopHeight],
   );
 
   return (
@@ -56,9 +65,10 @@ export function ScrollingBackground({ scrollY }: ScrollingBackgroundProps) {
         {Array.from({ length: count }, (_, i) => (
           <Image
             key={i}
-            source={TILE}
+            source={TILES[i % TILES.length]}
             style={{ width, height: tileHeight }}
             resizeMode="stretch"
+            fadeDuration={0}
             accessibilityIgnoresInvertColors
           />
         ))}

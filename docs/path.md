@@ -13,7 +13,7 @@
 | `src/app/(tabs)/games/path/stage.tsx` | экран этапа: дорожки с «Тренировать», «Продолжить», сетка слов с двумя строками точек |
 | `src/components/path/PathNode.tsx` | точка на карте: одно кольцо общего прогресса, название и навыки иконками (книга — перевод, карандаш — письмо), кусок тропинки, пульс, галочка «пройден» / печать «освоен» |
 | `src/components/path/PathWordGrid.tsx` | сетка слов этапа |
-| `src/components/path/ScrollingBackground.tsx` | повторяющийся фон-пейзаж с параллаксом (плитка `assets/images/backgrounds/path.jpg`, низ бесшовно переходит в верх) |
+| `src/components/path/ScrollingBackground.tsx` | повторяющийся фон-пейзаж с параллаксом (три плитки `assets/images/backgrounds/path-1..3.jpg` — одна бесшовная петля, разрезанная на части) |
 | `src/app/(tabs)/games/writing/path.tsx` | тренировка письма по этапу |
 
 Тренировка перевода этапа — обычный экран карточек с `setId = "path:1:0"`
