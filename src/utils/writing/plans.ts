@@ -295,3 +295,20 @@ export function createStepPlan(
     1,
   );
 }
+
+// ── Тренировка по списку слов (этап пути, маршрут /games/writing/path) ───────
+
+/**
+ * Тренировка по готовому списку слов: как по ступени — 1 слово для изучения
+ * (полный формат, по порядку списка) и 2 повторения (быстрый формат).
+ */
+export function createWordsPlan(words: Word[]): LessonItem[] {
+  const order = new Map(words.map((word, i) => [word.vocabularyId, i]));
+
+  return composeClassicPlan(
+    groupByWritingLevel(words),
+    shuffle,
+    (word) => order.get(word.vocabularyId) ?? Number.MAX_SAFE_INTEGER,
+    1,
+  );
+}

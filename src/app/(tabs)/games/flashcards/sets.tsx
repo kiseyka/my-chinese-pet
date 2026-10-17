@@ -35,7 +35,8 @@ import {
 } from "@/utils/flashcards/steps";
 import { searchWords } from "@/utils/searchWords";
 import { useTranslation } from "react-i18next";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useGameStore } from "@/store/gameStore";
 import { useCallback, useMemo, useState } from "react";
 import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
 
@@ -50,6 +51,13 @@ const TABS = [
 ];
 
 export default function FlashcardsHomeScreen() {
+  // Тренировки отсюда возвращаются сюда же, а не на путь
+  useFocusEffect(
+    useCallback(() => {
+      useGameStore.getState().setReturnTo(null);
+    }, []),
+  );
+
   const router = useRouter();
 
   const [tab, setTab] = useState<FlashcardsTab>("steps");

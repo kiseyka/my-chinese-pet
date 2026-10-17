@@ -131,6 +131,27 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="games/path/index"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="games/path/stage"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="games/writing/path"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="games/flashcards/edit/[setId]"
         options={{
           href: null,

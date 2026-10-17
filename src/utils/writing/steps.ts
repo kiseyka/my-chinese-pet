@@ -1,7 +1,10 @@
 // src/utils/writing/steps.ts
 //
-// Ступени в разделах режима «Написание»: слова раздела выстраиваются в порядок изучения
-// и делятся на ступени по STEP_SIZE слов. Текущая ступень — первая, в которой есть
+// Ступени в разделах режима «Написание».
+// Если у уровня есть темы (src/content/path/themes.ts), ступени — это темы по порядку;
+// большая тема делится на ровные части не больше STEP_SIZE слов («Еда», «Еда · 2»),
+// слова без темы идут в конце («Ещё слова»). Без тем слова раздела выстраиваются
+// в порядок изучения и делятся на ступени по STEP_SIZE слов («Ступень 1»). Текущая ступень — первая, в которой есть
 // ещё не начатые слова (позже — первая, финал которой не пройден).
 //
 // Порядок изучения:
@@ -13,6 +16,7 @@
 // всё нужное передаётся аргументами. Внизу — они же, применённые к разделам HSK.
 
 import type { Word } from "@/content/flashcards/types";
+import { pathThemes } from "@/content/path/themes";
 import { getWordFrequency } from "@/content/words/hsk";
 import {
   describeLevel,
@@ -153,17 +157,8 @@ function wordFrequency(word: Word): number {
   return getWordFrequency(word.vocabularyId) ?? Number.MAX_SAFE_INTEGER;
 }
 
-const sequenceCache = new Map<WritingLevel, Word[]>();
-
-/**
- * Порядок изучения слов раздела. Иероглифы из предыдущих разделов считаются
- * уже знакомыми; для «Других слов» знакомы все иероглифы разделов HSK.
- * Считается один раз для каждого раздела.
- */
-export function getLevelSequence(level: WritingLevel): Word[] {
-  const cached = sequenceCache.get(level);
-  if (cached) return cached;
-
+/** Иероглифы предыдущих разделов (для «Других слов» — всех разделов HSK). */
+function getKnownChars(level: WritingLevel): Set<string> {
   const knownChars = new Set<string>();
   for (const word of getWritingPool()) {
     const wordLevel = getWordHskLevel(word);
@@ -175,25 +170,134 @@ export function getLevelSequence(level: WritingLevel): Word[] {
       for (const char of Array.from(word.hanzi)) knownChars.add(char);
     }
   }
-
-  const sequence = orderLevelWords(
-    getLevelWords(level),
-    knownChars,
-    wordFrequency,
-  );
-  sequenceCache.set(level, sequence);
-  return sequence;
+  return knownChars;
 }
 
-const stepsCache = new Map<WritingLevel, Word[][]>();
+/** Делит слова на ровные части не больше size слов: 13 → 7 + 6, а не 10 + 3. */
+export function splitEvenly<T>(items: T[], size: number = STEP_SIZE): T[][] {
+  if (items.length === 0) return [];
+  const parts = Math.ceil(items.length / size);
+  const result: T[][] = [];
+  let start = 0;
+  for (let i = 0; i < parts; i++) {
+    const length = Math.ceil((items.length - start) / (parts - i));
+    result.push(items.slice(start, start + length));
+    start += length;
+  }
+  return result;
+}
 
-export function getLevelSteps(level: WritingLevel): Word[][] {
-  const cached = stepsCache.get(level);
+/** «Еда», «Еда · 2», «Еда · 3». */
+function partTitle(title: string, index: number): string {
+  return index === 0 ? title : `${title} · ${index + 1}`;
+}
+
+interface LevelPath {
+  steps: Word[][];
+  titles: string[];
+}
+
+/** Ступени по темам уровня. null — у уровня нет тем. */
+function buildThemedPath(
+  level: WritingLevel,
+  knownChars: ReadonlySet<string>,
+): LevelPath | null {
+  const themes = pathThemes.filter((theme) => theme.level === level);
+  if (themes.length === 0) return null;
+
+  const levelWords = getLevelWords(level);
+  const byHanzi = new Map<string, Word>();
+  for (const word of levelWords) {
+    if (!byHanzi.has(word.hanzi)) byHanzi.set(word.hanzi, word);
+  }
+
+  const known = new Set(knownChars);
+  const used = new Set<string>();
+  const path: LevelPath = { steps: [], titles: [] };
+
+  const add = (words: Word[], title: string) => {
+    // Внутри темы: частые раньше, иероглиф раньше слов с ним
+    const ordered = orderLevelWords(words, known, wordFrequency);
+    for (const word of ordered) {
+      for (const char of Array.from(word.hanzi)) known.add(char);
+    }
+    splitEvenly(ordered).forEach((part, index) => {
+      path.steps.push(part);
+      path.titles.push(partTitle(title, index));
+    });
+  };
+
+  for (const theme of themes) {
+    const words = theme.words
+      .split(/\s+/)
+      .map((hanzi) => byHanzi.get(hanzi))
+      .filter(
+        (word): word is Word => !!word && !used.has(word.vocabularyId),
+      );
+    for (const word of words) used.add(word.vocabularyId);
+    add(words, theme.title);
+  }
+
+  // Слова уровня, которые не попали ни в одну тему
+  add(
+    levelWords.filter((word) => !used.has(word.vocabularyId)),
+    "Ещё слова",
+  );
+
+  return path;
+}
+
+/** Ступени по частоте, как раньше: «Ступень 1», «Ступень 2»… */
+function buildFrequencyPath(
+  level: WritingLevel,
+  knownChars: ReadonlySet<string>,
+): LevelPath {
+  const steps = chunkSteps(
+    orderLevelWords(getLevelWords(level), knownChars, wordFrequency),
+  );
+  return { steps, titles: steps.map((_, index) => `Ступень ${index + 1}`) };
+}
+
+const pathCache = new Map<WritingLevel, LevelPath>();
+
+/** Ступени раздела и их названия. Считаются один раз для каждого раздела. */
+function getLevelPath(level: WritingLevel): LevelPath {
+  const cached = pathCache.get(level);
   if (cached) return cached;
 
-  const steps = chunkSteps(getLevelSequence(level));
-  stepsCache.set(level, steps);
-  return steps;
+  const knownChars = getKnownChars(level);
+  const path =
+    buildThemedPath(level, knownChars) ?? buildFrequencyPath(level, knownChars);
+  pathCache.set(level, path);
+  return path;
+}
+
+/** Порядок изучения слов раздела: все ступени подряд. */
+export function getLevelSequence(level: WritingLevel): Word[] {
+  return getLevelPath(level).steps.flat();
+}
+
+export function getLevelSteps(level: WritingLevel): Word[][] {
+  return getLevelPath(level).steps;
+}
+
+/** Названия ступеней раздела: тема («Семья», «Еда · 2») или «Ступень 3». */
+export function getLevelStepTitles(level: WritingLevel): string[] {
+  return getLevelPath(level).titles;
+}
+
+/**
+ * Иероглиф ступени для карты пути: первое односложное слово ступени,
+ * а если таких нет — первый иероглиф первого слова.
+ */
+export function getStepGlyph(words: Word[]): string {
+  const single = words.find((word) => Array.from(word.hanzi).length === 1);
+  return single?.hanzi ?? Array.from(words[0]?.hanzi ?? "")[0] ?? "";
+}
+
+/** Название одной ступени. */
+export function getStepTitle(level: WritingLevel, index: number): string {
+  return getLevelStepTitles(level)[index] ?? `Ступень ${index + 1}`;
 }
 
 /**
@@ -230,7 +334,7 @@ export function findWritingWordStep(
   return locationCache.get(wordId) ?? null;
 }
 
-/** «HSK 2 · Ступень 7». */
+/** «HSK 1 · Семья», «HSK 2 · Ступень 7». */
 export function describeWritingStep(level: WritingLevel, index: number): string {
-  return `${describeLevel(level)} · Ступень ${index + 1}`;
+  return `${describeLevel(level)} · ${getStepTitle(level, index)}`;
 }

@@ -7,7 +7,7 @@
 //     «Без подсказок» (с твоим написанием); у обоих — «Повторение» своего навыка
 //     и панель слова (наборы). У тонов — ошибки.
 //   - Внизу две кнопки: «Завершить» (к панде) и «Продолжить» — обратно на экран,
-//     откуда запускали тренировку (ступени, наборы, «Написание»).
+//     откуда запускали тренировку (ступени, наборы, «Написание», путь).
 
 import { FlashcardResultsList } from "@/components/flashcards/FlashcardResultsList";
 import { WordSheet } from "@/components/flashcards/WordSheet";
@@ -67,7 +67,9 @@ export default function GeneralStatsScreen() {
   const [opened, setOpened] = useState<Word | null>(null);
   const openedStep = opened ? findWordStep(opened.vocabularyId) : null;
 
-  const returnTo = gameId ? RETURN_TO[gameId] : "/games";
+  // Запуск с пути — обратно на путь, иначе на экран своего режима
+  const customReturnTo = useGameStore((s) => s.returnTo);
+  const returnTo = customReturnTo ?? (gameId ? RETURN_TO[gameId] : "/games");
 
   return (
     <Screen>

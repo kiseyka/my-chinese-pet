@@ -1,5 +1,6 @@
 // store/gameStore.ts
 
+import type { Href } from "expo-router";
 import { create } from "zustand";
 
 /** Ответ в самопроверке карточек. */
@@ -73,6 +74,14 @@ interface GameStore {
   setRewards: (rewards: TrainingRewards) => void;
 
   resetGame: () => void;
+
+  /**
+   * Куда ведёт «Продолжить» на экране итогов, если тренировку запустили не с экрана
+   * своего режима (например, с пути). null — на экран режима (карточки, «Написание»).
+   * Ставится перед запуском тренировки; экраны режимов сбрасывают его, когда открываются.
+   */
+  returnTo: Href | null;
+  setReturnTo: (href: Href | null) => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -122,4 +131,7 @@ export const useGameStore = create<GameStore>((set) => ({
       results: [],
       writingResults: [],
     }),
+
+  returnTo: null,
+  setReturnTo: (returnTo) => set({ returnTo }),
 }));
