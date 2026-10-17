@@ -1,7 +1,8 @@
 // src/components/path/ScrollingBackground.tsx
 //
 // Повторяющийся фон-пейзаж под картой пути. Картинка — бесшовная плитка
-// (assets/images/backgrounds/path.jpg: низ плавно переходит в верх), она повторяется
+// (assets/images/backgrounds/path.jpg): три панели пейзажа одна под другой,
+// стыки между ними и низ третьей с верхом первой плавно перетекают. Плитка повторяется
 // столько раз, сколько нужно, чтобы закрыть экран, и едет вместе с прокруткой,
 // но медленнее (PARALLAX) — так кажется, что пейзаж дальше тропинки.
 // Сдвиг считается по модулю высоты плитки, поэтому плиток всегда несколько,
@@ -12,8 +13,8 @@ import { Animated, Image, View, useWindowDimensions } from "react-native";
 
 const TILE = require("@/assets/images/backgrounds/path.jpg");
 /** Размер плитки в пикселях (ширина × высота файла). */
-const TILE_WIDTH = 1024;
-const TILE_HEIGHT = 1276;
+const TILE_WIDTH = 503;
+const TILE_HEIGHT = 2610;
 
 /** Во сколько раз фон движется медленнее тропинки (1 — вместе с ней, 0 — стоит). */
 const PARALLAX = 0.6;
