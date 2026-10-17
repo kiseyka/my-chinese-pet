@@ -71,13 +71,6 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="games/flashcards/sets"
-        options={{
-          href: null,
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
         name="games/tones"
         options={{
           href: null,
@@ -85,18 +78,6 @@ export default function TabLayout() {
         }}
       />
 
-      <Tabs.Screen
-        name="games/writing/sets"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="games/writing/classic"
-        options={{
-          headerShown: false,
-        }}
-      />
       <Tabs.Screen
         name="games/writing/free"
         options={{
@@ -106,13 +87,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="games/writing/exam"
         options={{
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="games/writing/step"
-        options={{
-          href: null,
           headerShown: false,
         }}
       />

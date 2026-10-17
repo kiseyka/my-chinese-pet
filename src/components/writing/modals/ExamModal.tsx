@@ -90,7 +90,7 @@ export function ExamModal({
             <View className="items-center gap-2">
               <SealMark size={44} />
               <Text className="font-nunitoBold text-title text-text">
-                Экзамен
+                Экзамен по письму
               </Text>
               <Text className="text-center font-nunito text-small text-text opacity-70">
                 Нажми на слово, чтобы убрать его из экзамена — оно останется в

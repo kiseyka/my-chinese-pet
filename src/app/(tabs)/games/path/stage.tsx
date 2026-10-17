@@ -36,7 +36,9 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 const GRID_INSET = 32 + 24;
 
 export default function PathStageScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, from } = useLocalSearchParams<{ id?: string; from?: string }>();
+  // «Назад» — в «Словарь», если этап открыли оттуда («Показать»), иначе на путь
+  const backHref = from === "dictionary" ? "/vocabulary" : "/games/path";
   const stage = findPathStage(id ?? "");
   const { progress, flashcardWords, startTraining } = usePath();
   const [opened, setOpened] = useState<Word | null>(null);
@@ -58,7 +60,7 @@ export default function PathStageScreen() {
   if (!stage || !item) {
     return (
       <Screen>
-        <BackButton href="/games/path" />
+        <BackButton href={backHref} />
         <Text className="mt-6 font-nunito text-body text-text">
           Этап не найден.
         </Text>
@@ -66,7 +68,10 @@ export default function PathStageScreen() {
     );
   }
 
-  const returnTo = { pathname: "/games/path/stage", params: { id: stage.id } };
+  const returnTo = {
+    pathname: "/games/path/stage",
+    params: from ? { id: stage.id, from } : { id: stage.id },
+  };
   const nextTrack = item.next ?? item.tracks.find((t) => !t.mastered)?.id;
 
   // Этап освоен целиком: «Повторить» — навык, на который отвечали реже
@@ -88,7 +93,7 @@ export default function PathStageScreen() {
       <WordSheet word={opened} onClose={() => setOpened(null)} />
 
       <View className="flex-row items-center">
-        <BackButton href="/games/path" />
+        <BackButton href={backHref} />
       </View>
 
       <ScrollView

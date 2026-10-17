@@ -6,8 +6,8 @@
 //   «Без подсказок» — остальные.
 // В строке: твоё написание, слово, перевод, точки «было → стало» (у слова
 // и у его иероглифов) и две кнопки справа:
-//   закладка — «Повторение» письма сразу, без панели. Убрать отсюда =
-//   «чувствую, что знаю»: слово встаёт в очередь на экзамен (через 24 часа);
+//   закладка — «Повторение» письма сразу, без панели (на экзамен слово попадает
+//   только с 3 точками, закладка на это не влияет);
 //   плюс — панель слова (onOpenWord): наборы, новый набор, озвучка.
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
@@ -67,12 +67,12 @@ export function WritingResultsList({
 }: WritingResultsListProps) {
   const { t } = useTranslation(["sets"]);
 
-  const writingReview = useWordProgressStore((s) => s.writingReview);
-  const toggleWritingReview = useWordProgressStore(
-    (s) => s.toggleWritingReview,
+  const review = useWordProgressStore((s) => s.review);
+  const toggleReview = useWordProgressStore(
+    (s) => s.toggleReview,
   );
-  const removeFromWritingReview = useWordProgressStore(
-    (s) => s.removeFromWritingReview,
+  const removeFromReview = useWordProgressStore(
+    (s) => s.removeFromReview,
   );
 
   // Одно слово может встретиться дважды (например, 画画 в уроке) — показываем один раз;
@@ -90,14 +90,14 @@ export function WritingResultsList({
 
   const toAdd = withHints
     .map((item) => item.vocabularyId)
-    .filter((id) => !writingReview[id]);
+    .filter((id) => !review[id]);
 
   const addAll = () => {
-    for (const id of toAdd) toggleWritingReview(id);
+    for (const id of toAdd) toggleReview(id);
   };
 
   const renderRow = (item: WritingWordResult) => {
-    const inReview = !!writingReview[item.vocabularyId];
+    const inReview = !!review[item.vocabularyId];
 
     return (
       <View
@@ -144,8 +144,8 @@ export function WritingResultsList({
             <Pressable
               onPress={() =>
                 inReview
-                  ? removeFromWritingReview(item.vocabularyId)
-                  : toggleWritingReview(item.vocabularyId)
+                  ? removeFromReview(item.vocabularyId)
+                  : toggleReview(item.vocabularyId)
               }
               hitSlop={4}
               className={`h-11 w-11 items-center justify-center rounded-full ${
@@ -248,8 +248,7 @@ export function WritingResultsList({
       )}
 
       <Text className="text-center font-nunito text-small text-textSecondary">
-        Закладка — в повторение (если убрать, через сутки откроется экзамен),
-        плюс — в любой набор.
+        Закладка — в повторение, плюс — в любой набор.
       </Text>
     </View>
   );

@@ -1,15 +1,15 @@
 // app/(game)/games.tsx  (твой путь к файлу экрана)
 
-import BookIcon from "@/assets/images/icons/vocabulary.svg";
 import { GameCard } from "@/components/game/GameCard";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { Title } from "@/components/ui/Title";
-import { colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
+// Путь — изучение по темам, «Словарь» — все слова, свои тренировки, наборы,
+// «Повторение» и экзамен; «Тоны» — отдельная игра на слух.
 const games = [
   {
     id: "path",
@@ -21,11 +21,12 @@ const games = [
     imageSource: require("@/assets/images/games/hanzi.png"),
   },
   {
-    id: "flashcards",
-    title: "games.flashcards.title",
-    description: "games.flashcards.description",
-    route: "/games/flashcards/sets",
+    id: "dictionary",
+    title: "games.dictionary.title",
+    description: "games.dictionary.description",
+    route: "/vocabulary",
     locked: false,
+    // Своей картинки у словаря пока нет
     imageSource: require("@/assets/images/games/flashcards.png"),
   },
   {
@@ -35,14 +36,6 @@ const games = [
     route: "/games/tones",
     locked: false,
     imageSource: require("@/assets/images/games/tones.png"),
-  },
-  {
-    id: "writing",
-    title: "games.writting.title",
-    description: "games.writting.description",
-    route: "/games/writing/sets",
-    locked: false,
-    imageSource: require("@/assets/images/games/hanzi.png"),
   },
 ];
 
@@ -57,15 +50,7 @@ export default function GamesScreen() {
           <BackButton href="/" />
           <Title>{t("games.title")}</Title>
 
-          <Pressable
-            onPress={() => router.push("/vocabulary")}
-            hitSlop={8}
-            className="h-10 w-10 items-center justify-center active:opacity-60"
-            accessibilityRole="button"
-            accessibilityLabel="Словарь"
-          >
-            <BookIcon width={26} height={26} color={colors.text} />
-          </Pressable>
+          <View style={{ width: 28 }} />
         </View>
 
         <View className=" flex-col gap-5">

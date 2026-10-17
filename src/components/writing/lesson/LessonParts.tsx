@@ -27,15 +27,14 @@ const RESULT_GAP = 12;
 const WRITTEN_SIZE = 52;
 
 /**
- * «Назад» ведёт туда, откуда запустили тренировку: на путь (returnTo) или на экран
- * «Написание». router.back() здесь не подходит: в табах он уводит на панду.
+ * «Назад» ведёт туда, откуда запустили тренировку: на путь (returnTo) или в «Словарь». router.back() здесь не подходит: в табах он уводит на панду.
  */
 export function TrainingHeader({ children }: { children?: ReactNode }) {
   const returnTo = useGameStore((state) => state.returnTo);
 
   return (
     <View className="flex-row items-center gap-3 pb-3 pr-4">
-      <BackButton href={returnTo ?? "/games/writing/sets"} />
+      <BackButton href={returnTo ?? "/vocabulary"} />
       <View className="flex-1">{children}</View>
     </View>
   );

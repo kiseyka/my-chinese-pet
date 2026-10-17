@@ -2,11 +2,13 @@
 //
 // Сетка слов этапа на экране этапа: иероглиф и под ним две строки точек —
 // перевод (зелёные) и письмо (тёмные, как тушь; только у слов, которые можно писать).
-// 4 колонки; слово из нескольких иероглифов занимает несколько колонок (до 4).
+// 4 колонки. Слово из 1–2 иероглифов — одна ячейка (два знака чуть мельче),
+// из 3 и больше — две ячейки: иначе длинные слова съедают ряд.
 
 import { Hanzi } from "@/components/ui/Hanzi";
 import type { Word } from "@/content/flashcards/types";
 import type { TrackId } from "@/utils/path/stages";
+import { memo } from "react";
 import { Pressable, View, useWindowDimensions } from "react-native";
 
 const COLUMNS = 4;
@@ -27,7 +29,8 @@ interface PathWordGridProps {
   horizontalInset: number;
 }
 
-export function PathWordGrid({
+// memo: в «Словаре» сотни сеток — перерисовываются только те, у которых что-то поменялось
+export const PathWordGrid = memo(function PathWordGrid({
   words,
   getDots,
   onSelect,
@@ -41,8 +44,14 @@ export function PathWordGrid({
   return (
     <View className="flex-row flex-wrap" style={{ gap: GAP }}>
       {words.map((word) => {
-        const span = Math.min(Array.from(word.hanzi).length, COLUMNS);
+        const length = Array.from(word.hanzi).length;
+        const span = length >= 3 ? 2 : 1;
         const cellWidth = unit * span + GAP * (span - 1);
+        // Размер знака: чтобы слово влезло в ячейку с небольшими полями
+        const fontSize = Math.min(
+          28,
+          Math.floor((cellWidth - 8) / Math.max(length, span === 1 ? 1 : 2)),
+        );
 
         return (
           <Pressable
@@ -54,7 +63,7 @@ export function PathWordGrid({
             accessibilityLabel={word.hanzi}
           >
             <Hanzi
-              size={Math.min(28, unit * 0.5)}
+              size={fontSize}
               numberOfLines={1}
               adjustsFontSizeToFit
               maxFontSizeMultiplier={1.2}
@@ -68,7 +77,7 @@ export function PathWordGrid({
       })}
     </View>
   );
-}
+});
 
 function SkillDots({
   track,

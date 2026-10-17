@@ -29,8 +29,8 @@ import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 /** Куда ведёт «Продолжить»: экран выбора, с которого запускали тренировку. */
 const RETURN_TO: Record<GameId, Href> = {
-  flashcards: "/games/flashcards/sets",
-  writing: "/games/writing/sets",
+  flashcards: "/vocabulary",
+  writing: "/vocabulary",
   tones: "/games",
 };
 

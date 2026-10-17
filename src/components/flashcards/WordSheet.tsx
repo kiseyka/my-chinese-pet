@@ -29,8 +29,8 @@ interface WordSheetProps {
   /** Если передан — у строки с местом есть кнопка «Показать». */
   onShowInStep?: () => void;
   /**
-   * Чей навык: точки и «Повторение» — чтения (карточки) или письма.
-   * У письма своё повторение: убрать оттуда = «чувствую, что знаю» (очередь на экзамен).
+   * Чей навык показывают точки: чтения (карточки) или письма.
+   * «Повторение» одно на оба навыка.
    */
   skill?: "reading" | "writing";
   onClose: () => void;
@@ -45,17 +45,9 @@ export function WordSheet({
 }: WordSheetProps) {
   const { t } = useTranslation();
 
-  const readingReview = useWordProgressStore((state) => state.readingReview);
-  const toggleReadingReview = useWordProgressStore(
-    (state) => state.toggleReadingReview,
-  );
-  const writingReview = useWordProgressStore((state) => state.writingReview);
-  const toggleWritingReview = useWordProgressStore(
-    (state) => state.toggleWritingReview,
-  );
-  const removeFromWritingReview = useWordProgressStore(
-    (state) => state.removeFromWritingReview,
-  );
+  // «Повторение» одно на все навыки
+  const review = useWordProgressStore((state) => state.review);
+  const toggleReview = useWordProgressStore((state) => state.toggleReview);
   const isWriting = skill === "writing";
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
   const vocabularyWords = useWordProgressStore(
@@ -73,14 +65,7 @@ export function WordSheet({
             : (vocabularyWords[shown.vocabularyId]?.isKnown ?? false),
           [skill],
         );
-        const inReview = isWriting
-          ? !!writingReview[shown.vocabularyId]
-          : !!readingReview[shown.vocabularyId];
-        const toggleReview = () => {
-          if (!isWriting) toggleReadingReview(shown.vocabularyId);
-          else if (inReview) removeFromWritingReview(shown.vocabularyId);
-          else toggleWritingReview(shown.vocabularyId);
-        };
+        const inReview = !!review[shown.vocabularyId];
 
         return (
           <>
@@ -107,7 +92,7 @@ export function WordSheet({
               icon={<ReviewIcon width={26} height={26} className="text-primary" />}
               label={inReview ? "В повторении" : "Добавить в повторение"}
               checked={inReview}
-              onPress={toggleReview}
+              onPress={() => toggleReview(shown.vocabularyId)}
             />
 
             <SetToggleList word={shown} className="mt-6" />
