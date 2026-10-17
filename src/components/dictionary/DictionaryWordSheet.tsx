@@ -62,6 +62,8 @@ export function DictionaryWordSheet({
   );
   const toggleFavorite = useWordProgressStore((state) => state.toggleFavorite);
   const review = useWordProgressStore((state) => state.review);
+  const readingExams = useWordProgressStore((state) => state.readingExams);
+  const writingExams = useWordProgressStore((state) => state.writingExams);
   const toggleReview = useWordProgressStore((state) => state.toggleReview);
   const sets = useCustomSetsStore((state) => state.sets);
 
@@ -215,12 +217,14 @@ export function DictionaryWordSheet({
                 label="перевод"
                 level={getTrackDots(target, "reading", flashcardWords)}
                 track="reading"
+                examPassed={!!readingExams[target.vocabularyId]?.passedAt}
               />
               {writable && (
                 <SkillDots
                   label="письмо"
                   level={getTrackDots(target, "writing", flashcardWords)}
                   track="writing"
+                  examPassed={!!writingExams[target.vocabularyId]?.passedAt}
                 />
               )}
             </View>
@@ -316,15 +320,20 @@ function WriteButton({
   );
 }
 
-/** Навык слова мелко: подпись и 3 точки (перевод — зелёные, письмо — тёмные). */
+/**
+ * Навык слова мелко: подпись и 3 точки (перевод — зелёные, письмо — тёмные),
+ * после них — «✓ экзамен», если экзамен этого навыка сдан.
+ */
 function SkillDots({
   label,
   level,
   track,
+  examPassed = false,
 }: {
   label: string;
   level: number;
   track: TrackId;
+  examPassed?: boolean;
 }) {
   const filled = track === "reading" ? "bg-primary" : "bg-text";
   const empty = track === "reading" ? "bg-primary/20" : "bg-text/20";
@@ -342,6 +351,11 @@ function SkillDots({
           />
         ))}
       </View>
+      {examPassed && (
+        <Text className="font-nunitoBold text-caption text-primary">
+          ✓ экзамен
+        </Text>
+      )}
     </View>
   );
 }
