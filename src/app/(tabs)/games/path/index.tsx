@@ -9,8 +9,14 @@
 //   - Внизу «Продолжить» (или «Начать») — сразу запускает нужную тренировку
 //     текущего этапа: сначала перевод, когда он пройден — письмо.
 //   - При открытии карта прокручена к текущему этапу.
+//   - Фон — пейзаж (assets/images/backgrounds/path.jpg). Он стоит на месте, а тропинка
+//     прокручивается поверх: рисунок по краям, середина пустая — там идёт тропинка.
 
-import { PathNode, PATH_ROW_HEIGHT, pathOffset } from "@/components/path/PathNode";
+import {
+  PathNode,
+  PATH_ROW_HEIGHT,
+  pathOffset,
+} from "@/components/path/PathNode";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { Title } from "@/components/ui/Title";
@@ -25,6 +31,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useMemo } from "react";
 import {
   FlatList,
+  Image,
   Pressable,
   Text,
   View,
@@ -157,50 +164,58 @@ export default function PathScreen() {
   };
 
   return (
-    <Screen>
-      <View className="flex-row items-center justify-between">
-        <BackButton href="/games" />
-        <Title>Путь</Title>
-        <View style={{ width: 28 }} />
-      </View>
-
-      <FlatList
-        data={rows}
-        keyExtractor={(row) => row.key}
-        renderItem={renderItem}
-        getItemLayout={(_, index) => ({ ...layout[index], index })}
-        initialScrollIndex={Math.max(currentRow - 1, 0)}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 8, paddingBottom: BOTTOM_SPACE }}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={9}
+    <View className="flex-1 bg-background">
+      <Image
+        source={require("@/assets/images/backgrounds/path.jpg")}
+        resizeMode="cover"
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        accessibilityIgnoresInvertColors
       />
-
-      {target && targetTrack && (
-        <View
-          className="absolute left-4 right-4"
-          style={{ bottom: insets.bottom + 12 }}
-        >
-          <Pressable
-            onPress={() => startTraining(target.stage, target.track)}
-            className="h-16 justify-center rounded-full bg-primary px-5 active:opacity-80"
-            accessibilityRole="button"
-            accessibilityLabel={`${isFresh ? "Начать" : "Продолжить"}: ${target.stage.title}, ${targetTrack.title}`}
-          >
-            <Text className="text-center font-nunitoBold text-lead text-white">
-              {isFresh ? "Начать" : "Продолжить"}
-            </Text>
-            <Text
-              numberOfLines={1}
-              className="text-center font-nunito text-caption text-white/80"
-            >
-              {target.stage.title} · {targetTrack.title.toLowerCase()}
-            </Text>
-          </Pressable>
+      <Screen>
+        <View className="flex-row items-center justify-between">
+          <BackButton href="/games" />
+          <Title>Путь</Title>
+          <View style={{ width: 28 }} />
         </View>
-      )}
-    </Screen>
+
+        <FlatList
+          data={rows}
+          keyExtractor={(row) => row.key}
+          renderItem={renderItem}
+          getItemLayout={(_, index) => ({ ...layout[index], index })}
+          initialScrollIndex={Math.max(currentRow - 1, 0)}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: BOTTOM_SPACE }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={9}
+        />
+
+        {target && targetTrack && (
+          <View
+            className="absolute left-4 right-4"
+            style={{ bottom: insets.bottom + 12 }}
+          >
+            <Pressable
+              onPress={() => startTraining(target.stage, target.track)}
+              className="h-16 justify-center rounded-full bg-primary px-5 active:opacity-80"
+              accessibilityRole="button"
+              accessibilityLabel={`${isFresh ? "Начать" : "Продолжить"}: ${target.stage.title}, ${targetTrack.title}`}
+            >
+              <Text className="text-center font-nunitoBold text-lead text-white">
+                {isFresh ? "Начать" : "Продолжить"}
+              </Text>
+              <Text
+                numberOfLines={1}
+                className="text-center font-nunito text-caption text-white/80"
+              >
+                {target.stage.title} · {targetTrack.title.toLowerCase()}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+      </Screen>
+    </View>
   );
 }
 

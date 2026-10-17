@@ -220,25 +220,32 @@ export const PathNode = memo(function PathNode({
           style={{ width: labelWidth, marginHorizontal: LABEL_GAP }}
           className={labelOnRight ? "items-start" : "items-end"}
         >
-          <Text
-            numberOfLines={2}
-            className={`${labelOnRight ? "text-left" : "text-right"} ${
-              state === "current"
-                ? "font-nunitoBold text-lead text-text"
-                : state === "passed"
-                  ? "font-nunitoBold text-body text-text"
-                  : "font-nunito text-body text-textSecondary"
+          {/* Полупрозрачная подложка: подпись читается и поверх рисунка фона */}
+          <View
+            className={`rounded-xl bg-background/85 px-2 py-1 ${
+              labelOnRight ? "items-start" : "items-end"
             }`}
           >
-            {title}
-          </Text>
-          {skills.length > 0 && (
-            <View className="mt-1 flex-row gap-3">
-              {skills.map((skill) => (
-                <SkillCount key={skill.id} skill={skill} />
-              ))}
-            </View>
-          )}
+            <Text
+              numberOfLines={2}
+              className={`${labelOnRight ? "text-left" : "text-right"} ${
+                state === "current"
+                  ? "font-nunitoBold text-lead text-text"
+                  : state === "passed"
+                    ? "font-nunitoBold text-body text-text"
+                    : "font-nunito text-body text-textSecondary"
+              }`}
+            >
+              {title}
+            </Text>
+            {skills.length > 0 && (
+              <View className="mt-1 flex-row gap-3">
+                {skills.map((skill) => (
+                  <SkillCount key={skill.id} skill={skill} />
+                ))}
+              </View>
+            )}
+          </View>
         </View>
       </Pressable>
     </View>
