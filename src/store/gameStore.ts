@@ -82,6 +82,13 @@ interface GameStore {
    */
   returnTo: Href | null;
   setReturnTo: (href: Href | null) => void;
+
+  /**
+   * Откуда брала слова последняя тренировка карточками (id источника: «path:1:0»,
+   * набор, «review»…). По нему экран итогов решает, предложить ли письмо этого этапа.
+   */
+  lastSourceId: string | null;
+  setLastSourceId: (id: string | null) => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -134,4 +141,7 @@ export const useGameStore = create<GameStore>((set) => ({
 
   returnTo: null,
   setReturnTo: (returnTo) => set({ returnTo }),
+
+  lastSourceId: null,
+  setLastSourceId: (lastSourceId) => set({ lastSourceId }),
 }));

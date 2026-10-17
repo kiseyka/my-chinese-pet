@@ -1,12 +1,15 @@
 // app/(tabs)/games/flashcards/[setId].tsx
 //
 // Тренировка карточками: свой набор, ступень HSK или «Повторение».
+// Слово, которое человек видит впервые (ни одного ответа по переводу), сначала
+// показывается карточкой знакомства (WordIntroCard), потом сразу вопрос.
 // Режим (mode) выбирают в панели «Как будем тренироваться?»:
 //   по умолчанию — выбор перевода (даёт точки чтения);
 //   mode=self — самопроверка «Знаю / Сомневаюсь / Не знаю» (без точек).
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
 import { GameHeader } from "@/components/game/GameHeader";
+import { WordIntroCard } from "@/components/game/WordIntroCard";
 import { SelfCheckQuestion } from "@/components/game/SelfCheckQuestion";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
@@ -19,7 +22,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import type { FlashcardSource } from "@/utils/flashcards/source";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Text, View } from "react-native";
 
 export default function FlashcardTrainingScreen() {
@@ -49,7 +52,38 @@ function ChoiceTraining({ setId }: { setId: string }) {
     handleSelect,
   } = useFlashcardGame({ setId });
 
+  // Новое слово — ни одного ответа по переводу на момент показа вопроса.
+  // Считаем один раз на вопрос: после ответа слово уже не новое, а карточка не нужна
+  const [introduced, setIntroduced] = useState<Set<string>>(() => new Set());
+  const questionId = currentQuestion?.id;
+  const isNew = useMemo(() => {
+    if (!currentQuestion) return false;
+    const reading =
+      useWordProgressStore.getState().flashcardWords[
+        currentQuestion.vocabularyId
+      ]?.reading;
+    return !reading || reading.correctAnswers + reading.incorrectAnswers === 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionId]);
+
   if (!source || !currentQuestion) return <NoWords source={source} />;
+
+  if (isNew && !introduced.has(currentQuestion.id)) {
+    return (
+      <TrainingFrame progress={progressPercent}>
+        <WordIntroCard
+          hanzi={currentQuestion.hanzi}
+          pinyin={currentQuestion.pinyin}
+          translation={currentQuestion.translation}
+          onContinue={() =>
+            setIntroduced((previous) =>
+              new Set(previous).add(currentQuestion.id),
+            )
+          }
+        />
+      </TrainingFrame>
+    );
+  }
 
   return (
     <TrainingFrame progress={progressPercent}>
