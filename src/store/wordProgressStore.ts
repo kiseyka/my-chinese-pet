@@ -57,15 +57,11 @@ interface WordProgressState {
   flashcardWords: Record<string, WordProgress>;
   vocabularyWords: Record<string, VocabularyWordProgress>;
   /**
-   * «Повторение» в письме: слова и иероглифы (id вида «char:么»), которые пользователь
-   * хочет отработать. Отдельно от избранного словаря: это временный список.
+   * «Повторение» — один рабочий список на все навыки: слова и иероглифы
+   * (id вида «char:么»), которые пользователь хочет отработать. Навык выбирается
+   * при запуске тренировки. Отдельно от избранного: избранное — личная коллекция.
    */
-  writingReview: Record<string, WritingReviewEntry>;
-  /**
-   * «Повторение» в карточках (чтение): слова, которые пользователь хочет повторить.
-   * Своё для каждого навыка: слово можно легко читать и не уметь писать.
-   */
-  readingReview: Record<string, WritingReviewEntry>;
+  review: Record<string, WritingReviewEntry>;
   /** Экзамены по письму, по id слова. */
   writingExams: Record<string, WritingExamEntry>;
 }
@@ -88,14 +84,12 @@ interface WordProgressActions {
     isKnown?: boolean;
   }) => void;
   toggleFavorite: (wordId: string) => void;
-  /** Добавляет слово в «Повторение» карточек или убирает оттуда. */
-  toggleReadingReview: (wordId: string) => void;
-  /** Добавляет несколько слов в «Повторение» карточек (уже добавленные пропускает). */
-  addToReadingReview: (wordIds: string[]) => void;
-  /** Добавляет слово в «Повторение» письма или убирает оттуда (без экзамена). */
-  toggleWritingReview: (wordId: string) => void;
-  /** Убирает слово из «Повторения» письма. На экзамен не ставит: для него нужны 3 точки. */
-  removeFromWritingReview: (wordId: string) => void;
+  /** Добавляет слово в «Повторение» или убирает оттуда. */
+  toggleReview: (wordId: string) => void;
+  /** Добавляет несколько слов в «Повторение» (уже добавленные пропускает). */
+  addToReview: (wordIds: string[]) => void;
+  /** Убирает слово из «Повторения». На экзамен не ставит: для него нужны 3 точки. */
+  removeFromReview: (wordId: string) => void;
   /** Ставит слово в очередь на экзамен, если оно ещё не сдано и не ждёт. */
   queueWritingExam: (wordId: string) => void;
   /** Записывает результат экзамена по одному слову. */
@@ -177,8 +171,7 @@ export const useWordProgressStore = create<WordProgressStore>()(
       flashcardSets: {},
       flashcardWords: {},
       vocabularyWords: {},
-      writingReview: {},
-      readingReview: {},
+      review: {},
       writingExams: {},
 
       completeFlashcardSet: ({ setId, score, totalQuestions, duration }) => {
@@ -275,49 +268,38 @@ export const useWordProgressStore = create<WordProgressStore>()(
         });
       },
 
-      toggleReadingReview: (wordId) => {
+      toggleReview: (wordId) => {
         set((state) => {
-          const next = { ...state.readingReview };
+          const next = { ...state.review };
 
           if (next[wordId]) delete next[wordId];
           else next[wordId] = { addedAt: Date.now() };
 
-          return { readingReview: next };
+          return { review: next };
         });
       },
 
-      addToReadingReview: (wordIds) => {
+      addToReview: (wordIds) => {
         set((state) => {
           const now = Date.now();
-          const next = { ...state.readingReview };
+          const next = { ...state.review };
           wordIds.forEach((id, index) => {
             // +index: сохраняем порядок добавления
             if (!next[id]) next[id] = { addedAt: now + index };
           });
-          return { readingReview: next };
-        });
-      },
-
-      toggleWritingReview: (wordId) => {
-        set((state) => {
-          const next = { ...state.writingReview };
-
-          if (next[wordId]) delete next[wordId];
-          else next[wordId] = { addedAt: Date.now() };
-
-          return { writingReview: next };
+          return { review: next };
         });
       },
 
       // Только убирает слово из «Повторения». На экзамен слово попадает одним путём —
       // 3 точки письма (см. getWritingExamStatus).
-      removeFromWritingReview: (wordId) => {
+      removeFromReview: (wordId) => {
         set((state) => {
-          if (!state.writingReview[wordId]) return state;
+          if (!state.review[wordId]) return state;
 
-          const next = { ...state.writingReview };
+          const next = { ...state.review };
           delete next[wordId];
-          return { writingReview: next };
+          return { review: next };
         });
       },
 
@@ -404,8 +386,7 @@ export const useWordProgressStore = create<WordProgressStore>()(
           flashcardSets: {},
           flashcardWords: {},
           vocabularyWords: {},
-          writingReview: {},
-          readingReview: {},
+          review: {},
           writingExams: {},
         });
       },
@@ -414,16 +395,33 @@ export const useWordProgressStore = create<WordProgressStore>()(
       name: "word-progress",
       storage: createJSONStorage(() => AsyncStorage),
       // Версия 1: склеены дубликаты слов (см. content/words/aliases.ts).
-      // writingReview, readingReview и writingExams добавлены без смены версии: у старых
-      // сохранений их нет, и persist подставляет значение по умолчанию ({}).
-      version: 1,
-      migrate: (persisted, version) =>
-        version < 1
-          ? mergeAliasedProgress(persisted as any)
-          : (persisted as any),
+      // Версия 2: два «Повторения» (карточек и письма) слиты в одно — review.
+      // writingExams добавлены без смены версии: у старых сохранений их нет,
+      // и persist подставляет значение по умолчанию ({}).
+      version: 2,
+      migrate: (persisted, version) => {
+        let state = persisted as any;
+        if (version < 1) state = mergeAliasedProgress(state);
+        if (version < 2) state = mergeReviewLists(state);
+        return state;
+      },
     },
   ),
 );
+/** Версия 2: «Повторение» карточек и письма → одно. Раньше добавленное идёт раньше. */
+function mergeReviewLists(state: any) {
+  const { readingReview = {}, writingReview = {}, ...rest } = state ?? {};
+  const review: Record<string, WritingReviewEntry> = { ...writingReview };
+  for (const [id, entry] of Object.entries(
+    readingReview as Record<string, WritingReviewEntry>,
+  )) {
+    const existing = review[id];
+    review[id] =
+      existing && existing.addedAt <= entry.addedAt ? existing : entry;
+  }
+  return { ...rest, review: { ...(rest.review ?? {}), ...review } };
+}
+
 export type WordLevel = 0 | 1 | 2 | 3;
 
 export function getWordLevel(

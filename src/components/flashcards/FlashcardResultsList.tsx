@@ -48,11 +48,11 @@ export function FlashcardResultsList({
 }: FlashcardResultsListProps) {
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
   const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
-  const readingReview = useWordProgressStore((s) => s.readingReview);
-  const toggleReadingReview = useWordProgressStore(
-    (s) => s.toggleReadingReview,
+  const review = useWordProgressStore((s) => s.review);
+  const toggleReview = useWordProgressStore(
+    (s) => s.toggleReview,
   );
-  const addToReadingReview = useWordProgressStore((s) => s.addToReadingReview);
+  const addToReview = useWordProgressStore((s) => s.addToReview);
 
   // Одно слово — одна строка; ошибка, если хоть раз ответили неверно
   const byId = new Map<string, FlashcardQuestionResult>();
@@ -68,10 +68,10 @@ export function FlashcardResultsList({
 
   /** Слова раздела, которых ещё нет в «Повторении». */
   const notInReview = (items: FlashcardQuestionResult[]) =>
-    items.map((item) => item.vocabularyId).filter((id) => !readingReview[id]);
+    items.map((item) => item.vocabularyId).filter((id) => !review[id]);
 
   const renderRow = (item: FlashcardQuestionResult) => {
-    const inReview = !!readingReview[item.vocabularyId];
+    const inReview = !!review[item.vocabularyId];
     const level = getWordLevel(
       flashcardWords[item.vocabularyId],
       vocabularyWords[item.vocabularyId]?.isKnown ?? false,
@@ -90,7 +90,7 @@ export function FlashcardResultsList({
           <View className="flex-row items-center">
             {/* Повторение — сразу, без панели */}
             <Pressable
-              onPress={() => toggleReadingReview(item.vocabularyId)}
+              onPress={() => toggleReview(item.vocabularyId)}
               hitSlop={4}
               className={`h-11 w-11 items-center justify-center rounded-full ${
                 inReview ? "bg-primary/15" : "active:bg-text/10"
@@ -136,7 +136,7 @@ export function FlashcardResultsList({
           </Text>
           {/* Ширина фиксирована: смена текста не сдвигает ничего вокруг */}
           <Pressable
-            onPress={() => addToReadingReview(toAdd)}
+            onPress={() => addToReview(toAdd)}
             disabled={toAdd.length === 0}
             className={`min-h-10 w-44 flex-row items-center justify-center gap-1.5 rounded-full px-3 ${
               toAdd.length > 0

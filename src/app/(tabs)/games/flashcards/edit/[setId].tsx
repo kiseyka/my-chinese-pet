@@ -45,13 +45,17 @@ import { FlatList, Pressable, Text, View } from "react-native";
 export default function EditSetScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  // from — куда вернуться (по умолчанию карточки; из «Написания» — туда)
+  // from — куда вернуться (по умолчанию карточки; из «Написания» или «Словаря» — туда)
   const { setId, from } = useLocalSearchParams<{
     setId: string;
     from?: string;
   }>();
   const backHref = (
-    from === "writing" ? "/games/writing/sets" : "/games/flashcards/sets"
+    from === "writing"
+      ? "/games/writing/sets"
+      : from === "dictionary"
+        ? "/vocabulary"
+        : "/games/flashcards/sets"
   ) as Href;
 
   const set = useCustomSet(setId);

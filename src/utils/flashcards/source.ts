@@ -16,7 +16,7 @@ export const READING_REVIEW_ID = "review";
 
 /** Слова «Повторения» карточек в порядке добавления. */
 export function getReadingReviewWords(
-  review = useWordProgressStore.getState().readingReview,
+  review = useWordProgressStore.getState().review,
 ): Word[] {
   const ids = Object.entries(review)
     .sort(([, a], [, b]) => a.addedAt - b.addedAt)

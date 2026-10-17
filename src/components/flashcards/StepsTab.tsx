@@ -96,10 +96,10 @@ export function StepsTab({
 
   // ── Повторение ─────────────────────────────────────────────────────────────
 
-  const readingReview = useWordProgressStore((state) => state.readingReview);
+  const review = useWordProgressStore((state) => state.review);
   const reviewWords = useMemo(
-    () => getReadingReviewWords(readingReview),
-    [readingReview],
+    () => getReadingReviewWords(review),
+    [review],
   );
   const [reviewOpen, setReviewOpen] = useState(false);
 

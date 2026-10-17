@@ -4,12 +4,14 @@
 //   - иероглиф и пиньинь (тап — озвучка), перевод;
 //   - навыки: перевод и письмо, у каждого свои 3 точки (письма нет у слов,
 //     которые нельзя писать — длиннее 2 иероглифов или без данных о чертах);
+//   - «Повторение» — рабочий список: слова, которые хочется отработать;
 //   - «Избранное» — личная коллекция слов, без цели повторять;
 //   - где слово на пути («HSK 1 · Семья») и «Показать» — экран этого этапа;
 //   - свои наборы переключателями.
-// «Повторение» сюда придёт, когда списки карточек и письма станут одним.
+//   - «Повторение» — один рабочий список на все навыки.
 
 import BookIcon from "@/assets/images/icons/book-open.svg";
+import ReviewIcon from "@/assets/images/icons/bookmark-plus.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import StarIcon from "@/assets/images/icons/star.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -46,6 +48,8 @@ export function DictionaryWordSheet({
     (state) => state.vocabularyWords,
   );
   const toggleFavorite = useWordProgressStore((state) => state.toggleFavorite);
+  const review = useWordProgressStore((state) => state.review);
+  const toggleReview = useWordProgressStore((state) => state.toggleReview);
 
   return (
     <BottomSheet item={word} onClose={onClose}>
@@ -53,6 +57,7 @@ export function DictionaryWordSheet({
         const stage = findWordStage(shown.vocabularyId);
         const writable = getWritableWords([shown]).length > 0;
         const isFavorite = !!vocabularyWords[shown.vocabularyId]?.isFavorite;
+        const inReview = !!review[shown.vocabularyId];
 
         return (
           <>
@@ -89,6 +94,20 @@ export function DictionaryWordSheet({
 
             <ToggleCard
               className="mt-4"
+              icon={
+                <ReviewIcon
+                  width={26}
+                  height={26}
+                  color={inReview ? colors.primary : colors.textSecondary}
+                />
+              }
+              label={inReview ? "В повторении" : "Добавить в повторение"}
+              checked={inReview}
+              onPress={() => toggleReview(shown.vocabularyId)}
+            />
+
+            <ToggleCard
+              className="mt-2"
               icon={
                 <StarIcon
                   width={26}

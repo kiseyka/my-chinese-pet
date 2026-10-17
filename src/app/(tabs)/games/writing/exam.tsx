@@ -37,6 +37,7 @@ import {
 } from "@/store/wordProgressStore";
 import { findPracticeWords, syllableOf } from "@/utils/writing/words";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useGameStore } from "@/store/gameStore";
 import { useCallback } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -111,8 +112,12 @@ function WritingExam({ buildWords }: WritingExamProps) {
           <ExamResultsList outcomes={outcomes} />
 
           <Pressable
-            // Не router.back(): в табах он уводит на панду
-            onPress={() => router.replace("/games/writing/sets")}
+            // Не router.back(): в табах он уводит на панду. Туда, откуда запускали
+            onPress={() =>
+              router.replace(
+                useGameStore.getState().returnTo ?? "/games/writing/sets",
+              )
+            }
             className="mt-6 min-h-12 items-center justify-center rounded-full bg-primary px-8 py-3"
           >
             <Text className="font-nunito text-body text-white">Готово</Text>

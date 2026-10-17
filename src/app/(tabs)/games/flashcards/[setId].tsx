@@ -71,9 +71,9 @@ function ChoiceTraining({ setId }: { setId: string }) {
 
 function SelfCheckTraining({ setId }: { setId: string }) {
   const showPinyin = useSettingsStore((s) => s.showPinyin);
-  const readingReview = useWordProgressStore((s) => s.readingReview);
-  const toggleReadingReview = useWordProgressStore(
-    (s) => s.toggleReadingReview,
+  const review = useWordProgressStore((s) => s.review);
+  const toggleReview = useWordProgressStore(
+    (s) => s.toggleReview,
   );
 
   const {
@@ -98,8 +98,8 @@ function SelfCheckTraining({ setId }: { setId: string }) {
         showPinyin={showPinyin}
         answer={answer}
         isLast={isLast}
-        inReview={!!readingReview[currentWord.vocabularyId]}
-        onToggleReview={() => toggleReadingReview(currentWord.vocabularyId)}
+        inReview={!!review[currentWord.vocabularyId]}
+        onToggleReview={() => toggleReview(currentWord.vocabularyId)}
         onAnswer={choose}
         onNext={next}
       />

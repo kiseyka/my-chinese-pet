@@ -74,7 +74,7 @@ export function createRepeatPlan(): LessonItem[] {
   const lastWritten = (word: Word) =>
     state.flashcardWords[word.vocabularyId]?.lastAnsweredAt ?? 0;
 
-  return findPracticeWords(Object.keys(state.writingReview))
+  return findPracticeWords(Object.keys(state.review))
     .sort((a, b) => lastWritten(a) - lastWritten(b))
     .slice(0, REPEAT_LESSON_SIZE)
     .map((word) => ({

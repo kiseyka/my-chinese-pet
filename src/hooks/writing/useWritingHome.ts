@@ -30,10 +30,10 @@ export function useWritingHome() {
 
   // Подписка на прогресс: точки, ступени, «Повторение» и экзамены пересчитываются при изменении
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
-  const writingReview = useWordProgressStore((s) => s.writingReview);
+  const review = useWordProgressStore((s) => s.review);
   const writingExams = useWordProgressStore((s) => s.writingExams);
-  const toggleWritingReview = useWordProgressStore(
-    (s) => s.toggleWritingReview,
+  const toggleReview = useWordProgressStore(
+    (s) => s.toggleReview,
   );
 
   // Время для очереди экзаменов: обновляем при каждом возвращении на экран.
@@ -55,8 +55,8 @@ export function useWritingHome() {
   // ── «Повторение» и экзамены ────────────────────────────────────────────────
 
   const repeatWords = useMemo(
-    () => findPracticeWords(Object.keys(writingReview)),
-    [writingReview],
+    () => findPracticeWords(Object.keys(review)),
+    [review],
   );
 
   // Очередь экзаменов: все слова с прогрессом письма или записью экзамена
@@ -87,8 +87,8 @@ export function useWritingHome() {
     [flashcardWords],
   );
   const isInReview = useCallback(
-    (word: Word) => !!writingReview[word.vocabularyId],
-    [writingReview],
+    (word: Word) => !!review[word.vocabularyId],
+    [review],
   );
   const getExamStatus = useCallback(
     (word: Word) =>
@@ -180,7 +180,7 @@ export function useWritingHome() {
     isInReview,
     getExamStatus,
     getExamMark,
-    toggleReview: (word: Word) => toggleWritingReview(word.vocabularyId),
+    toggleReview: (word: Word) => toggleReview(word.vocabularyId),
 
     // окна
     examOpen,

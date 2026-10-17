@@ -7,6 +7,8 @@
 //   «Письмо»         — урок письма по словам, которые можно писать; даёт точки письма.
 // Режим, для которого слов не хватает, показан бледным с причиной.
 // returnTo — куда вернёт «Продолжить» на экране итогов (и «назад» из тренировки).
+// Письмо по «Повторению» и по набору идёт своими уроками (как раньше в «Написании»),
+// остальное — уроком по списку слов.
 
 import ArrowRight from "@/assets/images/icons/chevron-right.svg";
 import SelfCheckIcon from "@/assets/images/icons/eye.svg";
@@ -19,7 +21,7 @@ import { MIN_SET_WORDS } from "@/store/customSetsStore";
 import { useGameStore } from "@/store/gameStore";
 import { pluralWords } from "@/utils/writing/labels";
 import { getWritableWords } from "@/utils/writing/words";
-import { resolveWordSource } from "@/utils/wordSource";
+import { resolveWordSource, REVIEW_SOURCE } from "@/utils/wordSource";
 import { useRouter, type Href } from "expo-router";
 import type { ComponentType } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -106,12 +108,7 @@ export function TrainingChoiceSheet({
                       : `Можно писать ${writable} из ${total}`
                 }
                 enabled={writable > 0}
-                onPress={() =>
-                  go({
-                    pathname: "/games/writing/path" as any,
-                    params: { source: id },
-                  })
-                }
+                onPress={() => go(writingHref(id))}
               />
             </View>
           </>
@@ -119,6 +116,15 @@ export function TrainingChoiceSheet({
       }}
     </BottomSheet>
   );
+}
+
+/** Урок письма для источника. */
+function writingHref(id: string): Href {
+  if (id === REVIEW_SOURCE) return "/games/writing/review" as any;
+  if (id.startsWith("set-")) {
+    return { pathname: "/games/writing/set" as any, params: { setId: id } };
+  }
+  return { pathname: "/games/writing/path" as any, params: { source: id } };
 }
 
 function ModeButton({

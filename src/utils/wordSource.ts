@@ -4,18 +4,36 @@
 // id источника:
 //   «path:1:0»  — этап пути (тема);
 //   «favorites» — избранное;
-//   «dict:other» — «Другие слова» (без уровня HSK).
+//   «dict:other» — «Другие слова» (без уровня HSK);
+//   «review»    — «Повторение» (вместе с иероглифами вида «char:么»);
+//   «set-…»     — свой набор.
 // Карточки берут слова отсюда же (utils/flashcards/source.ts), письмо —
 // маршрут /games/writing/path?source=… (там остаются только слова, которые можно писать).
 
 import type { Word } from "@/content/flashcards/types";
 import { allWords } from "@/content/words/vocabulary";
+import { findWords } from "@/content/words/vocabulary";
+import { useCustomSetsStore } from "@/store/customSetsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { findPathTraining, PATH_TRAINING_PREFIX } from "@/utils/path/stages";
-import { getWordHskLevel, NO_HSK_LEVEL } from "@/utils/writing/words";
+import {
+  findPracticeWords,
+  getWordHskLevel,
+  NO_HSK_LEVEL,
+} from "@/utils/writing/words";
 
 export const FAVORITES_SOURCE = "favorites";
 export const OTHER_WORDS_SOURCE = "dict:other";
+export const REVIEW_SOURCE = "review";
+
+/** id «Повторения» в порядке добавления. */
+export function getReviewIds(
+  review = useWordProgressStore.getState().review,
+): string[] {
+  return Object.entries(review)
+    .sort(([, a], [, b]) => a.addedAt - b.addedAt)
+    .map(([id]) => id);
+}
 
 export interface WordSource {
   title: string;
@@ -40,6 +58,13 @@ export function resolveWordSource(id: string): WordSource | null {
       words: allWords.filter((word) => getWordHskLevel(word) === NO_HSK_LEVEL),
     };
   }
+
+  if (id === REVIEW_SOURCE) {
+    return { title: "Повторение", words: findPracticeWords(getReviewIds()) };
+  }
+
+  const set = useCustomSetsStore.getState().sets.find((item) => item.id === id);
+  if (set) return { title: set.title, words: findWords(set.wordIds) };
 
   return null;
 }

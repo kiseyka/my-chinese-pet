@@ -67,12 +67,12 @@ export function WritingResultsList({
 }: WritingResultsListProps) {
   const { t } = useTranslation(["sets"]);
 
-  const writingReview = useWordProgressStore((s) => s.writingReview);
-  const toggleWritingReview = useWordProgressStore(
-    (s) => s.toggleWritingReview,
+  const review = useWordProgressStore((s) => s.review);
+  const toggleReview = useWordProgressStore(
+    (s) => s.toggleReview,
   );
-  const removeFromWritingReview = useWordProgressStore(
-    (s) => s.removeFromWritingReview,
+  const removeFromReview = useWordProgressStore(
+    (s) => s.removeFromReview,
   );
 
   // Одно слово может встретиться дважды (например, 画画 в уроке) — показываем один раз;
@@ -90,14 +90,14 @@ export function WritingResultsList({
 
   const toAdd = withHints
     .map((item) => item.vocabularyId)
-    .filter((id) => !writingReview[id]);
+    .filter((id) => !review[id]);
 
   const addAll = () => {
-    for (const id of toAdd) toggleWritingReview(id);
+    for (const id of toAdd) toggleReview(id);
   };
 
   const renderRow = (item: WritingWordResult) => {
-    const inReview = !!writingReview[item.vocabularyId];
+    const inReview = !!review[item.vocabularyId];
 
     return (
       <View
@@ -144,8 +144,8 @@ export function WritingResultsList({
             <Pressable
               onPress={() =>
                 inReview
-                  ? removeFromWritingReview(item.vocabularyId)
-                  : toggleWritingReview(item.vocabularyId)
+                  ? removeFromReview(item.vocabularyId)
+                  : toggleReview(item.vocabularyId)
               }
               hitSlop={4}
               className={`h-11 w-11 items-center justify-center rounded-full ${
