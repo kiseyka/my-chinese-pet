@@ -37,14 +37,17 @@ export function ReviewSheet({
   }, [open, words.length, onClose]);
 
   return (
-    <BottomSheet item={open ? words : null} onClose={onClose}>
-      {(shown) => (
+    // item — постоянное значение, а не список: новый список после «✕» панель
+    // приняла бы за повторное открытие (уехала бы вниз, а невидимое окно
+    // осталось бы и съело следующий тап). Слова берём из пропсов.
+    <BottomSheet item={open ? true : null} onClose={onClose}>
+      {() => (
         <>
           <Text className="text-center font-nunitoBold text-lead text-text">
             Повторение
           </Text>
           <Text className="mt-1 text-center font-nunito text-small text-textSecondary">
-            {shown.length} {pluralWords(shown.length)} · «✕» — убрать из
+            {words.length} {pluralWords(words.length)} · «✕» — убрать из
             повторения
           </Text>
 
@@ -59,7 +62,7 @@ export function ReviewSheet({
           </Pressable>
 
           <View className="mt-4 gap-2">
-            {shown.map((word) => (
+            {words.map((word) => (
               <SetWordRow
                 key={word.vocabularyId}
                 word={word}

@@ -6,12 +6,14 @@
 //   3. потренировать письмо: «Написать» быстро или полностью.
 // Остальное — мелко внизу: точки перевода и письма, где слово на пути («Показать»).
 //
-// «В набор» открывает вторую страницу этой же панели (наборы переключателями и
-// «Новый набор»), а не ещё одну панель поверх: так нет вложенных окон.
+// «В набор» открывает вторую страницу этой же панели: сверху то же слово, что на
+// первой странице, стрелка «назад», ниже наборы переключателями и «Новый набор».
+// Не ещё одна панель поверх: так нет вложенных окон.
 //
 // «Написать» есть только у слов, которые можно писать: из 1–2 иероглифов, у каждого
 // из которых есть данные о чертах. У слова из двух иероглифов сначала выбирается,
-// что писать: всё слово или один из знаков (например, 你好, 你 или 好).
+// что писать: всё слово или один из знаков (например, 你好, 你 или 好); под выбором —
+// пиньинь и перевод выбранного (у знака, которого нет в базе отдельно, — «из слова …»).
 
 import ArrowLeft from "@/assets/images/icons/arrow-left.svg";
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
@@ -20,6 +22,7 @@ import PencilIcon from "@/assets/images/icons/pencil.svg";
 import StarIcon from "@/assets/images/icons/star.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Hanzi } from "@/components/ui/Hanzi";
+import { Pinyin } from "@/components/ui/Pinyin";
 import { SetToggleList } from "@/components/word/SetToggleList";
 import { WordHeader } from "@/components/word/WordHeader";
 import type { Word } from "@/content/flashcards/types";
@@ -82,14 +85,19 @@ export function DictionaryWordSheet({
               <Pressable
                 onPress={() => setPage("main")}
                 hitSlop={8}
-                className="mb-3 flex-row items-center gap-2 self-start active:opacity-60"
+                className="mb-1 flex-row items-center gap-1 self-start active:opacity-60"
                 accessibilityRole="button"
                 accessibilityLabel="Назад к слову"
               >
                 <ArrowLeft width={22} height={22} color={colors.text} />
-                <Hanzi size="sm">{shown.hanzi}</Hanzi>
+                <Text className="font-nunito text-small text-text">Назад</Text>
               </Pressable>
-              <SetToggleList word={shown} />
+              <WordHeader
+                hanzi={shown.hanzi}
+                pinyin={shown.pinyin}
+                translation={t(shown.translation)}
+              />
+              <SetToggleList word={shown} className="mt-5" />
             </>
           );
         }
@@ -145,35 +153,44 @@ export function DictionaryWordSheet({
                 </View>
 
                 {characters.length > 0 && (
-                  <View className="flex-row flex-wrap gap-2">
-                    {[shown, ...characters].map((option) => {
-                      const selected =
-                        option.vocabularyId === target.vocabularyId;
-                      return (
-                        <Pressable
-                          key={option.vocabularyId}
-                          onPress={() =>
-                            setPart(option === shown ? null : option)
-                          }
-                          className={`min-h-11 min-w-11 items-center justify-center rounded-xl px-3 ${
-                            selected
-                              ? "bg-primary"
-                              : "border border-primary/30 bg-surface active:opacity-70"
-                          }`}
-                          accessibilityRole="radio"
-                          accessibilityState={{ selected }}
-                          accessibilityLabel={`Писать ${option.hanzi}`}
-                        >
-                          <Hanzi
-                            size={22}
-                            className={selected ? "text-white" : "text-text"}
+                  <>
+                    <View className="flex-row flex-wrap gap-2">
+                      {[shown, ...characters].map((option) => {
+                        const selected =
+                          option.vocabularyId === target.vocabularyId;
+                        return (
+                          <Pressable
+                            key={option.vocabularyId}
+                            onPress={() =>
+                              setPart(option === shown ? null : option)
+                            }
+                            className={`min-h-11 min-w-11 items-center justify-center rounded-xl px-3 ${
+                              selected
+                                ? "bg-primary"
+                                : "border border-primary/30 bg-surface active:opacity-70"
+                            }`}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected }}
+                            accessibilityLabel={`Писать ${option.hanzi}`}
                           >
-                            {option.hanzi}
-                          </Hanzi>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
+                            <Hanzi
+                              size={22}
+                              className={selected ? "text-white" : "text-text"}
+                            >
+                              {option.hanzi}
+                            </Hanzi>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    {/* Что именно пишем: пиньинь и перевод выбранного */}
+                    <View className="flex-row flex-wrap items-baseline gap-x-2">
+                      <Pinyin size="sm">{target.pinyin}</Pinyin>
+                      <Text className="shrink font-nunito text-body text-text">
+                        {t(target.translation)}
+                      </Text>
+                    </View>
+                  </>
                 )}
 
                 <View className="flex-row gap-2">
