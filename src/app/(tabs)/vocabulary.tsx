@@ -149,6 +149,7 @@ export default function DictionaryScreen() {
     [review],
   );
   const [reviewOpen, setReviewOpen] = useState(false);
+  const closeReview = useCallback(() => setReviewOpen(false), []);
 
   // Экзамен по письму: слова с 3 точками
   const exams = useExamQueue();
@@ -201,7 +202,6 @@ export default function DictionaryScreen() {
       <ReviewSheet
         open={reviewOpen}
         words={reviewWords}
-        getDots={getDots}
         onSelectWord={(word) => {
           setReviewOpen(false);
           setOpened(word);
@@ -210,7 +210,7 @@ export default function DictionaryScreen() {
           setReviewOpen(false);
           setTraining(REVIEW_SOURCE);
         }}
-        onClose={() => setReviewOpen(false)}
+        onClose={closeReview}
       />
 
       <ExamModal

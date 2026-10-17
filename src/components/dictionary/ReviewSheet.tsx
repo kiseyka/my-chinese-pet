@@ -1,24 +1,22 @@
 // src/components/dictionary/ReviewSheet.tsx
 //
 // Панель «Повторение» в «Словаре»: одно «Повторение» на все навыки.
-// Сетка слов с точками перевода и письма и «Тренировать» — выбор режима
-// (перевод, самопроверка, письмо). Тап по слову закрывает панель и открывает
-// панель слова — там слово можно убрать из повторения.
+// «Тренировать» — выбор режима (перевод, самопроверка, письмо), ниже слова списком:
+// иероглиф, пиньинь и перевод, справа «✕» — убрать из повторения прямо здесь.
+// Тап по строке закрывает панель и открывает панель слова.
+// Когда убрано последнее слово, панель закрывается сама.
 
-import {
-  BottomSheet,
-  SHEET_HORIZONTAL_INSET,
-} from "@/components/ui/BottomSheet";
-import { PathWordGrid } from "@/components/path/PathWordGrid";
+import { SetWordRow } from "@/components/flashcards/SetWordRow";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { Word } from "@/content/flashcards/types";
-import type { TrackId } from "@/utils/path/stages";
+import { useWordProgressStore } from "@/store/wordProgressStore";
 import { pluralWords } from "@/utils/writing/labels";
+import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 
 interface ReviewSheetProps {
   open: boolean;
   words: Word[];
-  getDots: (word: Word, track: TrackId) => number | undefined;
   onSelectWord: (word: Word) => void;
   onTrain: () => void;
   onClose: () => void;
@@ -27,11 +25,17 @@ interface ReviewSheetProps {
 export function ReviewSheet({
   open,
   words,
-  getDots,
   onSelectWord,
   onTrain,
   onClose,
 }: ReviewSheetProps) {
+  const removeFromReview = useWordProgressStore((s) => s.removeFromReview);
+
+  // Убрали всё — закрываем
+  useEffect(() => {
+    if (open && words.length === 0) onClose();
+  }, [open, words.length, onClose]);
+
   return (
     <BottomSheet item={open ? words : null} onClose={onClose}>
       {(shown) => (
@@ -40,8 +44,8 @@ export function ReviewSheet({
             Повторение
           </Text>
           <Text className="mt-1 text-center font-nunito text-small text-textSecondary">
-            {shown.length} {pluralWords(shown.length)}. Слово можно убрать в его
-            панели.
+            {shown.length} {pluralWords(shown.length)} · «✕» — убрать из
+            повторения
           </Text>
 
           <Pressable
@@ -54,13 +58,16 @@ export function ReviewSheet({
             </Text>
           </Pressable>
 
-          <View className="mt-4">
-            <PathWordGrid
-              words={shown}
-              getDots={getDots}
-              onSelect={onSelectWord}
-              horizontalInset={SHEET_HORIZONTAL_INSET}
-            />
+          <View className="mt-4 gap-2">
+            {shown.map((word) => (
+              <SetWordRow
+                key={word.vocabularyId}
+                word={word}
+                action="remove"
+                onPress={removeFromReview}
+                onOpenWord={onSelectWord}
+              />
+            ))}
           </View>
         </>
       )}

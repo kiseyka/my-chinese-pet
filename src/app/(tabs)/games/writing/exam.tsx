@@ -131,7 +131,7 @@ function WritingExam({ buildWords }: WritingExamProps) {
     return (
       <>
         <TrainingHeader>
-          <Title>Экзамен</Title>
+          <Title>Экзамен по письму</Title>
         </TrainingHeader>
         <View className="px-4">
           <Text className="font-nunito text-body text-text">
