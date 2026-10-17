@@ -14,7 +14,7 @@
 
 import BookIcon from "@/assets/images/icons/book-open.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
-import { PathWordGrid, TRACK_DOT_CLASSES } from "@/components/path/PathWordGrid";
+import { PathWordGrid } from "@/components/path/PathWordGrid";
 import { colors } from "@/theme/colors";
 import { WordSheet } from "@/components/flashcards/WordSheet";
 import { Screen } from "@/components/layout/Screen";
@@ -58,7 +58,7 @@ export default function PathStageScreen() {
   if (!stage || !item) {
     return (
       <Screen>
-        <BackButton />
+        <BackButton href="/games/path" />
         <Text className="mt-6 font-nunito text-body text-text">
           Этап не найден.
         </Text>
@@ -88,7 +88,7 @@ export default function PathStageScreen() {
       <WordSheet word={opened} onClose={() => setOpened(null)} />
 
       <View className="flex-row items-center">
-        <BackButton />
+        <BackButton href="/games/path" />
       </View>
 
       <ScrollView
@@ -224,15 +224,6 @@ function TrackRow({
           <Text className="font-nunitoBold text-body text-text">
             {track.title}
           </Text>
-          {/* Какого цвета точки этого навыка в сетке ниже */}
-          <View className="flex-row gap-0.5">
-            {[0, 1, 2].map((i) => (
-              <View
-                key={i}
-                className={`h-1.5 w-1.5 rounded-full ${TRACK_DOT_CLASSES[track.id][0]}`}
-              />
-            ))}
-          </View>
           {track.mastered && (
             <View className="rounded-full bg-primary px-2 py-0.5">
               <Text className="font-nunitoBold text-caption text-white">

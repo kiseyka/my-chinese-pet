@@ -9,6 +9,7 @@
 //   PillButton — круглая кнопка «Дальше», «Ещё раз».
 
 import { BackButton } from "@/components/ui/BackButton";
+import { useGameStore } from "@/store/gameStore";
 import { Pinyin } from "@/components/ui/Pinyin";
 import type { Word } from "@/content/flashcards/types";
 import { LESSON_SIDE_PADDING } from "@/hooks/writing/useCanvasSize";
@@ -25,10 +26,16 @@ const RESULT_GAP = 12;
 /** Размер уже написанных иероглифов над холстом. */
 const WRITTEN_SIZE = 52;
 
+/**
+ * «Назад» ведёт туда, откуда запустили тренировку: на путь (returnTo) или на экран
+ * «Написание». router.back() здесь не подходит: в табах он уводит на панду.
+ */
 export function TrainingHeader({ children }: { children?: ReactNode }) {
+  const returnTo = useGameStore((state) => state.returnTo);
+
   return (
     <View className="flex-row items-center gap-3 pb-3 pr-4">
-      <BackButton />
+      <BackButton href={returnTo ?? "/games/writing/sets"} />
       <View className="flex-1">{children}</View>
     </View>
   );

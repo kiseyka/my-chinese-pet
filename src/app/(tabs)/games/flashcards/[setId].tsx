@@ -14,6 +14,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useFlashcardGame } from "@/hooks/useFlashcardGame";
 import { SELF_CHECK_MODE, useSelfCheckGame } from "@/hooks/useSelfCheckGame";
 import { MIN_SET_WORDS } from "@/store/customSetsStore";
+import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import type { FlashcardSource } from "@/utils/flashcards/source";
@@ -118,6 +119,8 @@ function TrainingFrame({
 }) {
   const router = useRouter();
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
+  // Выход — туда, откуда запустили: на путь (returnTo) или к карточкам
+  const exitTo = useGameStore((state) => state.returnTo) ?? "/games/flashcards/sets";
 
   return (
     <Screen>
@@ -126,7 +129,7 @@ function TrainingFrame({
         onClose={() => setIsExitModalVisible(false)}
         onConfirm={() => {
           setIsExitModalVisible(false);
-          router.replace("/games/flashcards/sets");
+          router.replace(exitTo);
         }}
       />
 
@@ -142,10 +145,12 @@ function TrainingFrame({
 
 /** Набор удалили или в нём не хватает слов (вопросов нет). */
 function NoWords({ source }: { source: FlashcardSource | null }) {
+  const exitTo = useGameStore((state) => state.returnTo) ?? "/games/flashcards/sets";
+
   return (
     <Screen>
       <View className="flex-row items-center">
-        <BackButton href="/games/flashcards/sets" />
+        <BackButton href={exitTo} />
       </View>
       <Text className="mt-6 font-nunito text-body text-text">
         {source
