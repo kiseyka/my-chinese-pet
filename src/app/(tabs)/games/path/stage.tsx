@@ -5,6 +5,10 @@
 //   - дорожки по порядку (перевод, письмо): «начато / пройден / освоен» и своя
 //     кнопка «Тренировать» — можно сразу писать, минуя перевод;
 //   - «Продолжить» — в первую непройденную дорожку (её строка выделена рамкой);
+//     освоенная дорожка (все слова на 3 точках) получает зелёную плашку «Освоено»,
+//     а её кнопка зовётся «Повторить»;
+//   - этап освоен целиком — печать 印 на кружке, а вместо «Продолжить» — «Повторить этап»:
+//     он запускает навык, который тренировали меньше (по числу ответов);
 //   - сетка слов этапа: под иероглифом две строки точек — перевод и письмо;
 //     тап по слову открывает панель слова (перевод, звук, «Повторение», наборы).
 
@@ -64,6 +68,16 @@ export default function PathStageScreen() {
 
   const returnTo = { pathname: "/games/path/stage", params: { id: stage.id } };
   const nextTrack = item.next ?? item.tracks.find((t) => !t.mastered)?.id;
+
+  // Этап освоен целиком: «Повторить» — навык, на который отвечали реже
+  const answersOf = (track: TrackId) =>
+    (track === "writing" ? stage.writable : stage.words).reduce((sum, word) => {
+      const skill = flashcardWords[word.vocabularyId]?.[track];
+      return sum + (skill ? skill.correctAnswers + skill.incorrectAnswers : 0);
+    }, 0);
+  const repeatTrack = nextTrack
+    ? undefined
+    : [...item.tracks].sort((a, b) => answersOf(a.id) - answersOf(b.id))[0]?.id;
   const stageNumber =
     progress.stages.filter(
       (s) => s.stage.level === stage.level && s.stage.index <= stage.index,
@@ -95,6 +109,14 @@ export default function PathStageScreen() {
             >
               {stage.glyph}
             </Hanzi>
+            {item.mastered && (
+              <View
+                className="absolute items-center justify-center rounded-md border-2 border-seal bg-surface"
+                style={{ right: -6, top: -6, width: 26, height: 26 }}
+              >
+                <Text className="font-nunitoBold text-small text-seal">印</Text>
+              </View>
+            )}
           </View>
           <View className="flex-1">
             <Text className="font-nunito text-caption text-textSecondary">
@@ -104,6 +126,11 @@ export default function PathStageScreen() {
             <Text className="font-nunitoBold text-title text-text">
               {stage.title}
             </Text>
+            {item.mastered && (
+              <Text className="font-nunitoMedium text-small text-primary">
+                Все слова освоены и в переводе, и в письме
+              </Text>
+            )}
           </View>
         </View>
 
@@ -125,6 +152,21 @@ export default function PathStageScreen() {
             <Text className="font-nunitoBold text-body text-white">
               Продолжить ·{" "}
               {item.tracks.find((t) => t.id === nextTrack)?.title.toLowerCase()}
+            </Text>
+          </Pressable>
+        )}
+
+        {repeatTrack && (
+          <Pressable
+            onPress={() => startTraining(stage, repeatTrack, returnTo as any)}
+            className="items-center rounded-2xl bg-primary py-3.5 active:opacity-80"
+            accessibilityRole="button"
+          >
+            <Text className="font-nunitoBold text-body text-white">
+              Повторить этап ·{" "}
+              {item.tracks
+                .find((t) => t.id === repeatTrack)
+                ?.title.toLowerCase()}
             </Text>
           </Pressable>
         )}
@@ -155,7 +197,7 @@ function TrackRow({
 }) {
   const Icon = track.id === "reading" ? BookIcon : PencilIcon;
   const status = track.mastered
-    ? `освоено ${track.learned} из ${track.total}`
+    ? `все ${track.total} на 3 точках`
     : track.passed
       ? `пройден · освоено ${track.learned} из ${track.total}`
       : `начато ${track.started} из ${track.total}`;
@@ -166,8 +208,16 @@ function TrackRow({
         highlighted ? "border-2 border-primary" : "border-2 border-transparent"
       }`}
     >
-      <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
-        <Icon width={20} height={20} color={colors.primary} />
+      <View
+        className={`h-10 w-10 items-center justify-center rounded-xl ${
+          track.mastered ? "bg-primary" : "bg-primary/15"
+        }`}
+      >
+        <Icon
+          width={20}
+          height={20}
+          color={track.mastered ? "#FFFFFF" : colors.primary}
+        />
       </View>
       <View className="flex-1">
         <View className="flex-row items-center gap-2">
@@ -183,8 +233,19 @@ function TrackRow({
               />
             ))}
           </View>
+          {track.mastered && (
+            <View className="rounded-full bg-primary px-2 py-0.5">
+              <Text className="font-nunitoBold text-caption text-white">
+                Освоено ✓
+              </Text>
+            </View>
+          )}
         </View>
-        <Text className="font-nunito text-small text-textSecondary">
+        <Text
+          className={`font-nunito text-small ${
+            track.mastered ? "text-primary" : "text-textSecondary"
+          }`}
+        >
           {status}
         </Text>
       </View>
@@ -192,10 +253,10 @@ function TrackRow({
         onPress={onStart}
         className="min-h-10 justify-center rounded-full border border-primary px-4 active:opacity-70"
         accessibilityRole="button"
-        accessibilityLabel={`Тренировать: ${track.title}`}
+        accessibilityLabel={`${track.mastered ? "Повторить" : "Тренировать"}: ${track.title}`}
       >
         <Text className="font-nunitoBold text-small text-primary">
-          Тренировать
+          {track.mastered ? "Повторить" : "Тренировать"}
         </Text>
       </Pressable>
     </View>

@@ -31,7 +31,10 @@ export type PathNodeState = "passed" | "current" | "upcoming";
 /** Навык этапа для подписи: иконка и «5/8». */
 export interface PathSkill {
   id: "reading" | "writing";
+  /** Слов с хотя бы 1 точкой. */
   started: number;
+  /** Слов с 3 точками. */
+  learned: number;
   total: number;
 }
 
@@ -252,21 +255,39 @@ export const PathNode = memo(function PathNode({
   );
 });
 
-/** Навык под названием: иконка и «5/8»; пройденный — цветом primary. */
+/**
+ * Навык под названием, три вида:
+ *   не пройден — серая иконка и «начато / всего»;
+ *   пройден    — зелёная иконка и «освоено / всего» (сколько слов уже на 3 точках);
+ *   освоен     — зелёная плашка с белой иконкой и галочкой: все слова на 3 точках.
+ */
 function SkillCount({ skill }: { skill: PathSkill }) {
-  const done = skill.total > 0 && skill.started === skill.total;
-  const color = done ? colors.primary : colors.textSecondary;
   const Icon = skill.id === "reading" ? BookIcon : PencilIcon;
+  const mastered = skill.total > 0 && skill.learned === skill.total;
+  const passed = skill.total > 0 && skill.started === skill.total;
+
+  if (mastered) {
+    return (
+      <View className="flex-row items-center gap-1 rounded-full bg-primary px-2 py-0.5">
+        <Icon width={13} height={13} color="#FFFFFF" />
+        <Text className="font-nunitoBold text-caption text-white">✓</Text>
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-row items-center gap-1">
-      <Icon width={14} height={14} color={color} />
+    <View className="flex-row items-center gap-1 py-0.5">
+      <Icon
+        width={14}
+        height={14}
+        color={passed ? colors.primary : colors.textSecondary}
+      />
       <Text
         className={`font-nunitoMedium text-caption ${
-          done ? "text-primary" : "text-textSecondary"
+          passed ? "text-primary" : "text-textSecondary"
         }`}
       >
-        {skill.started}/{skill.total}
+        {passed ? skill.learned : skill.started}/{skill.total}
       </Text>
     </View>
   );

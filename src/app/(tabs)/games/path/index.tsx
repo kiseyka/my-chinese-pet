@@ -168,6 +168,7 @@ export default function PathScreen() {
             ? item.tracks.map((t) => ({
                 id: t.id,
                 started: t.started,
+                learned: t.learned,
                 total: t.total,
               }))
             : []
