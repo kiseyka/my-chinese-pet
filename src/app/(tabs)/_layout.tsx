@@ -1,3 +1,4 @@
+import { useActivityBackfill } from "@/hooks/useActivityBackfill";
 import { colors } from "@/theme/colors";
 import { useFonts } from "expo-font";
 import { Tabs, usePathname } from "expo-router";
@@ -9,6 +10,8 @@ export default function TabLayout() {
   const pathname = usePathname();
 
   const insets = useSafeAreaInsets();
+  // Журнал занятий: один раз восстановить дни из старого прогресса
+  useActivityBackfill();
   const [loaded] = useFonts({
     NotoSansSC: require("../../../assets/fonts/NotoSerifSC-Regular.ttf"),
     NotoSansSCBold: require("../../../assets/fonts/NotoSerifSC-Bold.ttf"),
@@ -66,6 +69,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
+          headerShown: false,
+        }}
+      />
+
+      <Tabs.Screen
+        name="licenses"
+        options={{
+          href: null,
           headerShown: false,
         }}
       />

@@ -57,6 +57,7 @@ export function useToneGame() {
 
       finishTraining({
         gameId: "tones",
+        answers: questions.length,
         rewards: {
           xp: calculateToneXp(accuracy),
           coins: calculateToneCoinsEarned(accuracy),

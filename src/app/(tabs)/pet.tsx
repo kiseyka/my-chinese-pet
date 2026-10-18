@@ -1,5 +1,6 @@
 // src/screens/PandaScreen.tsx
 
+import UserIcon from "@/assets/images/icons/user-round.svg";
 import practiceImg from "@/assets/images/practice.png";
 import shopImg from "@/assets/images/shop.png";
 import { CoinBalance } from "@/components/CoinBalance";
@@ -9,8 +10,9 @@ import { PandaScene } from "@/components/panda/PandaScene";
 import { NavIconButton } from "@/components/ui/NavIconButton";
 import { usePandaDialog } from "@/hooks/panda/usePandaDialog";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
+import { colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const PandaScreen = () => {
   const router = useRouter();
@@ -23,25 +25,39 @@ const PandaScreen = () => {
   return (
     <Screen className="bg-[#EDE0CE]">
       <View className="flex-row justify-between items-center px-2 z-10">
-        <View className="flex-col gap-1" style={{ width: "50%" }}>
-          <Text className="font-nunito text-lg tracking-wide text-text">
-            УРОВЕНЬ {level}
-          </Text>
+        {/* Левая колонка: профиль, уровень и опыт */}
+        <View className="flex-row items-center gap-3" style={{ width: "60%" }}>
+          <Pressable
+            onPress={() => router.push("/profile")}
+            className="items-center justify-center rounded-full border border-primary/30 bg-surface active:opacity-70"
+            style={{ width: 44, height: 44 }}
+            accessibilityRole="button"
+            accessibilityLabel="Профиль"
+            hitSlop={6}
+          >
+            <UserIcon width={24} height={24} color={colors.primary} />
+          </Pressable>
 
-          <View className="w-full h-2.5 rounded-full overflow-hidden bg-surface border border-primary/30">
-            <View
-              className="h-full rounded-full bg-primary opacity-100"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </View>
+          <View className="flex-1 flex-col gap-1">
+            <Text className="font-nunito text-lg tracking-wide text-text">
+              УРОВЕНЬ {level}
+            </Text>
 
-          <View className="flex-row gap-2 items-center">
-            <Text className="font-nunito text-xs tracking-wide text-text">
-              ОПЫТ
-            </Text>
-            <Text className="font-nunito text-xs text-text">
-              {xpIntoLevel} / {xpForNextLevel}
-            </Text>
+            <View className="w-full h-2.5 rounded-full overflow-hidden bg-surface border border-primary/30">
+              <View
+                className="h-full rounded-full bg-primary opacity-100"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </View>
+
+            <View className="flex-row gap-2 items-center">
+              <Text className="font-nunito text-xs tracking-wide text-text">
+                ОПЫТ
+              </Text>
+              <Text className="font-nunito text-xs text-text">
+                {xpIntoLevel} / {xpForNextLevel}
+              </Text>
+            </View>
           </View>
         </View>
 

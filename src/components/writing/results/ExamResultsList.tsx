@@ -2,6 +2,7 @@
 //
 // Итоги экзамена по письму: печать, «Сдано N из M» и строка на каждое слово —
 // твоё написание, слово и вердикт (галочка или «через сутки» / «−1 точка»).
+// Тап по написанию иероглифа — сохранить его в галерею.
 
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
@@ -10,7 +11,12 @@ import type { ExamOutcome, ExamVerdict } from "@/hooks/writing/useWritingExam";
 import { interopIconColor } from "@/lib/interopIcon";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
-import { HanziView } from "../canvas/HanziView";
+import { useState } from "react";
+import {
+  GallerySaveDialog,
+  type GalleryCandidate,
+} from "../gallery/GallerySaveDialog";
+import { SavableHanzi } from "../gallery/SavableHanzi";
 import { SealMark } from "../SealMark";
 
 interopIconColor(CheckIcon);
@@ -25,9 +31,12 @@ const VERDICT_SHORT: Record<ExamVerdict, string> = {
 export function ExamResultsList({ outcomes }: { outcomes: ExamOutcome[] }) {
   const { t } = useTranslation(["sets"]);
   const passed = outcomes.filter((o) => o.verdict === "passed").length;
+  const [toSave, setToSave] = useState<GalleryCandidate | null>(null);
 
   return (
     <>
+      <GallerySaveDialog candidate={toSave} onClose={() => setToSave(null)} />
+
       <View className="items-center gap-2 py-4">
         <SealMark size={56} />
         <Text className="font-nunitoBold text-title text-text">
@@ -43,10 +52,12 @@ export function ExamResultsList({ outcomes }: { outcomes: ExamOutcome[] }) {
           >
             <View className="flex-row gap-1">
               {outcome.chars.map((_, index) => (
-                <HanziView
+                <SavableHanzi
                   key={index}
+                  hanzi={Array.from(outcome.word.hanzi)[index] ?? ""}
+                  strokes={outcome.raws[index] ?? []}
                   size={52}
-                  rawStrokes={outcome.raws[index] ?? []}
+                  onSave={(hanzi, strokes) => setToSave({ hanzi, strokes })}
                 />
               ))}
             </View>

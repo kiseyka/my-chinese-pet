@@ -1,200 +1,321 @@
-import { useTranslation } from "react-i18next";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// app/(tabs)/profile.tsx
+//
+// Профиль, сверху вниз:
+//   - шапка в одну строку со стрелкой «назад»: по центру аватар, под ним имя
+//     (тап — «Как тебя зовут?») и уровень по опыту;
+//   - блок из четырёх чисел:
+//       дней занятий (дни с тренировками, не сбрасываются) — тап: календарь;
+//       опыт;
+//       изучено слов (сданы все экзамены слова) — тап: список этих слов;
+//       текущий этап пути — тап: экран этапа;
+//   - галерея лучших написаний (ProfileGallery);
+//   - внизу: политика конфиденциальности и лицензии.
+// Данные: wordProgressStore, activityStore (журнал), userProgressStore (опыт),
+// profileStore (имя), galleryStore.
 
-// Заглушка для иконок (можно заменить на react-native-vector-icons)
-const CheckCircle = () => <Text className="text-green-500 text-xl">✓</Text>;
-const Trophy = () => <Text className="text-yellow-500 text-xl">🏆</Text>;
-const Fire = () => <Text className="text-orange-500 text-xl">🔥</Text>;
-const Cards = () => <Text className="text-blue-500 text-xl">🃏</Text>;
+import CalendarIcon from "@/assets/images/icons/calendar-check.svg";
+import ChevronRightIcon from "@/assets/images/icons/chevron-right.svg";
+import CheckIcon from "@/assets/images/icons/circle-check.svg";
+import FlagIcon from "@/assets/images/icons/flag.svg";
+import PandaIcon from "@/assets/images/icons/panda.svg";
+import PencilIcon from "@/assets/images/icons/pencil.svg";
+import ZapIcon from "@/assets/images/icons/zap.svg";
+import { SetWordRow } from "@/components/flashcards/SetWordRow";
+import { WordSheet } from "@/components/flashcards/WordSheet";
+import { Screen } from "@/components/layout/Screen";
+import { NameModal } from "@/components/profile/NameModal";
+import { ProfileGallery } from "@/components/profile/ProfileGallery";
+import { StudyCalendar } from "@/components/profile/StudyCalendar";
+import { BackButton } from "@/components/ui/BackButton";
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import { Dialog, DialogButton } from "@/components/ui/Dialog";
+import type { Word } from "@/content/flashcards/types";
+import { PRIVACY_POLICY_URL } from "@/constants/legal";
+import { useActivityStore } from "@/store/activityStore";
+import { useProfileStore } from "@/store/profileStore";
+import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
+import { useWordProgressStore } from "@/store/wordProgressStore";
+import { colors } from "@/theme/colors";
+import {
+  getFullyLearnedWords,
+  getProfileStats,
+} from "@/utils/profile/stats";
+import { pluralDays, pluralWords } from "@/utils/writing/labels";
+import { useRouter } from "expo-router";
+import type { ComponentType } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { Linking, Pressable, ScrollView, Text, View } from "react-native";
+import type { SvgProps } from "react-native-svg";
 
-const ProfileScreen = () => {
-  const { t } = useTranslation();
+const AVATAR_SIZE = 96;
 
-  // Данные пользователя (можно вынести в стор)
-  const user = {
-    name: "Ли Вэй",
-    level: 2,
-    currentXP: 320,
-    maxXP: 500,
-    stats: {
-      words: 245,
-      characters: 128,
-      streak: 12,
-      time: "15 ч 30 мин",
-      games: 56,
-      avgScore: "85%",
-    },
-    achievements: [
-      {
-        id: 1,
-        title: t("profile.achievementsList.firstSteps"),
-        description: t("profile.achievementsList.firstStepsDesc"),
-        icon: <Trophy />,
-        completed: true,
-      },
-      {
-        id: 2,
-        title: t("profile.achievementsList.sevenDays"),
-        description: t("profile.achievementsList.sevenDaysDesc"),
-        icon: <Fire />,
-        completed: true,
-      },
-      {
-        id: 3,
-        title: t("profile.achievementsList.cardMaster"),
-        description: t("profile.achievementsList.cardMasterDesc"),
-        icon: <Cards />,
-        completed: true, // все выполнены, можно сделать частично
-      },
-    ],
+export default function ProfileScreen() {
+  const router = useRouter();
+  const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
+  const readingExams = useWordProgressStore((s) => s.readingExams);
+  const writingExams = useWordProgressStore((s) => s.writingExams);
+  const days = useActivityStore((s) => s.days);
+  const studyDays = Object.keys(days).length;
+  const xp = useProgressStore((s) => s.xp);
+  const { level } = getLevelInfo(xp);
+  const name = useProfileStore((s) => s.name);
+  const setName = useProfileStore((s) => s.setName);
+
+  const [editingName, setEditingName] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [wordsOpen, setWordsOpen] = useState(false);
+  const [opened, setOpened] = useState<Word | null>(null);
+  const [privacyStub, setPrivacyStub] = useState(false);
+
+  const stats = useMemo(
+    () => getProfileStats(flashcardWords, readingExams, writingExams),
+    [flashcardWords, readingExams, writingExams],
+  );
+  const learnedWords = useMemo(
+    () => (wordsOpen ? getFullyLearnedWords(readingExams, writingExams) : []),
+    [wordsOpen, readingExams, writingExams],
+  );
+
+  const openStage = () => {
+    if (!stats.currentStage) return;
+    router.push({
+      pathname: "/games/path/stage" as any,
+      params: { id: stats.currentStage.id },
+    });
   };
 
-  // Прогресс XP
-  const xpProgress = (user.currentXP / user.maxXP) * 100;
+  const openWord = useCallback((word: Word) => {
+    setWordsOpen(false);
+    setOpened(word);
+  }, []);
+
+  const openPrivacy = () => {
+    if (PRIVACY_POLICY_URL) Linking.openURL(PRIVACY_POLICY_URL);
+    else setPrivacyStub(true);
+  };
 
   return (
-    <SafeAreaView className="flex-1 ">
-      <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        {/* Заголовок профиля */}
-        <View className=" rounded-b-3xl  px-6 pt-8 pb-6">
-          <View className="flex flex-col items-center gap-5">
-            <View className="w-40 h-40 rounded-full  items-center justify-center mr-4 overflow-hidden">
-              <Image
-                source={require("@/assets/images/avatars/male.png")}
-                className="w-full h-full"
-                style={{ width: "100%", height: "100%" }}
-              />
-            </View>
-            <View>
-              <Text className="text-2xl font-bold text-gray-800">
-                {t("profile.greeting", { name: user.name })}
+    <Screen>
+      <NameModal
+        visible={editingName}
+        initialName={name}
+        onConfirm={(value) => {
+          setName(value);
+          setEditingName(false);
+        }}
+        onClose={() => setEditingName(false)}
+      />
+
+      <Dialog
+        visible={privacyStub}
+        onClose={() => setPrivacyStub(false)}
+        title="Политика конфиденциальности"
+        message="Скоро здесь будет ссылка на страницу политики. Приложение хранит все данные только на этом телефоне."
+        actions={
+          <DialogButton
+            label="Понятно"
+            variant="primary"
+            onPress={() => setPrivacyStub(false)}
+          />
+        }
+      />
+
+      <BottomSheet
+        item={calendarOpen ? true : null}
+        onClose={() => setCalendarOpen(false)}
+      >
+        {() => (
+          <>
+            <Text className="text-center font-nunitoBold text-lead text-text">
+              Дни занятий
+            </Text>
+            <Text className="mb-4 mt-1 text-center font-nunito text-small text-textSecondary">
+              Всего {studyDays} {pluralDays(studyDays)} · день засчитывается,
+              если в нём была тренировка
+            </Text>
+            <StudyCalendar days={days} />
+          </>
+        )}
+      </BottomSheet>
+
+      <BottomSheet
+        item={wordsOpen ? true : null}
+        onClose={() => setWordsOpen(false)}
+      >
+        {() => (
+          <>
+            <Text className="text-center font-nunitoBold text-lead text-text">
+              Изученные слова
+            </Text>
+            <Text className="mb-4 mt-1 text-center font-nunito text-small text-textSecondary">
+              Сданы экзамены и по переводу, и по письму
+            </Text>
+            {learnedWords.length === 0 ? (
+              <Text className="text-center font-nunito text-body text-text">
+                Пока пусто. Слово попадёт сюда, когда ты сдашь по нему все
+                экзамены.
               </Text>
-              {/* <Text className="text-gray-500 text-base">
-                {t("profile.level", { level: user.level })}
-              </Text> */}
-            </View>
+            ) : (
+              <View className="gap-2">
+                {learnedWords.map((word) => (
+                  <SetWordRow
+                    key={word.vocabularyId}
+                    word={word}
+                    action="open"
+                    onPress={() => openWord(word)}
+                    onOpenWord={openWord}
+                  />
+                ))}
+              </View>
+            )}
+          </>
+        )}
+      </BottomSheet>
+
+      <WordSheet word={opened} onClose={() => setOpened(null)} />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24, gap: 16 }}
+      >
+        {/* Шапка: стрелка слева, аватар по центру в той же строке */}
+        <View className="items-center">
+          <View className="absolute left-0 top-0">
+            <BackButton href="/pet" />
+          </View>
+          <View
+            className="items-center justify-center rounded-full bg-primary"
+            style={{ width: AVATAR_SIZE, height: AVATAR_SIZE }}
+          >
+            <PandaIcon width={52} height={52} />
           </View>
 
-          {/* XP прогресс */}
-          {/* <View className="mt-4">
-            <View className="flex-row justify-between mb-1">
-              <Text className="text-sm font-medium text-gray-700">
-                {t("profile.xp")}
+          <Pressable
+            onPress={() => setEditingName(true)}
+            className="mt-3 items-center active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="Изменить имя"
+            hitSlop={8}
+          >
+            <View className="flex-row items-center gap-2">
+              <Text
+                className={`font-nunitoBold text-heading ${
+                  name ? "text-text" : "text-textSecondary"
+                }`}
+                numberOfLines={1}
+              >
+                {name || "Как тебя зовут?"}
               </Text>
-              <Text className="text-sm text-gray-500">
-                {user.currentXP} / {user.maxXP} XP
-              </Text>
+              <PencilIcon width={18} height={18} color={colors.primary} />
             </View>
-            <View className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-              <View
-                className="h-full bg-blue-500 rounded-full"
-                style={{ width: `${xpProgress}%` }}
-              />
-            </View>
-          </View> */}
+            <Text className="font-nunito text-small text-textSecondary">
+              Уровень {level}
+            </Text>
+          </Pressable>
         </View>
 
-        {/* Достижения */}
-        {/* <View className="mt-4 mx-4 bg-white rounded-2xl p-5 shadow-sm">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-lg font-bold text-gray-800">
-              {t("profile.achievements")}
-            </Text>
-            <Pressable onPress={() => console.log("View all achievements")}>
-              <Text className="text-blue-500 text-sm font-medium">
-                {t("profile.viewAll")}
-              </Text>
-            </Pressable>
-          </View>
+        {/* Четыре главных числа */}
+        <View className="flex-row rounded-2xl bg-surface py-4">
+          <StatCell
+            Icon={CalendarIcon}
+            value={String(studyDays)}
+            label={`${pluralDays(studyDays)} занятий`}
+            onPress={() => setCalendarOpen(true)}
+          />
+          <Divider />
+          <StatCell Icon={ZapIcon} value={String(xp)} label="опыта" />
+          <Divider />
+          <StatCell
+            Icon={CheckIcon}
+            value={String(stats.fullyLearned)}
+            label={`${pluralWords(stats.fullyLearned)} изучено`}
+            gold={stats.fullyLearned > 0}
+            onPress={() => setWordsOpen(true)}
+          />
+          <Divider />
+          <StatCell
+            Icon={FlagIcon}
+            value={
+              stats.currentStage ? `HSK ${stats.currentStage.level}` : "✓"
+            }
+            label={stats.currentStage?.title ?? "путь пройден"}
+            onPress={stats.currentStage ? openStage : undefined}
+          />
+        </View>
 
-          {user.achievements.map((item) => (
-            <View
-              key={item.id}
-              className="flex-row items-center py-3 border-b border-gray-100 last:border-0"
-            >
-              <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-3">
-                {item.icon}
-              </View>
-              <View className="flex-1">
-                <Text className="text-base font-semibold text-gray-800">
-                  {item.title}
-                </Text>
-                <Text className="text-sm text-gray-500">
-                  {item.description}
-                </Text>
-              </View>
-              {item.completed && <CheckCircle />}
-            </View>
-          ))}
-        </View> */}
+        <ProfileGallery />
 
-        {/* Статистика */}
-        {/* <View className="mt-4 mx-4 bg-white rounded-2xl p-5 shadow-sm">
-          <Text className="text-lg font-bold text-gray-800 mb-3">
-            {t("profile.stats")}
-          </Text>
-          <View className="flex-row flex-wrap justify-between">
-            <StatCard
-              label={t("profile.wordsLearned")}
-              value={user.stats.words}
-            />
-            <StatCard
-              label={t("profile.charactersLearned")}
-              value={user.stats.characters}
-            />
-            <StatCard
-              label={t("profile.daysStreak")}
-              value={user.stats.streak}
-            />
-            <StatCard label={t("profile.studyTime")} value={user.stats.time} />
-            <StatCard
-              label={t("profile.gamesPlayed")}
-              value={user.stats.games}
-            />
-            <StatCard
-              label={t("profile.averageResult")}
-              value={user.stats.avgScore}
-            />
-          </View>
-        </View> */}
-
-        {/* Отступ для нижнего таббара */}
-        <View className="h-20" />
+        {/* Документы */}
+        <View className="overflow-hidden rounded-2xl bg-surface">
+          <LinkRow title="Политика конфиденциальности" onPress={openPrivacy} />
+          <View className="mx-4 h-px bg-border" />
+          <LinkRow title="Лицензии" onPress={() => router.push("/licenses")} />
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
-};
+}
 
-// Компонент для статистики
-const StatCard = ({
-  label,
+// ── Блок чисел ───────────────────────────────────────────────────────────────
+
+function StatCell({
+  Icon,
   value,
-}: {
-  label: string;
-  value: string | number;
-}) => (
-  <View className="w-[48%] bg-gray-50 rounded-xl p-3 mb-3">
-    <Text className="text-gray-500 text-xs mb-1">{label}</Text>
-    <Text className="text-xl font-bold text-gray-800">{value}</Text>
-  </View>
-);
-
-// Кнопка таббара
-export const TabButton = ({
   label,
-  active = false,
+  gold = false,
+  onPress,
 }: {
+  Icon: ComponentType<SvgProps>;
+  value: string;
   label: string;
-  active?: boolean;
-}) => (
-  <Pressable className="py-2 px-6 rounded-full">
-    <Text
-      className={`font-semibold ${active ? "text-blue-500" : "text-gray-400"}`}
+  gold?: boolean;
+  onPress?: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      className="flex-1 items-center gap-1 px-1 active:opacity-70"
+      accessibilityRole={onPress ? "button" : undefined}
     >
-      {label}
-    </Text>
-  </Pressable>
-);
+      <Icon
+        width={22}
+        height={22}
+        color={gold ? colors.gold : colors.primary}
+      />
+      <Text
+        className={`font-nunitoBold text-lead ${gold ? "text-gold" : "text-text"}`}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {value}
+      </Text>
+      <Text
+        className="text-center font-nunito text-caption text-textSecondary"
+        numberOfLines={2}
+      >
+        {label}
+        {onPress ? " ›" : ""}
+      </Text>
+    </Pressable>
+  );
+}
 
-export default ProfileScreen;
+function Divider() {
+  return <View className="w-px self-stretch bg-border" />;
+}
+
+// ── Строка-ссылка ────────────────────────────────────────────────────────────
+
+function LinkRow({ title, onPress }: { title: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="min-h-12 flex-row items-center justify-between px-4 py-3 active:bg-primary/10"
+      accessibilityRole="button"
+    >
+      <Text className="font-nunito text-body text-text">{title}</Text>
+      <ChevronRightIcon width={20} height={20} color={colors.textSecondary} />
+    </Pressable>
+  );
+}
