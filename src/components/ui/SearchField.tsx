@@ -49,13 +49,17 @@ export function SearchField({
         accessibilityLabel={accessibilityLabel}
       />
       {hasValue && (
+        // Очищаем сразу при касании (onPressIn), а не по отпусканию: пока открыта
+        // клавиатура, отпускание пальца с крошечного «✕» часто не засчитывалось.
+        // Зона нажатия — квадрат 40×40, а не один символ
         <Pressable
-          onPress={() => onChangeText("")}
-          hitSlop={12}
+          onPressIn={() => onChangeText("")}
+          hitSlop={8}
+          className="-mr-2 h-10 w-10 items-center justify-center rounded-full active:bg-text/10"
           accessibilityRole="button"
           accessibilityLabel="Очистить поиск"
         >
-          <Text className="font-nunito text-body text-textSecondary">✕</Text>
+          <Text className="font-nunito text-lead text-textSecondary">✕</Text>
         </Pressable>
       )}
     </View>

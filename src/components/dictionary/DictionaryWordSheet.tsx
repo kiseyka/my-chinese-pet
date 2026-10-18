@@ -335,8 +335,17 @@ function SkillDots({
   track: TrackId;
   examPassed?: boolean;
 }) {
-  const filled = track === "reading" ? "bg-primary" : "bg-text";
-  const empty = track === "reading" ? "bg-primary/20" : "bg-text/20";
+  // Экзамен сдан — точки золотые, как в сетке
+  const filled = examPassed
+    ? "bg-gold"
+    : track === "reading"
+      ? "bg-primary"
+      : "bg-text";
+  const empty = examPassed
+    ? "bg-gold/30"
+    : track === "reading"
+      ? "bg-primary/20"
+      : "bg-text/20";
 
   return (
     <View className="flex-row items-center gap-1.5">
@@ -352,7 +361,7 @@ function SkillDots({
         ))}
       </View>
       {examPassed && (
-        <Text className="font-nunitoBold text-caption text-primary">
+        <Text className="font-nunitoBold text-caption text-gold">
           ✓ экзамен
         </Text>
       )}
