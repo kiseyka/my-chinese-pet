@@ -13,6 +13,7 @@
 // Результат слова записывается в стор сразу, как только он ясен (а не в конце экзамена),
 // чтобы выход посреди экзамена не отменял уже проваленное слово.
 
+import { reportExamToPanda } from "@/utils/panda/news";
 import type { Word } from "@/content/flashcards/types";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import type { HanziData } from "@/types/hanzi";
@@ -245,6 +246,7 @@ export function useWritingExam(buildWords: () => Word[]) {
     // Награда: опыт за каждое сданное слово, монеты — по доле сданных
     const passed = nextOutcomes.filter((o) => o.verdict === "passed").length;
     logTraining(nextOutcomes.length);
+    reportExamToPanda("writing", nextOutcomes);
     grantRewards({
       xp: passed,
       coins: calculateCoinsEarned(getAccuracy(passed, nextOutcomes.length)),

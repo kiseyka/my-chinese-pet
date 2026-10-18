@@ -18,6 +18,7 @@ import {
   buildReadingExamQuestion,
   type ReadingExamQuestion,
 } from "@/utils/readingExam";
+import { reportExamToPanda } from "@/utils/panda/news";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -84,6 +85,7 @@ export function useReadingExam(words: Word[]) {
 
     const passed = outcomes.filter((o) => o.verdict === "passed").length;
     logTraining(outcomes.length);
+    reportExamToPanda("reading", outcomes);
     grantRewards({
       xp: passed,
       coins: calculateCoinsEarned(getAccuracy(passed, outcomes.length)),

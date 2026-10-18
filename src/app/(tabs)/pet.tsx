@@ -5,10 +5,8 @@ import practiceImg from "@/assets/images/practice.png";
 import shopImg from "@/assets/images/shop.png";
 import { CoinBalance } from "@/components/CoinBalance";
 import { Screen } from "@/components/layout/Screen";
-import { PandaDialogBubble } from "@/components/panda/PandaDialogBubble";
 import { PandaScene } from "@/components/panda/PandaScene";
 import { NavIconButton } from "@/components/ui/NavIconButton";
-import { usePandaDialog } from "@/hooks/panda/usePandaDialog";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
@@ -17,7 +15,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const PandaScreen = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { step, selectReply, close, speakPhrase } = usePandaDialog();
   const xp = useProgressStore((s) => s.xp);
   const { level, xpIntoLevel, xpForNextLevel } = getLevelInfo(xp);
   const progressPercent = Math.min(100, (xpIntoLevel / xpForNextLevel) * 100);
@@ -91,21 +88,9 @@ const PandaScreen = () => {
 
       <View className="flex-1" />
 
-      {/* Диалог панды: появляется после тренировки, если есть что сказать */}
-      <View className="flex-1 relative">
-        {step && (
-          <View className="absolute bottom-4 left-4 right-4">
-            <PandaDialogBubble
-              text={step.text}
-              phrase={step.phrase}
-              replies={step.replies}
-              onReply={selectReply}
-              onSpeakPhrase={speakPhrase}
-              onClose={close}
-            />
-          </View>
-        )}
-      </View>
+      {/* Новости панды пока не показываются: копятся тихо (utils/panda/news),
+          вернуть плашку — usePandaNews + PandaDialogBubble, когда будут тексты/анимации */}
+      <View className="flex-1" />
 
       {/* Ряд навигационных иконок — обе просто переводят на отдельный
           экран, никакого локального state/анимации тут больше нет. */}

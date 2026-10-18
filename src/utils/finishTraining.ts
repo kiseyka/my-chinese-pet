@@ -1,7 +1,9 @@
 // src/utils/finishTraining.ts
 //
 // Общий конец любой тренировки, которая ведёт на экран итогов:
-// время → награда → результат для панды → переход на /games/stats.
+// время → награда → журнал занятий → новости для панды → переход на /games/stats.
+// Панда после обычных тренировок молчит: она запоминает только вехи пути
+// (utils/panda/news) и расскажет о них по тапу.
 // Каждая тренировка сама решает, СКОЛЬКО давать (формулы у неё свои),
 // а здесь только одно место, где награда начисляется и запоминается для экрана итогов.
 
@@ -9,6 +11,7 @@ import { useActivityStore } from "@/store/activityStore";
 import { useGameStore, type TrainingRewards } from "@/store/gameStore";
 import { usePandaStore, type PandaTrainingResult } from "@/store/pandaStore";
 import { useProgressStore } from "@/store/userProgressStore";
+import { reportTrainingToPanda } from "@/utils/panda/news";
 import { router } from "expo-router";
 
 export type GameId = "flashcards" | "tones" | "writing";
@@ -18,7 +21,11 @@ interface FinishTrainingParams {
   rewards: TrainingRewards;
   /** Сколько было ответов — для журнала занятий (профиль). */
   answers: number;
-  /** Что передать панде для комментария. Не все тренировки её пока зовут. */
+  /**
+   * Итог тренировки для реплик панды про слова (3 точки, ошибки, квиз).
+   * Сейчас эти реплики выключены — панда рассказывает только о вехах. Оставлено,
+   * чтобы вернуть их, когда будет больше вариантов текста.
+   */
   pandaResult?: PandaTrainingResult;
   /** Режим тренировки для экрана итогов (например, самопроверка карточек). */
   mode?: string;
@@ -56,9 +63,10 @@ export function finishTraining({
   grantRewards(rewards);
   logTraining(answers);
 
-  if (pandaResult) {
-    usePandaStore.getState().setPendingTrainingResult(pandaResult);
-  }
+  // Реплики панды после каждой тренировки выключены (надоедали) — только вехи пути
+  void pandaResult;
+  usePandaStore.getState().increaseBond(1);
+  reportTrainingToPanda();
 
   router.replace({
     pathname: "/games/stats",

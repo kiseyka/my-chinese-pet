@@ -6,21 +6,8 @@
 
 import { useActivityStore } from "@/store/activityStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
+import { whenHydrated } from "@/utils/hydration";
 import { useEffect } from "react";
-
-type PersistApi = {
-  hasHydrated: () => boolean;
-  onFinishHydration: (fn: () => void) => () => void;
-};
-
-/** Вызывает fn, когда стор загружен (сразу, если уже). Возвращает отписку. */
-function whenHydrated(api: PersistApi, fn: () => void): () => void {
-  if (api.hasHydrated()) {
-    fn();
-    return () => {};
-  }
-  return api.onFinishHydration(fn);
-}
 
 /** Когда пользователь занимался до появления журнала. */
 function collectOldProgressTimes(): number[] {

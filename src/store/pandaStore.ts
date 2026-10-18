@@ -3,6 +3,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import type { PandaNews } from "@/utils/panda/news";
+import type { MilestoneSnapshot } from "@/utils/panda/milestones";
 import type { FlashcardQuestionResult } from "./gameStore";
 import type { WordLevel } from "./wordProgressStore";
 
@@ -45,6 +47,18 @@ interface PandaState {
    */
   trainingsSinceChoice: number;
 
+  /**
+   * Вехи, которые панда уже отметила (этапы, разделы HSK, изученные слова).
+   * null — снимок ещё не сделан. Сохраняется. См. utils/panda/milestones.
+   */
+  milestones: MilestoneSnapshot | null;
+
+  /**
+   * Новости, которые панда расскажет по тапу (вехи пути, экзамены).
+   * Копятся, пока пользователь их не прочитал. Сохраняется. См. utils/panda/news.
+   */
+  news: PandaNews[];
+
   /** Результат последней тренировки, который панда ещё не прокомментировала. Не сохраняется. */
   pendingTrainingResult: PandaTrainingResult | null;
 }
@@ -55,6 +69,9 @@ interface PandaActions {
   /** Вызывается после каждой тренировки: hadChoices — был ли диалог с кнопками. */
   registerTraining: (hadChoices: boolean) => void;
   setPendingTrainingResult: (result: PandaTrainingResult) => void;
+  setMilestones: (snapshot: MilestoneSnapshot) => void;
+  addNews: (items: PandaNews[]) => void;
+  clearNews: () => void;
   clearPendingTrainingResult: () => void;
 }
 
@@ -66,6 +83,8 @@ export const usePandaStore = create<PandaStore>()(
       bond: 0,
       recentWordIds: [],
       trainingsSinceChoice: 1,
+      milestones: null,
+      news: [],
       pendingTrainingResult: null,
 
       increaseBond: (amount) =>
@@ -90,6 +109,15 @@ export const usePandaStore = create<PandaStore>()(
         set({ pendingTrainingResult: result }),
 
       clearPendingTrainingResult: () => set({ pendingTrainingResult: null }),
+
+      setMilestones: (snapshot) => set({ milestones: snapshot }),
+
+      addNews: (items) =>
+        set((state) =>
+          items.length === 0 ? state : { news: [...state.news, ...items] },
+        ),
+
+      clearNews: () => set({ news: [] }),
     }),
     {
       name: "panda-store",
@@ -98,6 +126,8 @@ export const usePandaStore = create<PandaStore>()(
         bond: state.bond,
         recentWordIds: state.recentWordIds,
         trainingsSinceChoice: state.trainingsSinceChoice,
+        milestones: state.milestones,
+        news: state.news,
       }),
     },
   ),

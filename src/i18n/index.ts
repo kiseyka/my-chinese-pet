@@ -15,7 +15,9 @@ import ruSets from "./locales/ru/sets.json";
 import enCommon from "./locales/en/common.json";
 import ruCommon from "./locales/ru/common.json";
 
+import enPandaNews from "./locales/en/panda/news.json";
 import enPhrases from "./locales/en/panda/phrases.json";
+import ruPandaNews from "./locales/ru/panda/news.json";
 import ruPhrases from "./locales/ru/panda/phrases.json";
 
 /**
@@ -34,6 +36,7 @@ const resources = {
     translation: en,
     sets: enSets,
     common: enCommon,
+    panda: enPandaNews,
     pandaPhrases: enPhrases,
     words: wordTranslations("en"),
   },
@@ -41,6 +44,7 @@ const resources = {
     translation: ru,
     sets: ruSets,
     common: ruCommon,
+    panda: ruPandaNews,
     pandaPhrases: ruPhrases,
     words: wordTranslations("ru"),
   },
