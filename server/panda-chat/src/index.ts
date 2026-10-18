@@ -35,8 +35,8 @@ const MAX_MESSAGE_LENGTH = 300;
 const MAX_KNOWN_WORDS = 150;
 const MAX_STAGE_WORDS = 20;
 const MAX_WORD_LENGTH = 8;
-/** Ответ панды короткий; запас — на случай, если модель всё же начнёт «думать». */
-const MAX_TOKENS = 500;
+/** Потолок длины ответа. Ответ панды — около 50 токенов; потолок защищает лимит, если модель разговорится. */
+const MAX_TOKENS = 200;
 
 type ChatRole = "user" | "panda";
 
