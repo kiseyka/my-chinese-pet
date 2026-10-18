@@ -8,8 +8,8 @@ import type { ChatRole } from "@/store/pandaChatStore";
 
 const CHAT_URL = process.env.EXPO_PUBLIC_PANDA_CHAT_URL;
 
-/** Модель иногда думает долго; дольше ждать нет смысла. */
-const TIMEOUT_MS = 45_000;
+/** Сервер ждёт одну модель до 15 с, потом запасную — итого не больше ~30–35 с. */
+const TIMEOUT_MS = 40_000;
 
 export interface ChatRequest {
   /** ru — перевод реплики панды: модель видит в истории тот же формат, что должна выдать. */

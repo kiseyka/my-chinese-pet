@@ -39,10 +39,10 @@ const MAX_INPUT_LENGTH = 300;
 const ERROR_TEXT: Record<ChatErrorKind, string> = {
   no_url:
     "Чат ещё не подключён: нет адреса сервера (EXPO_PUBLIC_PANDA_CHAT_URL).",
-  offline: "Панда не услышала — нет связи. Попробуй ещё раз.",
-  timeout: "Панда думала слишком долго и сбилась. Попробуй ещё раз.",
+  offline: "Панда не услышала — нет связи.",
+  timeout: "Панда думала слишком долго и сбилась.",
   quota: "Панда устала болтать сегодня. Приходи завтра!",
-  failed: "Панда задумалась и ничего не ответила. Попробуй ещё раз.",
+  failed: "Панда задумалась и ничего не ответила.",
 };
 
 function PandaBubble({ message }: { message: ChatMessage }) {
@@ -93,15 +93,11 @@ export default function ChatScreen() {
 
   const canSend = input.trim().length > 0 && !sending && messagesLeft > 0;
 
-  const send = async () => {
-    if (!canSend) return;
-    const text = input.trim();
+  /** Спросить панду: последнее сообщение в истории — от пользователя. */
+  const requestReply = async () => {
     const store = usePandaChatStore.getState();
-
-    setInput("");
     setError(null);
     setSending(true);
-    store.addMessage({ role: "user", text });
 
     try {
       const history = usePandaChatStore
@@ -130,6 +126,17 @@ export default function ChatScreen() {
       setSending(false);
     }
   };
+
+  const send = () => {
+    if (!canSend) return;
+    usePandaChatStore.getState().addMessage({ role: "user", text: input.trim() });
+    setInput("");
+    requestReply();
+  };
+
+  /** Панда не ответила — спросить ещё раз, не печатая сообщение заново. */
+  const lastIsUser = messages[messages.length - 1]?.role === "user";
+  const canRetry = !!error && error !== "quota" && lastIsUser && !sending;
 
   // Клавиатура. При edge-to-edge Android сам экран не сжимает, поэтому поднимаем
   // содержимое на высоту клавиатуры (минус нижний отступ, который у экрана уже есть).
@@ -190,9 +197,22 @@ export default function ChatScreen() {
                   </View>
                 )}
                 {error && (
-                  <Text className="font-nunito text-small text-error text-center">
-                    {ERROR_TEXT[error]}
-                  </Text>
+                  <View className="items-center gap-2">
+                    <Text className="font-nunito text-small text-error text-center">
+                      {ERROR_TEXT[error]}
+                    </Text>
+                    {canRetry && (
+                      <Pressable
+                        onPress={requestReply}
+                        className="rounded-full border border-primary px-4 py-2 active:opacity-70"
+                        accessibilityRole="button"
+                      >
+                        <Text className="font-nunito text-body text-primary">
+                          Спросить ещё раз
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
                 )}
                 {messagesLeft === 0 && !error && (
                   <Text className="font-nunito text-small text-textSecondary text-center">

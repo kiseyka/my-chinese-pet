@@ -37,6 +37,12 @@ const MAX_STAGE_WORDS = 20;
 const MAX_WORD_LENGTH = 8;
 /** Потолок длины ответа. Ответ панды — около 50 токенов; потолок защищает лимит, если модель разговорится. */
 const MAX_TOKENS = 200;
+/**
+ * Сколько ждать одну модель. Обычно ответ за 1 секунду; если Cloudflare завис —
+ * не ждём, а спрашиваем запасную модель. Две попытки укладываются в 40 секунд,
+ * которые ждёт приложение.
+ */
+const MODEL_TIMEOUT_MS = 15_000;
 
 type ChatRole = "user" | "panda";
 
@@ -279,7 +285,7 @@ async function askModel(
   const startedAt = Date.now();
   let result: unknown;
   try {
-    result = await env.AI.run(
+    const call = env.AI.run(
       model as any,
       {
         messages: toModelMessages(chat, model),
@@ -292,6 +298,15 @@ async function askModel(
         }),
       } as any,
     );
+    result = await Promise.race([
+      call,
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`timeout after ${MODEL_TIMEOUT_MS} ms`)),
+          MODEL_TIMEOUT_MS,
+        ),
+      ),
+    ]);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`${model} error: ${message}`);
