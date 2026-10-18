@@ -45,6 +45,8 @@ export interface ProfileStats {
   stagesMastered: number;
   /** Уровень HSK текущего этапа пути (null — путь пройден целиком). */
   currentLevel: number | null;
+  /** Текущий этап пути: первый непройденный (null — пройдены все). */
+  currentStage: { id: string; title: string; level: number } | null;
   levels: LevelStats[];
 }
 
@@ -93,6 +95,10 @@ export function getProfileStats(
   ).length;
 
   const path = getPathProgress(progress);
+  const current =
+    path.currentIndex === undefined
+      ? null
+      : path.stages[path.currentIndex].stage;
   const levels = new Map<number, LevelStats>();
   for (const { stage, passed, mastered } of path.stages) {
     const entry = levels.get(stage.level) ?? {
@@ -115,10 +121,10 @@ export function getProfileStats(
     stagesTotal: path.stages.length,
     stagesPassed: levelList.reduce((sum, l) => sum + l.stagesPassed, 0),
     stagesMastered: levelList.reduce((sum, l) => sum + l.stagesMastered, 0),
-    currentLevel:
-      path.currentIndex === undefined
-        ? null
-        : path.stages[path.currentIndex].stage.level,
+    currentLevel: current ? current.level : null,
+    currentStage: current
+      ? { id: current.id, title: current.title, level: current.level }
+      : null,
     levels: levelList,
   };
 }

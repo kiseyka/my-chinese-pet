@@ -1,109 +1,167 @@
 // app/(tabs)/profile.tsx
 //
 // Профиль — сводка из реальных данных, без выдуманных цифр:
-//   - шапка: сколько дней с пандой (дни входа, никогда не сбрасываются),
-//     ниже мелко — дней подряд сейчас и лучшая серия (просто факт, без давления);
-//   - «Слова»: полностью изучено (сданы все экзамены слова) — крупно, золотом;
-//     по переводу и по письму: начато / освоено (3 точки) / экзамен сдан;
-//   - «Путь»: текущий уровень HSK, этапы пройдены и освоены, полоска по каждому HSK;
-//   - «Активность»: сетка за 12 недель (дни входа и тренировки), итог за этот срок.
-// Данные: wordProgressStore (точки, экзамены) и activityStore (журнал занятий).
+//   - шапка: панда-аватар, имя (тап — «Как тебя зовут?»), уровень по опыту;
+//   - блок из четырёх чисел: дней с пандой (дни входа, не сбрасываются),
+//     опыт, полностью изученные слова (сданы все экзамены), текущий этап пути
+//     (тап — экран этапа);
+//   - «Слова»: по переводу и по письму — начато / освоено (3 точки) / экзамен сдан;
+//   - «Путь»: этапы пройдены и освоены, полоска по каждому HSK.
+// Данные: wordProgressStore, activityStore (журнал), userProgressStore (опыт),
+// profileStore (имя).
 
 import BookIcon from "@/assets/images/icons/book-open.svg";
+import CalendarIcon from "@/assets/images/icons/calendar-check.svg";
+import CheckIcon from "@/assets/images/icons/circle-check.svg";
+import FlagIcon from "@/assets/images/icons/flag.svg";
 import PandaIcon from "@/assets/images/icons/panda.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
+import ZapIcon from "@/assets/images/icons/zap.svg";
 import { Screen } from "@/components/layout/Screen";
+import { NameModal } from "@/components/profile/NameModal";
 import { BackButton } from "@/components/ui/BackButton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Title } from "@/components/ui/Title";
 import { useActivityStore } from "@/store/activityStore";
+import { useProfileStore } from "@/store/profileStore";
+import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
-import {
-  getActivityWeeks,
-  getBestSeries,
-  getCurrentSeries,
-  type ActivityCell,
-} from "@/utils/activity";
 import { getProfileStats, type SkillStats } from "@/utils/profile/stats";
 import { pluralDays, pluralWords } from "@/utils/writing/labels";
+import { useRouter } from "expo-router";
 import type { ComponentType, ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import type { SvgProps } from "react-native-svg";
 
-/** Сколько недель в сетке активности. */
-const ACTIVITY_WEEKS = 12;
-const CELL_GAP = 4;
-
 export default function ProfileScreen() {
+  const router = useRouter();
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
   const readingExams = useWordProgressStore((s) => s.readingExams);
   const writingExams = useWordProgressStore((s) => s.writingExams);
-  const days = useActivityStore((s) => s.days);
+  const totalDays = useActivityStore((s) => Object.keys(s.days).length);
+  const xp = useProgressStore((s) => s.xp);
+  const { level } = getLevelInfo(xp);
+  const name = useProfileStore((s) => s.name);
+  const setName = useProfileStore((s) => s.setName);
+  const [editingName, setEditingName] = useState(false);
 
   const stats = useMemo(
     () => getProfileStats(flashcardWords, readingExams, writingExams),
     [flashcardWords, readingExams, writingExams],
   );
 
-  const totalDays = Object.keys(days).length;
-  const series = getCurrentSeries(days);
-  const bestSeries = getBestSeries(days);
+  const openStage = () => {
+    if (!stats.currentStage) return;
+    router.push({
+      pathname: "/games/path/stage" as any,
+      params: { id: stats.currentStage.id },
+    });
+  };
 
   return (
     <Screen>
-      <View className="flex-row items-center justify-between">
+      <NameModal
+        visible={editingName}
+        initialName={name}
+        onConfirm={(value) => {
+          setName(value);
+          setEditingName(false);
+        }}
+        onClose={() => setEditingName(false)}
+      />
+
+      <View className="flex-row items-center">
         <BackButton href="/pet" />
-        <Title>Профиль</Title>
-        <View style={{ width: 28 }} />
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingVertical: 16, gap: 12 }}
       >
-        <DaysCard total={totalDays} series={series} best={bestSeries} />
+        {/* Шапка: аватар и имя */}
+        <View className="mb-2 flex-row items-center gap-4">
+          <View
+            className="items-center justify-center rounded-full bg-primary"
+            style={{ width: 88, height: 88 }}
+          >
+            <PandaIcon width={48} height={48} />
+          </View>
+          <Pressable
+            onPress={() => setEditingName(true)}
+            className="flex-1 active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="Изменить имя"
+          >
+            <View className="flex-row items-center gap-2">
+              <Text
+                className={`font-nunitoBold text-heading ${
+                  name ? "text-text" : "text-textSecondary"
+                }`}
+                numberOfLines={1}
+              >
+                {name || "Как тебя зовут?"}
+              </Text>
+              <PencilIcon width={18} height={18} color={colors.primary} />
+            </View>
+            <Text className="font-nunito text-small text-textSecondary">
+              Уровень {level}
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Четыре главных числа */}
+        <View className="flex-row rounded-2xl bg-surface py-4">
+          <StatCell
+            Icon={CalendarIcon}
+            value={String(totalDays)}
+            label={`${pluralDays(totalDays)} с пандой`}
+          />
+          <Divider />
+          <StatCell Icon={ZapIcon} value={String(xp)} label="опыта" />
+          <Divider />
+          <StatCell
+            Icon={CheckIcon}
+            value={String(stats.fullyLearned)}
+            label={`${pluralWords(stats.fullyLearned)} изучено`}
+            gold={stats.fullyLearned > 0}
+          />
+          <Divider />
+          <StatCell
+            Icon={FlagIcon}
+            value={
+              stats.currentStage ? `HSK ${stats.currentStage.level}` : "✓"
+            }
+            label={stats.currentStage?.title ?? "путь пройден"}
+            onPress={stats.currentStage ? openStage : undefined}
+          />
+        </View>
 
         <Card title="Слова">
-          <View className="flex-row items-baseline gap-2">
-            <Text className="font-nunitoBold text-heading text-gold">
-              {stats.fullyLearned}
-            </Text>
-            <Text className="font-nunitoMedium text-body text-text">
-              {pluralWords(stats.fullyLearned)} изучено полностью
-            </Text>
-          </View>
           <Text className="font-nunito text-small text-textSecondary">
-            Сданы экзамены и по переводу, и по письму
+            «Изучено» — сданы экзамены и по переводу, и по письму
           </Text>
-
-          <View className="mt-4 gap-3">
+          <View className="mt-3 gap-3">
             <SkillRow title="Перевод" Icon={BookIcon} stats={stats.reading} />
             <SkillRow title="Письмо" Icon={PencilIcon} stats={stats.writing} />
           </View>
         </Card>
 
         <Card title="Путь">
-          <Text className="font-nunitoMedium text-body text-text">
-            {stats.currentLevel !== null
-              ? `Сейчас: HSK ${stats.currentLevel}`
-              : "Весь путь пройден"}
-          </Text>
           <Text className="font-nunito text-small text-textSecondary">
             Этапов пройдено {stats.stagesPassed} из {stats.stagesTotal} ·
             освоено {stats.stagesMastered}
           </Text>
 
-          <View className="mt-4 gap-3">
-            {stats.levels.map((level) => (
-              <View key={level.level} className="gap-1.5">
+          <View className="mt-3 gap-3">
+            {stats.levels.map((item) => (
+              <View key={item.level} className="gap-1.5">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center gap-2">
                     <Text className="font-nunitoBold text-body text-text">
-                      HSK {level.level}
+                      HSK {item.level}
                     </Text>
-                    {level.level === stats.currentLevel && (
+                    {item.level === stats.currentLevel && (
                       <View className="rounded-full bg-primary px-2 py-0.5">
                         <Text className="font-nunitoBold text-caption text-white">
                           сейчас
@@ -112,25 +170,72 @@ export default function ProfileScreen() {
                     )}
                   </View>
                   <Text className="font-nunito text-small text-textSecondary">
-                    {level.stagesPassed} из {level.stagesTotal}
-                    {level.stagesMastered > 0
-                      ? ` · 印 ${level.stagesMastered}`
+                    {item.stagesPassed} из {item.stagesTotal}
+                    {item.stagesMastered > 0
+                      ? ` · 印 ${item.stagesMastered}`
                       : ""}
                   </Text>
                 </View>
                 <ProgressBar
-                  progress={(level.stagesPassed / level.stagesTotal) * 100}
+                  progress={(item.stagesPassed / item.stagesTotal) * 100}
                   className="h-2"
                 />
               </View>
             ))}
           </View>
         </Card>
-
-        <ActivityCard days={days} />
       </ScrollView>
     </Screen>
   );
+}
+
+// ── Блок чисел ───────────────────────────────────────────────────────────────
+
+function StatCell({
+  Icon,
+  value,
+  label,
+  gold = false,
+  onPress,
+}: {
+  Icon: ComponentType<SvgProps>;
+  value: string;
+  label: string;
+  gold?: boolean;
+  onPress?: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      className="flex-1 items-center gap-1 px-1 active:opacity-70"
+      accessibilityRole={onPress ? "button" : undefined}
+    >
+      <Icon
+        width={22}
+        height={22}
+        color={gold ? colors.gold : colors.primary}
+      />
+      <Text
+        className={`font-nunitoBold text-lead ${gold ? "text-gold" : "text-text"}`}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {value}
+      </Text>
+      <Text
+        className="text-center font-nunito text-caption text-textSecondary"
+        numberOfLines={2}
+      >
+        {label}
+        {onPress ? " ›" : ""}
+      </Text>
+    </Pressable>
+  );
+}
+
+function Divider() {
+  return <View className="w-px self-stretch bg-border" />;
 }
 
 // ── Карточка ─────────────────────────────────────────────────────────────────
@@ -138,42 +243,8 @@ export default function ProfileScreen() {
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View className="rounded-2xl bg-surface p-4">
-      <Text className="mb-2 font-nunitoBold text-title text-text">{title}</Text>
+      <Text className="mb-1 font-nunitoBold text-title text-text">{title}</Text>
       {children}
-    </View>
-  );
-}
-
-// ── Дни ──────────────────────────────────────────────────────────────────────
-
-function DaysCard({
-  total,
-  series,
-  best,
-}: {
-  total: number;
-  series: number;
-  best: number;
-}) {
-  return (
-    <View className="flex-row items-center gap-4 rounded-2xl bg-surface p-4">
-      <View
-        className="items-center justify-center rounded-full bg-primary"
-        style={{ width: 64, height: 64 }}
-      >
-        <PandaIcon width={34} height={34} />
-      </View>
-      <View className="flex-1">
-        <View className="flex-row items-baseline gap-2">
-          <Text className="font-nunitoBold text-heading text-text">{total}</Text>
-          <Text className="font-nunitoMedium text-body text-text">
-            {pluralDays(total)} с пандой
-          </Text>
-        </View>
-        <Text className="font-nunito text-small text-textSecondary">
-          Подряд: {series} {pluralDays(series)} · лучшая серия: {best}
-        </Text>
-      </View>
     </View>
   );
 }
@@ -224,93 +295,5 @@ function Figure({
       </Text>{" "}
       {label}
     </Text>
-  );
-}
-
-// ── Активность ───────────────────────────────────────────────────────────────
-
-/** Цвет дня: пусто → только вход → 1 тренировка → 2–3 → 4 и больше. */
-function cellClass(cell: ActivityCell): string {
-  if (cell.future) return "bg-transparent";
-  const trainings = cell.activity?.trainings;
-  if (trainings === undefined) return "bg-progress-inactive";
-  if (trainings === 0) return "bg-primary/20";
-  if (trainings === 1) return "bg-primary/45";
-  if (trainings <= 3) return "bg-primary/70";
-  return "bg-primary";
-}
-
-function ActivityCard({
-  days,
-}: {
-  days: ReturnType<typeof useActivityStore.getState>["days"];
-}) {
-  const [width, setWidth] = useState(0);
-  const weeks = useMemo(
-    () => getActivityWeeks(days, ACTIVITY_WEEKS),
-    [days],
-  );
-
-  const cell =
-    width > 0
-      ? Math.floor((width - CELL_GAP * (ACTIVITY_WEEKS - 1)) / ACTIVITY_WEEKS)
-      : 0;
-
-  let trainings = 0;
-  let answers = 0;
-  let activeDays = 0;
-  for (const week of weeks) {
-    for (const day of week) {
-      if (!day.activity) continue;
-      trainings += day.activity.trainings;
-      answers += day.activity.answers;
-      if (day.activity.trainings > 0) activeDays += 1;
-    }
-  }
-
-  return (
-    <Card title="Активность">
-      <Text className="mb-3 font-nunito text-small text-textSecondary">
-        За {ACTIVITY_WEEKS} недель: {activeDays} {pluralDays(activeDays)} с
-        тренировками · тренировок {trainings} · ответов {answers}
-      </Text>
-
-      <View
-        className="flex-row"
-        style={{ gap: CELL_GAP }}
-        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      >
-        {cell > 0 &&
-          weeks.map((week) => (
-            <View key={week[0].key} style={{ gap: CELL_GAP }}>
-              {week.map((day) => (
-                <View
-                  key={day.key}
-                  className={`rounded-md ${cellClass(day)}`}
-                  style={{ width: cell, height: cell }}
-                />
-              ))}
-            </View>
-          ))}
-      </View>
-
-      <View className="mt-3 flex-row items-center justify-end gap-1.5">
-        <Text className="mr-1 font-nunito text-caption text-textSecondary">
-          меньше
-        </Text>
-        {[
-          "bg-progress-inactive",
-          "bg-primary/20",
-          "bg-primary/45",
-          "bg-primary/70",
-          "bg-primary",
-        ].map((tone) => (
-          <View key={tone} className={`h-3 w-3 rounded-sm ${tone}`} />
-        ))}
-        <Text className="ml-1 font-nunito text-caption text-textSecondary">
-          больше
-        </Text>
-      </View>
-    </Card>
   );
 }
