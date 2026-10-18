@@ -77,6 +77,14 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="chat"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+
+      <Tabs.Screen
         name="licenses"
         options={{
           href: null,

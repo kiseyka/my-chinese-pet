@@ -1,0 +1,16 @@
+// Сервер чата с пандой (Cloudflare Worker).
+// Деплой: npx wrangler deploy (из этой папки). Логи: npx wrangler tail.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "panda-chat",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  // Модели Cloudflare Workers AI: бесплатно 10 000 «нейронов» в сутки, без ключей
+  "ai": {
+    "binding": "AI"
+  },
+  // Логи запросов видны в панели Cloudflare (Workers → panda-chat → Logs)
+  "observability": {
+    "enabled": true
+  }
+}

@@ -1,5 +1,6 @@
 // src/screens/PandaScreen.tsx
 
+import ChatIcon from "@/assets/images/icons/message-circle-more.svg";
 import UserIcon from "@/assets/images/icons/user-round.svg";
 import practiceImg from "@/assets/images/practice.png";
 import shopImg from "@/assets/images/shop.png";
@@ -58,8 +59,20 @@ const PandaScreen = () => {
           </View>
         </View>
 
-        {/* Правая колонка: монеты */}
-        <CoinBalance />
+        {/* Правая колонка: чат с пандой и монеты */}
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={() => router.push("/chat")}
+            className="items-center justify-center rounded-full border border-primary/30 bg-surface active:opacity-70"
+            style={{ width: 44, height: 44 }}
+            accessibilityRole="button"
+            accessibilityLabel="Чат с пандой"
+            hitSlop={6}
+          >
+            <ChatIcon width={24} height={24} color={colors.primary} />
+          </Pressable>
+          <CoinBalance />
+        </View>
       </View>
 
       {/* Сцена с пандой — на весь экран под шапкой. */}

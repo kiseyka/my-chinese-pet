@@ -8,7 +8,7 @@
       "@/assets/*": ["./assets/*"]
     }
   },
-  "exclude": ["node_modules", "scripts"],
+  "exclude": ["node_modules", "scripts", "server"],
   "include": [
     "**/*.ts",
     "**/*.tsx",
