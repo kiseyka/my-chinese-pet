@@ -1,7 +1,8 @@
 // src/hooks/useExamQueue.ts
 //
-// Очередь экзаменов по письму: какие слова готовы прямо сейчас и какие откроются скоро.
-// На экзамен попадает слово с 3 точками письма (или ждущее пересдачи).
+// Очередь экзаменов навыка (письмо или перевод): какие слова готовы прямо сейчас
+// и какие откроются скоро. На экзамен попадает слово с 3 точками этого навыка
+// (или ждущее пересдачи).
 // now обновляется при каждом возвращении на экран.
 
 import type { UpcomingExamWord } from "@/components/writing/modals/ExamModal";
@@ -13,9 +14,11 @@ import { findPracticeWords } from "@/utils/writing/words";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 
-export function useExamQueue() {
+export function useExamQueue(skill: "reading" | "writing" = "writing") {
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
-  const writingExams = useWordProgressStore((s) => s.writingExams);
+  const writingExams = useWordProgressStore((s) =>
+    skill === "reading" ? s.readingExams : s.writingExams,
+  );
 
   const [now, setNow] = useState(() => Date.now());
   useFocusEffect(
@@ -28,7 +31,13 @@ export function useExamQueue() {
     const ids = Array.from(
       new Set([...Object.keys(flashcardWords), ...Object.keys(writingExams)]),
     );
-    const result = getWritingExamQueue(ids, flashcardWords, writingExams, now);
+    const result = getWritingExamQueue(
+      ids,
+      flashcardWords,
+      writingExams,
+      now,
+      skill,
+    );
 
     const ready = findPracticeWords(result.ready);
     const upcoming: UpcomingExamWord[] = result.upcoming.flatMap(
@@ -38,7 +47,7 @@ export function useExamQueue() {
       },
     );
     return { ready, upcoming };
-  }, [flashcardWords, writingExams, now]);
+  }, [flashcardWords, writingExams, now, skill]);
 
   return { ...queue, now };
 }

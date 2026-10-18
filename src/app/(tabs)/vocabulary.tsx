@@ -2,7 +2,8 @@
 //
 // «Словарь» — все слова приложения в одном месте:
 //   - поиск по иероглифу, пиньиню без тонов и переводу (результаты — списком);
-//   - сверху одной строкой «Экзамен» (если есть что сдавать) и «Повторение»
+//   - сверху одной строкой «Экзамен» (по переводу и по письму; если есть что сдавать
+//     или скоро будет) и «Повторение»
 //     (если в нём есть слова);
 //   - чипсы: «Избранное», «Наборы», разделы HSK, «Другие слова»;
 //   - слова раздела сгруппированы по темам — тем же, что этапы пути;
@@ -16,6 +17,7 @@
 
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { DictionaryWordSheet } from "@/components/dictionary/DictionaryWordSheet";
+import { ExamHubSheet } from "@/components/dictionary/ExamHubSheet";
 import { ReviewSheet } from "@/components/dictionary/ReviewSheet";
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { LevelChips } from "@/components/flashcards/LevelChips";
@@ -153,9 +155,34 @@ export default function DictionaryScreen() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const closeReview = useCallback(() => setReviewOpen(false), []);
 
-  // Экзамен по письму: слова с 3 точками
-  const exams = useExamQueue();
+  // Экзамены: по переводу и по письму — слова с 3 точками своего навыка.
+  // «Экзамен» открывает панель с обоими; письмо — дальше окно выбора слов.
+  const exams = useExamQueue("writing");
+  const readingExams = useExamQueue("reading");
+  const [examHubOpen, setExamHubOpen] = useState(false);
   const [examOpen, setExamOpen] = useState(false);
+  const hasExams =
+    exams.ready.length +
+      exams.upcoming.length +
+      readingExams.ready.length +
+      readingExams.upcoming.length >
+    0;
+  const examReady = exams.ready.length + readingExams.ready.length;
+  const nextExamAt = Math.min(
+    exams.upcoming[0]?.availableAt ?? Infinity,
+    readingExams.upcoming[0]?.availableAt ?? Infinity,
+  );
+  const startReadingExam = () => {
+    if (readingExams.ready.length === 0) return;
+    setExamHubOpen(false);
+    useGameStore.getState().setReturnTo("/vocabulary");
+    router.push({
+      pathname: "/games/reading-exam" as any,
+      params: {
+        wordIds: readingExams.ready.map((w) => w.vocabularyId).join(","),
+      },
+    });
+  };
   const startExam = (words: Word[]) => {
     if (words.length === 0) return;
     setExamOpen(false);
@@ -223,6 +250,25 @@ export default function DictionaryScreen() {
         onClose={closeReview}
       />
 
+      <ExamHubSheet
+        open={examHubOpen}
+        reading={{
+          ready: readingExams.ready.length,
+          nextAt: readingExams.upcoming[0]?.availableAt,
+        }}
+        writing={{
+          ready: exams.ready.length,
+          nextAt: exams.upcoming[0]?.availableAt,
+        }}
+        now={exams.now}
+        onStartReading={startReadingExam}
+        onStartWriting={() => {
+          setExamHubOpen(false);
+          setExamOpen(true);
+        }}
+        onClose={() => setExamHubOpen(false)}
+      />
+
       <ExamModal
         open={examOpen}
         ready={exams.ready}
@@ -287,21 +333,19 @@ export default function DictionaryScreen() {
         className="flex-1"
         style={{ display: isSearching ? "none" : "flex" }}
       >
-        {(reviewWords.length > 0 ||
-          exams.ready.length > 0 ||
-          exams.upcoming.length > 0) && (
+        {(reviewWords.length > 0 || hasExams) && (
           // Одной строкой: слева экзамен, справа повторение
           <View className="mt-3 flex-row gap-2">
-            {(exams.ready.length > 0 || exams.upcoming.length > 0) && (
+            {hasExams && (
               <EntryTile
                 icon={<SealMark size={26} />}
                 title="Экзамен"
                 caption={
-                  exams.ready.length > 0
-                    ? `письмо · ${exams.ready.length} ${pluralWords(exams.ready.length)}`
-                    : `письмо · ${formatExamWait(exams.upcoming[0].availableAt, exams.now)}`
+                  examReady > 0
+                    ? `готово ${examReady} ${pluralWords(examReady)}`
+                    : formatExamWait(nextExamAt, exams.now)
                 }
-                onPress={() => setExamOpen(true)}
+                onPress={() => setExamHubOpen(true)}
               />
             )}
             {reviewWords.length > 0 && (

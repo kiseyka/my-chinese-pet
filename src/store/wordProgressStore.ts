@@ -62,6 +62,8 @@ interface WordProgressState {
    * при запуске тренировки. Отдельно от избранного: избранное — личная коллекция.
    */
   review: Record<string, WritingReviewEntry>;
+  /** Экзамены по переводу (те же правила, что у письма), по id слова. */
+  readingExams: Record<string, WritingExamEntry>;
   /** Экзамены по письму, по id слова. */
   writingExams: Record<string, WritingExamEntry>;
 }
@@ -92,8 +94,13 @@ interface WordProgressActions {
   removeFromReview: (wordId: string) => void;
   /** Ставит слово в очередь на экзамен, если оно ещё не сдано и не ждёт. */
   queueWritingExam: (wordId: string) => void;
-  /** Записывает результат экзамена по одному слову. */
+  /** Записывает результат экзамена по письму по одному слову. */
   recordWritingExamResult: (params: {
+    wordId: string;
+    passed: boolean;
+  }) => void;
+  /** Записывает результат экзамена по переводу по одному слову. */
+  recordReadingExamResult: (params: {
     wordId: string;
     passed: boolean;
   }) => void;
@@ -165,6 +172,76 @@ function applyWritingDotToExams(
   return exams;
 }
 
+type ExamSkill = "reading" | "writing";
+
+const EXAMS_KEY = {
+  reading: "readingExams",
+  writing: "writingExams",
+} as const;
+
+/**
+ * Итог экзамена по навыку (письмо или перевод), правила одинаковые:
+ *   сдал — слово отмечается сданным;
+ *   первый провал — пересдача через 24 часа, точки не трогаем;
+ *   второй провал подряд — минус одна точка навыка, экзамен ждёт новую точку.
+ */
+function recordExamResult(
+  state: WordProgressState,
+  skill: ExamSkill,
+  wordId: string,
+  passed: boolean,
+): Partial<WordProgressState> {
+  const key = EXAMS_KEY[skill];
+  const exams = state[key];
+  const now = Date.now();
+  // Слова с тремя точками до появления экзаменов записи не имеют.
+  const entry: WritingExamEntry = exams[wordId] ?? {
+    availableAt: now,
+    failures: 0,
+  };
+
+  if (passed) {
+    return {
+      [key]: { ...exams, [wordId]: { ...entry, failures: 0, passedAt: now } },
+    };
+  }
+
+  const failures = entry.failures + 1;
+
+  if (failures < WRITING_EXAM_FAILURES_BEFORE_DROP) {
+    return {
+      [key]: {
+        ...exams,
+        [wordId]: {
+          ...entry,
+          failures,
+          availableAt: now + WRITING_EXAM_COOLDOWN_MS,
+        },
+      },
+    };
+  }
+
+  const progress = state.flashcardWords[wordId];
+  const flashcardWords = progress
+    ? {
+        ...state.flashcardWords,
+        [wordId]: {
+          ...progress,
+          [skill]: {
+            ...progress[skill],
+            streak: Math.max(progress[skill].streak - 1, 0),
+          },
+          lastAnsweredAt: now,
+        },
+      }
+    : state.flashcardWords;
+
+  return {
+    flashcardWords,
+    [key]: { ...exams, [wordId]: { availableAt: null, failures: 0 } },
+  };
+}
+
 export const useWordProgressStore = create<WordProgressStore>()(
   persist(
     (set) => ({
@@ -172,6 +249,7 @@ export const useWordProgressStore = create<WordProgressStore>()(
       flashcardWords: {},
       vocabularyWords: {},
       review: {},
+      readingExams: {},
       writingExams: {},
 
       completeFlashcardSet: ({ setId, score, totalQuestions, duration }) => {
@@ -223,7 +301,19 @@ export const useWordProgressStore = create<WordProgressStore>()(
 
           const flashcardWords = { ...state.flashcardWords, [wordId]: updated };
 
-          if (skill !== "writing") return { flashcardWords };
+          // Третья точка открывает экзамен своего навыка (через 24 часа)
+          if (skill === "reading") {
+            return {
+              flashcardWords,
+              readingExams: applyWritingDotToExams(
+                state.readingExams,
+                wordId,
+                previous.reading.streak,
+                nextSkill.streak,
+                now,
+              ),
+            };
+          }
 
           return {
             flashcardWords,
@@ -321,64 +411,11 @@ export const useWordProgressStore = create<WordProgressStore>()(
       },
 
       recordWritingExamResult: ({ wordId, passed }) => {
-        set((state) => {
-          const now = Date.now();
-          // Слова с тремя точками до появления экзаменов записи не имеют.
-          const entry: WritingExamEntry = state.writingExams[wordId] ?? {
-            availableAt: now,
-            failures: 0,
-          };
+        set((state) => recordExamResult(state, "writing", wordId, passed));
+      },
 
-          if (passed) {
-            return {
-              writingExams: {
-                ...state.writingExams,
-                [wordId]: { ...entry, failures: 0, passedAt: now },
-              },
-            };
-          }
-
-          const failures = entry.failures + 1;
-
-          // Первый провал: повтор через 24 часа, точки не трогаем.
-          if (failures < WRITING_EXAM_FAILURES_BEFORE_DROP) {
-            return {
-              writingExams: {
-                ...state.writingExams,
-                [wordId]: {
-                  ...entry,
-                  failures,
-                  availableAt: now + WRITING_EXAM_COOLDOWN_MS,
-                },
-              },
-            };
-          }
-
-          // Второй провал подряд: минус одна точка письма (не до нуля сразу),
-          // экзамен ждёт, пока точку снова заработают.
-          const progress = state.flashcardWords[wordId];
-          const flashcardWords = progress
-            ? {
-                ...state.flashcardWords,
-                [wordId]: {
-                  ...progress,
-                  writing: {
-                    ...progress.writing,
-                    streak: Math.max(progress.writing.streak - 1, 0),
-                  },
-                  lastAnsweredAt: now,
-                },
-              }
-            : state.flashcardWords;
-
-          return {
-            flashcardWords,
-            writingExams: {
-              ...state.writingExams,
-              [wordId]: { availableAt: null, failures: 0 },
-            },
-          };
-        });
+      recordReadingExamResult: ({ wordId, passed }) => {
+        set((state) => recordExamResult(state, "reading", wordId, passed));
       },
 
       reset: () => {
@@ -387,6 +424,7 @@ export const useWordProgressStore = create<WordProgressStore>()(
           flashcardWords: {},
           vocabularyWords: {},
           review: {},
+          readingExams: {},
           writingExams: {},
         });
       },
@@ -459,13 +497,14 @@ export function getWritingExamStatus(
   progress: WordProgress | undefined,
   entry: WritingExamEntry | undefined,
   now: number = Date.now(),
+  skill: ExamSkill = "writing",
 ): WritingExamStatus {
   if (entry?.passedAt) return { status: "passed", passedAt: entry.passedAt };
 
   // Раньше слово вставало в очередь, когда его убирали из «Повторения», — даже без
   // 3 точек. Такие записи (без попыток и не «ждёт точку» после провалов) больше
   // не считаются: нужны 3 точки.
-  const hasThreeDots = progress?.writing.streak === 3;
+  const hasThreeDots = progress?.[skill].streak === 3;
   if (
     entry &&
     entry.failures === 0 &&
@@ -482,7 +521,7 @@ export function getWritingExamStatus(
     return { status: "ready" };
   }
 
-  if (progress?.writing.streak === 3) return { status: "ready" };
+  if (hasThreeDots) return { status: "ready" };
   return { status: "unavailable" };
 }
 
@@ -492,6 +531,7 @@ export function getWritingExamQueue(
   flashcardWords: Record<string, WordProgress>,
   writingExams: Record<string, WritingExamEntry>,
   now: number = Date.now(),
+  skill: ExamSkill = "writing",
 ): {
   ready: string[];
   upcoming: Array<{ wordId: string; availableAt: number }>;
@@ -504,6 +544,7 @@ export function getWritingExamQueue(
       flashcardWords[wordId],
       writingExams[wordId],
       now,
+      skill,
     );
     if (result.status === "ready") ready.push(wordId);
     else if (result.status === "cooldown")
