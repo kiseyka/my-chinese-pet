@@ -2,10 +2,14 @@
 //
 // ЧАТ С ПАНДОЙ — сервер-посредник между приложением и моделью Cloudflare Workers AI.
 //
-// Приложение шлёт POST с историей и словами пользователя:
-//   { messages: [{ role: "user" | "panda", text, ru? }], known: ["你", "好"], stage?: { title, words } }
-// Сервер собирает промпт панды, спрашивает модель и отвечает:
-//   200 { reply: { zh, pinyin, ru } }
+// Два вида запросов (POST):
+//   Реплика:  { messages: [{ role: "user" | "panda", text, ru? }], name, known: ["你", "好"], stage? }
+//             → 200 { reply: { zh, pinyin, syllables, ru } }
+//             syllables — пиньинь каждого символа zh (по одному на символ, знаки — как есть),
+//             чтобы приложение подписало пиньинь под каждым словом.
+//   Слово:    { mode: "explain", word: "冰淇淋", sentence: "冰淇淋很好吃吗？" }
+//             → 200 { explanation: "…" } — что слово значит в этой фразе, по-русски.
+// Ошибки:
 //   400 { error: "bad_request" }  — приложение прислало что-то не то
 //   429 { error: "quota" }        — бесплатные «нейроны» на сегодня кончились (сброс в 00:00 UTC)
 //   502 { error: "model" }        — модель ответила ошибкой или непонятным текстом
@@ -16,7 +20,7 @@
 // она не путает тоны так, как модель, и знает изменения тонов у 不 и 一.
 
 import { pinyin } from "pinyin-pro";
-import { buildSystemPrompt } from "./prompt";
+import { buildExplainPrompt, buildSystemPrompt } from "./prompt";
 
 interface Env {
   AI: Ai;
@@ -64,7 +68,25 @@ interface ChatRequest {
 interface PandaReply {
   zh: string;
   pinyin: string;
+  /** Пиньинь по символам zh: Array.from(zh)[i] ↔ syllables[i]. */
+  syllables: string[];
+  /** Слова реплики (их склейка = zh); пусто — модель не разбила, приложение разобьёт само. */
+  words: string[];
   ru: string;
+}
+
+interface ExplainRequest {
+  word: string;
+  sentence: string;
+}
+
+function parseExplainRequest(raw: Record<string, unknown>): ExplainRequest | null {
+  if (!isString(raw.word) || !isString(raw.sentence)) return null;
+  const word = raw.word.trim();
+  const sentence = raw.sentence.trim();
+  if (!word || Array.from(word).length > MAX_WORD_LENGTH) return null;
+  if (!sentence || sentence.length > 200) return null;
+  return { word, sentence };
 }
 
 // ── Ответы ───────────────────────────────────────────────────────────────────
@@ -138,15 +160,23 @@ function parseRequest(body: unknown): ChatRequest | null {
 
 // ── Промпт (сам текст — в prompt.ts) ─────────────────────────────────────────
 
-function toModelMessages(request: ChatRequest, model: string) {
-  // Qwen 3 по умолчанию «думает» перед ответом — долго; так ему велят не думать
+type ModelMessage = { role: string; content: string };
+
+/** Qwen 3 по умолчанию «думает» перед ответом — долго; так ему велят не думать. */
+function systemMessage(prompt: string, model: string): ModelMessage {
   const noThink = model.includes("qwen3") ? "\n/no_think" : "";
+  return { role: "system", content: prompt + noThink };
+}
+
+function toModelMessages(request: ChatRequest, model: string): ModelMessage[] {
   return [
-    { role: "system", content: buildSystemPrompt(request) + noThink },
+    systemMessage(buildSystemPrompt(request), model),
     ...request.messages.map((message) =>
       message.role === "panda"
         ? {
             role: "assistant",
+            // Приложение присылает реплики панды со словами через пробел —
+            // тот же формат, что модель должна выдать
             content: JSON.stringify({ zh: message.text, ru: message.ru ?? "" }),
           }
         : { role: "user", content: message.text },
@@ -218,12 +248,10 @@ function parseReply(text: string): PandaReply | null {
         unknown
       >;
       if (isString(data.zh) && HAN.test(data.zh)) {
-        const zh = data.zh.trim().slice(0, 120);
-        return {
-          zh,
-          pinyin: toPinyin(zh),
-          ru: isString(data.ru) ? data.ru.trim().slice(0, 300) : "",
-        };
+        return makeReply(
+          data.zh.slice(0, 200),
+          isString(data.ru) ? data.ru.trim().slice(0, 300) : "",
+        );
       }
     } catch {
       // ниже — запасной вариант
@@ -232,10 +260,56 @@ function parseReply(text: string): PandaReply | null {
 
   // Модель забыла про JSON, но ответила по-китайски — показываем как есть
   if (HAN.test(cleaned) && !cleaned.includes("{")) {
-    const zh = cleaned.slice(0, 120);
-    return { zh, pinyin: toPinyin(zh), ru: "" };
+    return makeReply(cleaned.slice(0, 120), "");
   }
   return null;
+}
+
+/**
+ * Слова из ответа модели: «我 没 吃过 冰淇淋。» → 我 · 没 · 吃过 · 冰淇淋 · 。
+ * Модель разделяет слова пробелами; знаки, прилипшие к слову, отделяем сами.
+ * Пробелы внутри латиницы (имя «Ann Lee») в китайском тексте редки — не страшно.
+ */
+function splitWords(spaced: string): string[] {
+  const words: string[] = [];
+  for (const token of spaced.trim().split(/\s+/)) {
+    // Иероглифы отдельно от знаков и латиницы: «吗？» → 吗 · ？
+    const parts = token.match(/\p{Script=Han}+|[^\p{Script=Han}]+/gu) ?? [];
+    words.push(...parts);
+  }
+  return words;
+}
+
+function makeReply(spacedZh: string, ru: string): PandaReply {
+  const words = splitWords(spacedZh);
+  const zh = words.join("");
+  // Модель не разделила слова (одно длинное «слово») — пусть приложение разобьёт само
+  const hanWords = words.filter((w) => HAN.test(w));
+  const spaced = hanWords.length > 1 || Array.from(zh).length <= 4;
+  return {
+    zh,
+    pinyin: toPinyin(zh),
+    syllables: pinyin(zh, { type: "array" }),
+    words: spaced ? words : [],
+    ru,
+  };
+}
+
+/** Объяснение слова: {"ru": "…"}. */
+function parseExplanation(text: string): string | null {
+  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    try {
+      const data = JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
+      if (isString(data.ru) && data.ru.trim()) return data.ru.trim().slice(0, 400);
+    } catch {
+      // ниже — запасной вариант
+    }
+  }
+  // Ответила просто текстом — тоже годится, если это не обрывок JSON
+  return cleaned && !cleaned.includes("{") ? cleaned.slice(0, 400) : null;
 }
 
 /** Бесплатный лимит на сегодня исчерпан (код 4006 у Workers AI). */
@@ -259,36 +333,71 @@ export default {
       return json({ error: "bad_request" }, 400);
     }
 
+    const raw = (body ?? {}) as Record<string, unknown>;
+
+    // Что значит слово
+    if (raw.mode === "explain") {
+      const explain = parseExplainRequest(raw);
+      if (!explain) return json({ error: "bad_request" }, 400);
+      const outcome = await askModels(
+        env,
+        (model) => [
+          systemMessage(buildExplainPrompt(explain.word, explain.sentence), model),
+          { role: "user", content: explain.word },
+        ],
+        parseExplanation,
+      );
+      return "value" in outcome
+        ? json({ explanation: outcome.value })
+        : json({ error: outcome.error }, outcome.error === "quota" ? 429 : 502);
+    }
+
+    // Реплика панды
     const chat = parseRequest(body);
     if (!chat) return json({ error: "bad_request" }, 400);
-
-    const primary = env.MODEL || DEFAULT_MODEL;
-    const models =
-      primary === FALLBACK_MODEL ? [primary] : [primary, FALLBACK_MODEL];
-
-    for (const model of models) {
-      const outcome = await askModel(env, model, chat);
-      if (outcome.reply) return json({ reply: outcome.reply });
-      // Лимит общий на все модели — запасная тоже не ответит
-      if (outcome.quota) return json({ error: "quota" }, 429);
-    }
-    return json({ error: "model" }, 502);
+    const outcome = await askModels(
+      env,
+      (model) => toModelMessages(chat, model),
+      parseReply,
+    );
+    return "value" in outcome
+      ? json({ reply: outcome.value })
+      : json({ error: outcome.error }, outcome.error === "quota" ? 429 : 502);
   },
 } satisfies ExportedHandler<Env>;
 
+/** Основная модель, при сбое — запасная. Лимит общий: кончился — запасную не спрашиваем. */
+async function askModels<T>(
+  env: Env,
+  buildMessages: (model: string) => ModelMessage[],
+  parse: (text: string) => T | null,
+): Promise<{ value: T } | { error: "quota" | "model" }> {
+  const primary = env.MODEL || DEFAULT_MODEL;
+  const models =
+    primary === FALLBACK_MODEL ? [primary] : [primary, FALLBACK_MODEL];
+
+  for (const model of models) {
+    const outcome = await askModel(env, model, buildMessages(model), parse);
+    if (outcome.value !== undefined) return { value: outcome.value };
+    if (outcome.quota) return { error: "quota" };
+  }
+  return { error: "model" };
+}
+
 /** Один запрос к модели. Всё, что пошло не так, — в логах (`npx wrangler tail`). */
-async function askModel(
+async function askModel<T>(
   env: Env,
   model: string,
-  chat: ChatRequest,
-): Promise<{ reply?: PandaReply; quota?: boolean }> {
+  messages: ModelMessage[],
+  parse: (text: string) => T | null,
+): Promise<{ value?: T; quota?: boolean }> {
   const startedAt = Date.now();
   let result: unknown;
   try {
     const call = env.AI.run(
       model as any,
       {
-        messages: toModelMessages(chat, model),
+        messages,
         max_tokens: MAX_TOKENS,
         temperature: 0.7,
         // Gemma 4 по умолчанию «думает» перед ответом и тратит на это все токены —
@@ -315,12 +424,12 @@ async function askModel(
 
   const text = extractText(result);
   console.log(`${model} answered in ${Date.now() - startedAt} ms`);
-  const reply = parseReply(text);
-  if (!reply) {
+  const value = parse(text);
+  if (value === null) {
     console.error(
       `${model} unparsable reply: ${JSON.stringify(result).slice(0, 800)}`,
     );
     return {};
   }
-  return { reply };
+  return { value };
 }

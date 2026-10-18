@@ -23,6 +23,7 @@ import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { SetToggleList } from "@/components/word/SetToggleList";
+import { ActionChip } from "@/components/word/ActionChip";
 import { WordHeader } from "@/components/word/WordHeader";
 import type { Word } from "@/content/flashcards/types";
 import { useCustomSetsStore } from "@/store/customSetsStore";
@@ -32,11 +33,9 @@ import { findWordStage } from "@/utils/dictionary";
 import { getTrackDots, type TrackId } from "@/utils/path/stages";
 import type { FreeFormat } from "@/utils/writing/plans";
 import { getWordCharacters, getWritableWords } from "@/utils/writing/words";
-import { useState, type ComponentType, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
-
-type IconProps = { width: number; height: number; color: string };
 
 interface DictionaryWordSheetProps {
   /** Слово; null — панель закрыта. */
@@ -239,44 +238,6 @@ export function DictionaryWordSheet({
 }
 
 /** Компактная кнопка «отложить»: иконка и подпись, включённая — залита. */
-function ActionChip({
-  Icon,
-  label,
-  active,
-  onPress,
-}: {
-  Icon: ComponentType<IconProps>;
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`min-h-16 flex-1 items-center justify-center gap-1 rounded-2xl px-1 py-2 active:opacity-70 ${
-        active ? "bg-primary" : "border border-primary/30 bg-surface"
-      }`}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={label}
-    >
-      <Icon
-        width={20}
-        height={20}
-        color={active ? "#FFFFFF" : colors.primary}
-      />
-      <Text
-        numberOfLines={1}
-        className={`font-nunitoBold text-caption ${
-          active ? "text-white" : "text-text"
-        }`}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 function WriteButton({
   label,
   primary = false,

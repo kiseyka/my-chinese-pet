@@ -23,6 +23,10 @@ export interface ChatRequest {
 export interface PandaReply {
   zh: string;
   pinyin: string;
+  /** Пиньинь по символам zh (может отсутствовать у старого сервера). */
+  syllables?: string[];
+  /** Слова реплики, как их разделила модель (может быть пусто). */
+  words?: string[];
   ru: string;
 }
 
@@ -41,6 +45,23 @@ export class ChatError extends Error {
 }
 
 export async function askPanda(request: ChatRequest): Promise<PandaReply> {
+  const data = await post<{ reply?: PandaReply }>(request);
+  if (!data.reply?.zh) throw new ChatError("failed");
+  return data.reply;
+}
+
+/** Что значит слово в реплике панды — короткое объяснение по-русски. */
+export async function explainWord(word: string, sentence: string): Promise<string> {
+  const data = await post<{ explanation?: string }>({
+    mode: "explain",
+    word,
+    sentence,
+  });
+  if (!data.explanation) throw new ChatError("failed");
+  return data.explanation;
+}
+
+async function post<T>(body: unknown): Promise<T> {
   if (!CHAT_URL) throw new ChatError("no_url");
 
   const controller = new AbortController();
@@ -51,7 +72,7 @@ export async function askPanda(request: ChatRequest): Promise<PandaReply> {
     response = await fetch(CHAT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
   } catch {
@@ -64,9 +85,7 @@ export async function askPanda(request: ChatRequest): Promise<PandaReply> {
   if (!response.ok) throw new ChatError("failed");
 
   try {
-    const data = (await response.json()) as { reply?: PandaReply };
-    if (!data.reply?.zh) throw new Error("empty");
-    return data.reply;
+    return (await response.json()) as T;
   } catch {
     throw new ChatError("failed");
   }

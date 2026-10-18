@@ -26,6 +26,10 @@ export interface ChatMessage {
   text: string;
   /** Только у панды: пиньинь и перевод (могут быть пустыми). */
   pinyin?: string;
+  /** Только у панды: пиньинь по символам text — для подписей под словами. */
+  syllables?: string[];
+  /** Только у панды: слова реплики (склейка = text), если модель их разделила. */
+  words?: string[];
   ru?: string;
   at: number;
 }
