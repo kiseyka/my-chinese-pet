@@ -285,6 +285,11 @@ async function askModel(
         messages: toModelMessages(chat, model),
         max_tokens: MAX_TOKENS,
         temperature: 0.7,
+        // Gemma 4 по умолчанию «думает» перед ответом и тратит на это все токены —
+        // ответ приходит пустым. Выключаем размышления (у Qwen для этого /no_think).
+        ...(!model.includes("qwen3") && {
+          chat_template_kwargs: { enable_thinking: false },
+        }),
       } as any,
     );
   } catch (error) {
