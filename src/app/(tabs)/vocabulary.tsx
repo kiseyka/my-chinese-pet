@@ -49,6 +49,7 @@ import { formatExamWait, pluralWords } from "@/utils/writing/labels";
 import { colors } from "@/theme/colors";
 import {
   FAVORITES_SOURCE,
+  findAnyWords,
   getReviewIds,
   REVIEW_SOURCE,
 } from "@/utils/wordSource";
@@ -81,6 +82,7 @@ const SETS = -2;
 const noop = () => {};
 
 type GetDots = (word: Word, track: TrackId) => number | undefined;
+type GetExams = (word: Word) => { reading: boolean; writing: boolean };
 
 export default function DictionaryScreen() {
   const router = useRouter();
@@ -96,6 +98,10 @@ export default function DictionaryScreen() {
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
 
   const [query, setQuery] = useState("");
+  // Ушли со «Словаря» — поиск сбрасывается: вернёмся к обычному виду
+  useFocusEffect(
+    useCallback(() => () => setQuery(""), []),
+  );
   const isSearching = query.trim().length > 0;
   const results = useMemo(
     () => (isSearching ? searchWords(allWords, query, (key) => t(key)) : []),
@@ -143,13 +149,24 @@ export default function DictionaryScreen() {
     [writableIds, flashcardWords],
   );
 
+  // Сданные экзамены — для золотых точек и «парадных» ячеек
+  const readingExamEntries = useWordProgressStore((s) => s.readingExams);
+  const writingExamEntries = useWordProgressStore((s) => s.writingExams);
+  const getExams = useCallback<GetExams>(
+    (word) => ({
+      reading: !!readingExamEntries[word.vocabularyId]?.passedAt,
+      writing: !!writingExamEntries[word.vocabularyId]?.passedAt,
+    }),
+    [readingExamEntries, writingExamEntries],
+  );
+
   const [opened, setOpened] = useState<Word | null>(null);
   const [training, setTraining] = useState<string | null>(null);
 
   // «Повторение» — одно на все навыки
   const review = useWordProgressStore((s) => s.review);
   const reviewWords = useMemo(
-    () => findPracticeWords(getReviewIds(review)),
+    () => findAnyWords(getReviewIds(review)),
     [review],
   );
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -373,6 +390,7 @@ export default function DictionaryScreen() {
             chip={item}
             visible={item === shownChip}
             getDots={getDots}
+            getExams={getExams}
             onSelect={setOpened}
             onTrain={setTraining}
             onEditSet={editSet}
@@ -392,6 +410,7 @@ const DictionarySection = memo(function DictionarySection({
   chip,
   visible,
   getDots,
+  getExams,
   onSelect,
   onTrain,
   onEditSet,
@@ -400,6 +419,7 @@ const DictionarySection = memo(function DictionarySection({
   chip: number;
   visible: boolean;
   getDots: GetDots;
+  getExams: GetExams;
   onSelect: (word: Word) => void;
   onTrain: (sourceId: string) => void;
   onEditSet: (setId: string) => void;
@@ -439,12 +459,13 @@ const DictionarySection = memo(function DictionarySection({
       <GroupCard
         group={item}
         getDots={getDots}
+        getExams={getExams}
         onSelect={onSelect}
         onTrain={onTrain}
         onEdit={chip === SETS ? onEditSet : undefined}
       />
     ),
-    [getDots, onSelect, onTrain, onEditSet, chip],
+    [getDots, getExams, onSelect, onTrain, onEditSet, chip],
   );
 
   const style = { display: visible ? ("flex" as const) : ("none" as const) };
@@ -506,12 +527,14 @@ const DictionarySection = memo(function DictionarySection({
 const GroupCard = memo(function GroupCard({
   group,
   getDots,
+  getExams,
   onSelect,
   onTrain,
   onEdit,
 }: {
   group: DictionaryGroup;
   getDots: GetDots;
+  getExams: GetExams;
   onSelect: (word: Word) => void;
   onTrain: (sourceId: string) => void;
   /** Только у своего набора: карандаш — редактор набора. */
@@ -568,6 +591,7 @@ const GroupCard = memo(function GroupCard({
       <PathWordGrid
         words={group.words}
         getDots={getDots}
+        getExams={getExams}
         onSelect={onSelect}
         horizontalInset={GRID_INSET}
       />
