@@ -22,15 +22,11 @@ import { colors } from "@/theme/colors";
 import { askPanda, ChatError, type ChatErrorKind } from "@/utils/panda/chatApi";
 import { getChatContext } from "@/utils/panda/chatContext";
 import { useEffect, useRef, useState } from "react";
-import {
-  FlatList,
-  Keyboard,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { FlatList, Keyboard, Pressable, Text, TextInput, View } from "react-native";
+import Animated, {
+  useAnimatedKeyboard,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /** Сколько последних сообщений отправлять серверу как историю. */
@@ -45,28 +41,6 @@ const ERROR_TEXT: Record<ChatErrorKind, string> = {
   quota: "Панда устала болтать сегодня. Приходи завтра!",
   failed: "Панда задумалась и ничего не ответила. Попробуй ещё раз.",
 };
-
-/** Высота клавиатуры: при edge-to-edge экран сам не сжимается, отступ ставим вручную. */
-function useKeyboardHeight(): number {
-  const [height, setHeight] = useState(0);
-
-  useEffect(() => {
-    const showEvent =
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent =
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const show = Keyboard.addListener(showEvent, (e) =>
-      setHeight(e.endCoordinates.height),
-    );
-    const hide = Keyboard.addListener(hideEvent, () => setHeight(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-
-  return height;
-}
 
 function PandaBubble({ message }: { message: ChatMessage }) {
   const { speakForced } = useSpeakHanzi();
@@ -103,7 +77,6 @@ function UserBubble({ message }: { message: ChatMessage }) {
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
-  const keyboardHeight = useKeyboardHeight();
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   const messages = usePandaChatStore((s) => s.messages);
@@ -152,19 +125,25 @@ export default function ChatScreen() {
 
   const scrollToEnd = () => listRef.current?.scrollToEnd({ animated: true });
 
+  // Клавиатура. При edge-to-edge Android сам экран не сжимает, поэтому поднимаем
+  // содержимое на высоту клавиатуры (минус нижний отступ, который у экрана уже есть).
+  // Высоту даёт Reanimated по системным отступам — надёжнее событий Keyboard.
+  const keyboard = useAnimatedKeyboard();
+  const keyboardStyle = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(0, keyboard.height.value - insets.bottom),
+  }));
+
   // Клавиатура выдвинулась — последние сообщения не должны уйти под неё
   useEffect(() => {
-    if (keyboardHeight > 0) setTimeout(scrollToEnd, 50);
-  }, [keyboardHeight]);
+    const sub = Keyboard.addListener("keyboardDidShow", () =>
+      setTimeout(scrollToEnd, 50),
+    );
+    return () => sub.remove();
+  }, []);
 
   return (
     <Screen className="bg-background">
-      <View
-        style={{
-          flex: 1,
-          marginBottom: Math.max(0, keyboardHeight - insets.bottom),
-        }}
-      >
+      <Animated.View style={[{ flex: 1 }, keyboardStyle]}>
         {/* Шапка */}
         <View className="flex-row items-center gap-3 py-2">
           <BackButton />
@@ -251,7 +230,7 @@ export default function ChatScreen() {
             <SendIcon width={24} height={24} color="white" />
           </Pressable>
         </View>
-      </View>
+      </Animated.View>
     </Screen>
   );
 }
