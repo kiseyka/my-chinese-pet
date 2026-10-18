@@ -16,6 +16,7 @@
 // она не путает тоны так, как модель, и знает изменения тонов у 不 и 一.
 
 import { pinyin } from "pinyin-pro";
+import { buildSystemPrompt } from "./prompt";
 
 interface Env {
   AI: Ai;
@@ -25,6 +26,8 @@ interface Env {
 
 /** Если в wrangler.jsonc модель не указана. */
 const DEFAULT_MODEL = "@cf/google/gemma-4-26b-a4b-it";
+/** Запасная модель: если основная ответила ошибкой или непонятно, спрашиваем её. */
+const FALLBACK_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
 
 /** Сколько последних сообщений истории отправлять модели. */
 const MAX_HISTORY = 8;
@@ -33,7 +36,7 @@ const MAX_KNOWN_WORDS = 150;
 const MAX_STAGE_WORDS = 20;
 const MAX_WORD_LENGTH = 8;
 /** Ответ панды короткий; запас — на случай, если модель всё же начнёт «думать». */
-const MAX_TOKENS = 300;
+const MAX_TOKENS = 500;
 
 type ChatRole = "user" | "panda";
 
@@ -127,40 +130,7 @@ function parseRequest(body: unknown): ChatRequest | null {
   };
 }
 
-// ── Промпт ───────────────────────────────────────────────────────────────────
-
-function buildSystemPrompt({ name, known, stage }: ChatRequest): string {
-  const knownLine =
-    known.length > 0
-      ? known.join(" ")
-      : "(almost none yet — use only the simplest HSK 1 words)";
-  const stageLine = stage
-    ? `${stage.title}: ${stage.words.join(" ")}`
-    : "(no topic — chat about everyday things)";
-  const userLine = name
-    ? `The user is a human named ${name}. Call them ${name} sometimes.`
-    : "The user is a human; you don't know their name yet — you may ask it.";
-
-  return `You are 熊猫 (a panda), a character in a Chinese-learning app. ${userLine} The user is NOT a panda: never call them 熊猫 or 小熊猫.
-You and the user are learning Chinese together. You are their friend and study buddy, not a teacher: curious, warm, a little playful, never lecturing.
-
-How to reply:
-- Always reply in simple Mandarin Chinese (simplified characters): 1–2 short sentences, at most 40 characters.
-- Prefer KNOWN WORDS and TOPIC WORDS below. Other words only if simple (HSK 1–2).
-- The user may write in Russian, Chinese or pinyin. Understand them and always answer in Chinese.
-- Keep the meaning exact. Example: "тепло" is 暖和, not 热 ("жарко").
-- If the user asks how to say something in Chinese, give exactly that phrase in your reply, then continue the chat.
-- If the user does not understand you, say the same thing again in even simpler Chinese.
-- If the user's Chinese has a mistake, don't explain it — just use the correct form naturally.
-- Greet only once at the start of the chat. Keep the conversation going with a simple question about the user or the topic.
-- If the user asks for something unsafe or inappropriate, gently change the subject.
-
-Every reply, including later ones, is ONLY a JSON object, nothing else:
-{"zh": "<your reply in Chinese>", "ru": "<natural Russian translation of zh>"}
-
-KNOWN WORDS: ${knownLine}
-TOPIC WORDS: ${stageLine}`;
-}
+// ── Промпт (сам текст — в prompt.ts) ─────────────────────────────────────────
 
 function toModelMessages(request: ChatRequest, model: string) {
   // Qwen 3 по умолчанию «думает» перед ответом — долго; так ему велят не думать
@@ -219,7 +189,14 @@ function extractText(result: unknown): string {
   const raw = result as Record<string, any>;
   if (isString(raw.response)) return raw.response;
   const content = raw.choices?.[0]?.message?.content;
-  return isString(content) ? content : "";
+  if (isString(content)) return content;
+  // Некоторые модели отдают content списком частей: [{ type: "text", text }]
+  if (Array.isArray(content)) {
+    return content
+      .map((part: any) => (isString(part?.text) ? part.text : ""))
+      .join("");
+  }
+  return "";
 }
 
 function parseReply(text: string): PandaReply | null {
@@ -279,32 +256,51 @@ export default {
     const chat = parseRequest(body);
     if (!chat) return json({ error: "bad_request" }, 400);
 
-    const model = env.MODEL || DEFAULT_MODEL;
-    const startedAt = Date.now();
-    let result: unknown;
-    try {
-      result = await env.AI.run(
-        model as any,
-        {
-          messages: toModelMessages(chat, model),
-          max_tokens: MAX_TOKENS,
-          temperature: 0.7,
-        } as any,
-      );
-    } catch (error) {
-      console.error("AI error", error);
-      const quota = isQuotaError(error);
-      return json({ error: quota ? "quota" : "model" }, quota ? 429 : 502);
-    }
+    const primary = env.MODEL || DEFAULT_MODEL;
+    const models =
+      primary === FALLBACK_MODEL ? [primary] : [primary, FALLBACK_MODEL];
 
-    const text = extractText(result);
-    console.log(`${model} answered in ${Date.now() - startedAt} ms`);
-    const reply = parseReply(text);
-    if (!reply) {
-      console.error("Unparsable reply", text.slice(0, 500));
-      return json({ error: "model" }, 502);
+    for (const model of models) {
+      const outcome = await askModel(env, model, chat);
+      if (outcome.reply) return json({ reply: outcome.reply });
+      // Лимит общий на все модели — запасная тоже не ответит
+      if (outcome.quota) return json({ error: "quota" }, 429);
     }
-
-    return json({ reply });
+    return json({ error: "model" }, 502);
   },
 } satisfies ExportedHandler<Env>;
+
+/** Один запрос к модели. Всё, что пошло не так, — в логах (`npx wrangler tail`). */
+async function askModel(
+  env: Env,
+  model: string,
+  chat: ChatRequest,
+): Promise<{ reply?: PandaReply; quota?: boolean }> {
+  const startedAt = Date.now();
+  let result: unknown;
+  try {
+    result = await env.AI.run(
+      model as any,
+      {
+        messages: toModelMessages(chat, model),
+        max_tokens: MAX_TOKENS,
+        temperature: 0.7,
+      } as any,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`${model} error: ${message}`);
+    return { quota: isQuotaError(error) };
+  }
+
+  const text = extractText(result);
+  console.log(`${model} answered in ${Date.now() - startedAt} ms`);
+  const reply = parseReply(text);
+  if (!reply) {
+    console.error(
+      `${model} unparsable reply: ${JSON.stringify(result).slice(0, 800)}`,
+    );
+    return {};
+  }
+  return { reply };
+}

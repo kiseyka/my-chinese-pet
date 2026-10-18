@@ -33,7 +33,8 @@
 
 | Файл | Что внутри |
 |---|---|
-| `server/panda-chat/src/index.ts` | Worker: проверка запроса, промпт панды, разбор ответа модели |
+| `server/panda-chat/src/prompt.ts` | **промпт панды** — характер и правила ответа, с пояснениями, как его править |
+| `server/panda-chat/src/index.ts` | Worker: проверка запроса, запрос к модели (основная, при сбое — запасная Qwen 3), разбор ответа, пиньинь |
 | `server/panda-chat/wrangler.jsonc` | настройки Worker (имя, привязка AI) |
 | `src/utils/panda/chatApi.ts` | запрос к серверу и причины ошибок |
 | `src/utils/panda/chatContext.ts` | какие слова и этап отправить |
