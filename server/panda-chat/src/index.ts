@@ -7,8 +7,9 @@
 //             → 200 { reply: { zh, pinyin, syllables, ru } }
 //             syllables — пиньинь каждого символа zh (по одному на символ, знаки — как есть),
 //             чтобы приложение подписало пиньинь под каждым словом.
-//   Слово:    { mode: "explain", word: "冰淇淋", sentence: "冰淇淋很好吃吗？" }
-//             → 200 { explanation: "…" } — что слово значит в этой фразе, по-русски.
+//   Слово:    { mode: "explain", word: "冰淇淋", sentence: "冰淇淋很好吃吗？", known: [...] }
+//             → 200 { explanation: { zh, pinyin, syllables, words, ru } } — что слово значит
+//             в этой фразе: простыми словами по-китайски (zh может быть пустым) и по-русски.
 // Ошибки:
 //   400 { error: "bad_request" }  — приложение прислало что-то не то
 //   429 { error: "quota" }        — бесплатные «нейроны» на сегодня кончились (сброс в 00:00 UTC)
@@ -78,6 +79,7 @@ interface PandaReply {
 interface ExplainRequest {
   word: string;
   sentence: string;
+  known: string[];
 }
 
 function parseExplainRequest(raw: Record<string, unknown>): ExplainRequest | null {
@@ -86,7 +88,7 @@ function parseExplainRequest(raw: Record<string, unknown>): ExplainRequest | nul
   const sentence = raw.sentence.trim();
   if (!word || Array.from(word).length > MAX_WORD_LENGTH) return null;
   if (!sentence || sentence.length > 200) return null;
-  return { word, sentence };
+  return { word, sentence, known: cleanWords(raw.known, MAX_KNOWN_WORDS) };
 }
 
 // ── Ответы ───────────────────────────────────────────────────────────────────
@@ -295,21 +297,26 @@ function makeReply(spacedZh: string, ru: string): PandaReply {
   };
 }
 
-/** Объяснение слова: {"ru": "…"}. */
-function parseExplanation(text: string): string | null {
+/** Объяснение слова: {"zh": "…", "ru": "…"} → то же, что реплика (zh может быть пустым). */
+function parseExplanation(text: string): PandaReply | null {
   const cleaned = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   if (start !== -1 && end > start) {
     try {
       const data = JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
-      if (isString(data.ru) && data.ru.trim()) return data.ru.trim().slice(0, 400);
+      const ru = isString(data.ru) ? data.ru.trim().slice(0, 400) : "";
+      const zh = isString(data.zh) && HAN.test(data.zh) ? data.zh.slice(0, 120) : "";
+      if (!ru && !zh) return null;
+      return zh ? makeReply(zh, ru) : { zh: "", pinyin: "", syllables: [], words: [], ru };
     } catch {
       // ниже — запасной вариант
     }
   }
-  // Ответила просто текстом — тоже годится, если это не обрывок JSON
-  return cleaned && !cleaned.includes("{") ? cleaned.slice(0, 400) : null;
+  // Ответила просто текстом — годится как русское объяснение, если это не обрывок JSON
+  return cleaned && !cleaned.includes("{")
+    ? { zh: "", pinyin: "", syllables: [], words: [], ru: cleaned.slice(0, 400) }
+    : null;
 }
 
 /** Бесплатный лимит на сегодня исчерпан (код 4006 у Workers AI). */
@@ -342,7 +349,10 @@ export default {
       const outcome = await askModels(
         env,
         (model) => [
-          systemMessage(buildExplainPrompt(explain.word, explain.sentence), model),
+          systemMessage(
+            buildExplainPrompt(explain.word, explain.sentence, explain.known),
+            model,
+          ),
           { role: "user", content: explain.word },
         ],
         parseExplanation,

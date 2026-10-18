@@ -50,14 +50,24 @@ export async function askPanda(request: ChatRequest): Promise<PandaReply> {
   return data.reply;
 }
 
-/** Что значит слово в реплике панды — короткое объяснение по-русски. */
-export async function explainWord(word: string, sentence: string): Promise<string> {
-  const data = await post<{ explanation?: string }>({
+/**
+ * Что значит слово в реплике панды: простыми словами по-китайски (zh может быть пустым,
+ * если просто не объяснить) и по-русски. known — слова пользователя, ими панда и объясняет.
+ */
+export async function explainWord(
+  word: string,
+  sentence: string,
+  known: string[],
+): Promise<PandaReply> {
+  const data = await post<{ explanation?: PandaReply }>({
     mode: "explain",
     word,
     sentence,
+    known,
   });
-  if (!data.explanation) throw new ChatError("failed");
+  if (!data.explanation || (!data.explanation.zh && !data.explanation.ru)) {
+    throw new ChatError("failed");
+  }
   return data.explanation;
 }
 

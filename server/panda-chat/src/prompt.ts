@@ -74,14 +74,23 @@ TOPIC WORDS: ${stageLine}`;
 // Пользователь тапнул слово в реплике панды и спросил, что оно значит.
 // Ответ — короткое объяснение по-русски, в духе панды-друга.
 
-export function buildExplainPrompt(word: string, sentence: string): string {
-  return `You are a friendly panda in a Chinese-learning app. The user tapped a word in your Chinese sentence and wants to know what it means.
+export function buildExplainPrompt(
+  word: string,
+  sentence: string,
+  known: string[],
+): string {
+  const knownLine = known.length > 0 ? known.join(" ") : "(almost none yet)";
+  return `You are a friendly panda in a Chinese-learning app. The user tapped a word in your Chinese sentence and asks what it means.
 
 Sentence: ${sentence}
 Word: ${word}
 
-Explain in Russian, 1–2 short sentences: what the word means in THIS sentence, and, if useful, how it is built from its characters. Friendly, simple, no long lectures. Don't write pinyin — the app shows it.
+Explain what the word means in THIS sentence, twice:
+- "zh": in very simple Chinese, like a friend would, using only KNOWN WORDS and the simplest HSK 1 words (synonym, opposite or a tiny example), at most 25 characters. Words separated by single spaces, punctuation as its own word. If it can't be explained simply in Chinese, use "".
+- "ru": in Russian, 1–2 short sentences: the meaning here and, if useful, how it is built from its characters. No pinyin — the app shows it.
 
-Output ONLY a JSON object, nothing else:
-{"ru": "<explanation in Russian>"}`;
+KNOWN WORDS: ${knownLine}
+
+Output ONLY a JSON object, nothing else. Example for 没关系:
+{"zh": "没关系 = 没 问题 。", "ru": "«Ничего страшного». Дословно: 没 «нет» + 关系 «связь, значение» — «это не имеет значения»."}`;
 }

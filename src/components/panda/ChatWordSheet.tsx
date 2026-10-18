@@ -5,7 +5,9 @@
 //   - у слова из нескольких иероглифов — каждый иероглиф с переводом из словаря
 //     (помогает понять «吃过» или «冰淇淋», которых нет в словаре целиком);
 //   - «Повторение» — если слово есть в словаре: отложить его, чтобы потом потренировать;
-//   - «Спросить панду» — что слово значит именно в этой фразе. Это запрос к модели,
+//   - «Спросить панду» — что слово значит именно в этой фразе: сначала простыми словами
+//     по-китайски (из слов, которые пользователь знает), русское объяснение — под кнопкой
+//     «По-русски» (сразу, если по-китайски объяснить не вышло). Это запрос к модели,
 //     поэтому он тратит одно сообщение из дневного лимита. Ответ запоминается,
 //     пока открыт чат: повторный тап по тому же слову не тратит лимит.
 
@@ -14,6 +16,7 @@ import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
+import { PandaText } from "@/components/panda/PandaText";
 import { ActionChip } from "@/components/word/ActionChip";
 import { WordHeader } from "@/components/word/WordHeader";
 import {
@@ -21,14 +24,19 @@ import {
   usePandaChatStore,
 } from "@/store/pandaChatStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
-import { ChatError, explainWord } from "@/utils/panda/chatApi";
+import {
+  ChatError,
+  explainWord,
+  type PandaReply,
+} from "@/utils/panda/chatApi";
+import { getChatContext } from "@/utils/panda/chatContext";
 import {
   findWordByHanzi,
   type ChatSegment,
 } from "@/utils/panda/chatSegments";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 export interface ChatWordTarget {
   segment: ChatSegment;
@@ -43,7 +51,7 @@ interface ChatWordSheetProps {
 
 type Explanation =
   | { status: "loading" }
-  | { status: "done"; text: string }
+  | { status: "done"; reply: PandaReply }
   | { status: "error"; text: string };
 
 const ERROR_TEXT = {
@@ -61,6 +69,7 @@ export function ChatWordSheet({ target, onClose }: ChatWordSheetProps) {
   // Ответы панды по словам — пока открыт чат
   const cache = useRef(new Map<string, Explanation>());
   const [, rerender] = useState(0);
+  const [showRussian, setShowRussian] = useState(false);
   const update = (key: string, value: Explanation) => {
     cache.current.set(key, value);
     rerender((n) => n + 1);
@@ -70,9 +79,12 @@ export function ChatWordSheet({ target, onClose }: ChatWordSheetProps) {
     if (cache.current.get(key)?.status === "loading") return;
     update(key, { status: "loading" });
     try {
-      const text = await explainWord(shown.segment.text, shown.sentence);
+      const { known } = getChatContext(
+        useWordProgressStore.getState().flashcardWords,
+      );
+      const reply = await explainWord(shown.segment.text, shown.sentence, known);
       usePandaChatStore.getState().countSent();
-      update(key, { status: "done", text });
+      update(key, { status: "done", reply });
     } catch (e) {
       const quota = e instanceof ChatError && e.kind === "quota";
       update(key, {
@@ -83,7 +95,11 @@ export function ChatWordSheet({ target, onClose }: ChatWordSheetProps) {
   };
 
   return (
-    <BottomSheet item={target} onClose={onClose}>
+    <BottomSheet
+      item={target}
+      onClose={onClose}
+      onOpen={() => setShowRussian(false)}
+    >
       {(shown) => {
         const { segment } = shown;
         const word = segment.word;
@@ -149,21 +165,49 @@ export function ChatWordSheet({ target, onClose }: ChatWordSheetProps) {
               />
             </View>
 
-            {explanation && (
+            {explanation && explanation.status !== "done" && (
               <View className="mt-4 rounded-2xl bg-background/60 p-3">
                 <Text
                   className={`font-nunito text-body ${
                     explanation.status === "error"
                       ? "text-error"
-                      : explanation.status === "loading"
-                        ? "text-textSecondary"
-                        : "text-text"
+                      : "text-textSecondary"
                   }`}
                 >
                   {explanation.status === "loading"
                     ? "Панда думает…"
                     : explanation.text}
                 </Text>
+              </View>
+            )}
+
+            {explanation?.status === "done" && (
+              <View className="mt-4 gap-2 rounded-2xl bg-background/60 p-3">
+                {!!explanation.reply.zh && (
+                  <PandaText
+                    text={explanation.reply.zh}
+                    syllables={explanation.reply.syllables}
+                    words={explanation.reply.words}
+                    size={22}
+                  />
+                )}
+                {!!explanation.reply.ru &&
+                  (!explanation.reply.zh || showRussian ? (
+                    <Text className="font-nunito text-body text-text">
+                      {explanation.reply.ru}
+                    </Text>
+                  ) : (
+                    <Pressable
+                      onPress={() => setShowRussian(true)}
+                      hitSlop={8}
+                      className="self-start active:opacity-60"
+                      accessibilityRole="button"
+                    >
+                      <Text className="font-nunito text-small text-primary">
+                        По-русски
+                      </Text>
+                    </Pressable>
+                  ))}
               </View>
             )}
 

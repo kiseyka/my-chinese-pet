@@ -15,10 +15,10 @@ import {
   ChatWordSheet,
   type ChatWordTarget,
 } from "@/components/panda/ChatWordSheet";
+import { PandaText } from "@/components/panda/PandaText";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { Hanzi } from "@/components/ui/Hanzi";
-import { Pinyin } from "@/components/ui/Pinyin";
 import { PinyinToggle } from "@/components/ui/PinyinToggle";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import {
@@ -27,12 +27,11 @@ import {
   type ChatMessage,
 } from "@/store/pandaChatStore";
 import { useProfileStore } from "@/store/profileStore";
-import { useSettingsStore } from "@/store/settingsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { askPanda, ChatError, type ChatErrorKind } from "@/utils/panda/chatApi";
 import { getChatContext } from "@/utils/panda/chatContext";
-import { segmentReply, type ChatSegment } from "@/utils/panda/chatSegments";
+import type { ChatSegment } from "@/utils/panda/chatSegments";
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import Animated, {
@@ -54,8 +53,6 @@ const ERROR_TEXT: Record<ChatErrorKind, string> = {
   failed: "Панда задумалась и ничего не ответила.",
 };
 
-const BUBBLE_HANZI_SIZE = 26;
-
 function PandaBubble({
   message,
   onWordPress,
@@ -64,37 +61,17 @@ function PandaBubble({
   onWordPress: (segment: ChatSegment, sentence: string) => void;
 }) {
   const { speakForced } = useSpeakHanzi();
-  const showPinyin = useSettingsStore((s) => s.showPinyin);
   const [showTranslation, setShowTranslation] = useState(false);
-  const segments = useMemo(
-    () => segmentReply(message.text, message.syllables, message.words),
-    [message.text, message.syllables, message.words],
-  );
 
   return (
     <View className="self-start max-w-[85%] rounded-2xl rounded-tl-sm bg-surface px-4 py-3 gap-2">
-      {/* Слова: пиньинь над каждым, тап — панель слова */}
-      <View className="flex-row flex-wrap items-end">
-        {segments.map((segment, i) =>
-          segment.isHan ? (
-            <Pressable
-              key={i}
-              onPress={() => onWordPress(segment, message.text)}
-              className="items-center px-0.5 active:opacity-50"
-              accessibilityRole="button"
-              accessibilityLabel={segment.text}
-            >
-              {showPinyin && <Pinyin size="sm">{segment.pinyin || " "}</Pinyin>}
-              <Hanzi size={BUBBLE_HANZI_SIZE}>{segment.text}</Hanzi>
-            </Pressable>
-          ) : (
-            <View key={i} className="items-center">
-              {showPinyin && <Pinyin size="sm"> </Pinyin>}
-              <Hanzi size={BUBBLE_HANZI_SIZE}>{segment.text}</Hanzi>
-            </View>
-          ),
-        )}
-      </View>
+      {/* Слова: пиньинь над каждым, тап по слову — панель слова */}
+      <PandaText
+        text={message.text}
+        syllables={message.syllables}
+        words={message.words}
+        onWordPress={(segment) => onWordPress(segment, message.text)}
+      />
 
       {showTranslation && !!message.ru && (
         <Text className="font-nunito text-small text-textSecondary">
