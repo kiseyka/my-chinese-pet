@@ -9,6 +9,11 @@
   "ai": {
     "binding": "AI"
   },
+  // Модель Workers AI. Другие: @cf/qwen/qwen3-30b-a3b-fp8, @cf/meta/llama-3.3-70b-instruct-fp8-fast
+  // (сильнее, но тратит ~в 4 раза больше бесплатного лимита). Цены: developers.cloudflare.com/workers-ai/platform/pricing
+  "vars": {
+    "MODEL": "@cf/google/gemma-4-26b-a4b-it"
+  },
   // Логи запросов видны в панели Cloudflare (Workers → panda-chat → Logs)
   "observability": {
     "enabled": true

@@ -11,7 +11,7 @@
 //   502 { error: "model" }        — модель ответила ошибкой или непонятным текстом
 //
 // Ключей здесь нет: модель доступна через привязку AI (wrangler.jsonc).
-// Модель меняется одной строкой — MODEL ниже.
+// Модель задаётся в wrangler.jsonc (vars.MODEL) — поменять и снова `npx wrangler deploy`.
 // Модель пишет только иероглифы и перевод. Пиньинь считает библиотека pinyin-pro:
 // она не путает тоны так, как модель, и знает изменения тонов у 不 и 一.
 
@@ -19,10 +19,12 @@ import { pinyin } from "pinyin-pro";
 
 interface Env {
   AI: Ai;
+  /** Модель Workers AI из wrangler.jsonc. */
+  MODEL?: string;
 }
 
-/** Qwen лучше всех из бесплатных моделей знает китайский; стоит как маленькая Llama 3B. */
-const MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
+/** Если в wrangler.jsonc модель не указана. */
+const DEFAULT_MODEL = "@cf/google/gemma-4-26b-a4b-it";
 
 /** Сколько последних сообщений истории отправлять модели. */
 const MAX_HISTORY = 8;
@@ -44,6 +46,8 @@ interface ChatMessage {
 
 interface ChatRequest {
   messages: ChatMessage[];
+  /** Имя пользователя из профиля (может быть пустым). */
+  name: string;
   known: string[];
   stage?: { title: string; words: string[] };
 }
@@ -113,12 +117,19 @@ function parseRequest(body: unknown): ChatRequest | null {
     }
   }
 
-  return { messages, known: cleanWords(raw.known, MAX_KNOWN_WORDS), stage };
+  const name = isString(raw.name) ? raw.name.trim().slice(0, 24) : "";
+
+  return {
+    messages,
+    name,
+    known: cleanWords(raw.known, MAX_KNOWN_WORDS),
+    stage,
+  };
 }
 
 // ── Промпт ───────────────────────────────────────────────────────────────────
 
-function buildSystemPrompt({ known, stage }: ChatRequest): string {
+function buildSystemPrompt({ name, known, stage }: ChatRequest): string {
   const knownLine =
     known.length > 0
       ? known.join(" ")
@@ -126,29 +137,36 @@ function buildSystemPrompt({ known, stage }: ChatRequest): string {
   const stageLine = stage
     ? `${stage.title}: ${stage.words.join(" ")}`
     : "(no topic — chat about everyday things)";
+  const userLine = name
+    ? `The user is a human named ${name}. Call them ${name} sometimes.`
+    : "The user is a human; you don't know their name yet — you may ask it.";
 
-  return `You are a small friendly panda who lives in a Chinese-learning app. You are learning Chinese together with the user: a study buddy and friend, NOT a teacher. You are curious, warm and a little playful. You never lecture.
+  return `You are 熊猫 (a panda), a character in a Chinese-learning app. ${userLine} The user is NOT a panda: never call them 熊猫 or 小熊猫.
+You and the user are learning Chinese together. You are their friend and study buddy, not a teacher: curious, warm, a little playful, never lecturing.
 
 How to reply:
-- Always reply in simple Mandarin Chinese (simplified characters): 1–2 short sentences, at most 25 characters in total.
-- Build your sentences mostly from KNOWN WORDS and TOPIC WORDS below. If you need another word, use only the most basic HSK 1 words.
-- The user may write in Russian, Chinese or pinyin. Always answer in Chinese anyway.
-- Keep the conversation going: often ask a simple question about the topic.
-- If the user's Chinese has a mistake, do not explain it. Just use the correct form naturally in your reply.
+- Always reply in simple Mandarin Chinese (simplified characters): 1–2 short sentences, at most 40 characters.
+- Prefer KNOWN WORDS and TOPIC WORDS below. Other words only if simple (HSK 1–2).
+- The user may write in Russian, Chinese or pinyin. Understand them and always answer in Chinese.
+- Keep the meaning exact. Example: "тепло" is 暖和, not 热 ("жарко").
+- If the user asks how to say something in Chinese, give exactly that phrase in your reply, then continue the chat.
 - If the user does not understand you, say the same thing again in even simpler Chinese.
-- If the user asks for something unrelated, unsafe or inappropriate, gently change the subject back to everyday chat.
+- If the user's Chinese has a mistake, don't explain it — just use the correct form naturally.
+- Greet only once at the start of the chat. Keep the conversation going with a simple question about the user or the topic.
+- If the user asks for something unsafe or inappropriate, gently change the subject.
 
 Every reply, including later ones, is ONLY a JSON object, nothing else:
 {"zh": "<your reply in Chinese>", "ru": "<natural Russian translation of zh>"}
 
 KNOWN WORDS: ${knownLine}
-TOPIC WORDS: ${stageLine}
-/no_think`;
+TOPIC WORDS: ${stageLine}`;
 }
 
-function toModelMessages(request: ChatRequest) {
+function toModelMessages(request: ChatRequest, model: string) {
+  // Qwen 3 по умолчанию «думает» перед ответом — долго; так ему велят не думать
+  const noThink = model.includes("qwen3") ? "\n/no_think" : "";
   return [
-    { role: "system", content: buildSystemPrompt(request) },
+    { role: "system", content: buildSystemPrompt(request) + noThink },
     ...request.messages.map((message) =>
       message.role === "panda"
         ? {
@@ -261,13 +279,14 @@ export default {
     const chat = parseRequest(body);
     if (!chat) return json({ error: "bad_request" }, 400);
 
+    const model = env.MODEL || DEFAULT_MODEL;
     const startedAt = Date.now();
     let result: unknown;
     try {
       result = await env.AI.run(
-        MODEL as any,
+        model as any,
         {
-          messages: toModelMessages(chat),
+          messages: toModelMessages(chat, model),
           max_tokens: MAX_TOKENS,
           temperature: 0.7,
         } as any,
@@ -279,7 +298,7 @@ export default {
     }
 
     const text = extractText(result);
-    console.log(`Model answered in ${Date.now() - startedAt} ms`);
+    console.log(`${model} answered in ${Date.now() - startedAt} ms`);
     const reply = parseReply(text);
     if (!reply) {
       console.error("Unparsable reply", text.slice(0, 500));

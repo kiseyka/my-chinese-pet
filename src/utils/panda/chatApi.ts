@@ -14,6 +14,8 @@ const TIMEOUT_MS = 45_000;
 export interface ChatRequest {
   /** ru — перевод реплики панды: модель видит в истории тот же формат, что должна выдать. */
   messages: { role: ChatRole; text: string; ru?: string }[];
+  /** Имя из профиля, чтобы панда обращалась по имени (может быть пустым). */
+  name: string;
   known: string[];
   stage?: { title: string; words: string[] };
 }

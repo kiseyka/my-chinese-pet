@@ -4,6 +4,8 @@
 // панда отвечает коротко по-китайски, в основном словами, которые он уже учит,
 // и на тему текущего этапа пути. Сервер: server/panda-chat (см. docs/panda-chat.md).
 // Тап по иероглифам — озвучка.
+// Список перевёрнут (inverted): новые сообщения сами оказываются внизу у поля ввода,
+// прокручивать после каждого ответа не нужно.
 
 import SendIcon from "@/assets/images/icons/arrow-right.svg";
 import { Screen } from "@/components/layout/Screen";
@@ -16,13 +18,14 @@ import {
   usePandaChatStore,
   type ChatMessage,
 } from "@/store/pandaChatStore";
+import { useProfileStore } from "@/store/profileStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { askPanda, ChatError, type ChatErrorKind } from "@/utils/panda/chatApi";
 import { getChatContext } from "@/utils/panda/chatContext";
-import { useEffect, useRef, useState } from "react";
-import { FlatList, Keyboard, Pressable, Text, TextInput, View } from "react-native";
+import { useMemo, useState } from "react";
+import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import Animated, {
   useAnimatedKeyboard,
   useAnimatedStyle,
@@ -77,9 +80,10 @@ function UserBubble({ message }: { message: ChatMessage }) {
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
-  const listRef = useRef<FlatList<ChatMessage>>(null);
 
   const messages = usePandaChatStore((s) => s.messages);
+  /** Для перевёрнутого списка: самое новое — первым. */
+  const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
   const usage = usePandaChatStore((s) => s.usage);
   const messagesLeft = getChatMessagesLeft(usage);
 
@@ -108,7 +112,11 @@ export default function ChatScreen() {
         useWordProgressStore.getState().flashcardWords,
       );
 
-      const reply = await askPanda({ messages: history, ...context });
+      const reply = await askPanda({
+        messages: history,
+        name: useProfileStore.getState().name,
+        ...context,
+      });
       store.addMessage({
         role: "panda",
         text: reply.zh,
@@ -123,8 +131,6 @@ export default function ChatScreen() {
     }
   };
 
-  const scrollToEnd = () => listRef.current?.scrollToEnd({ animated: true });
-
   // Клавиатура. При edge-to-edge Android сам экран не сжимает, поэтому поднимаем
   // содержимое на высоту клавиатуры (минус нижний отступ, который у экрана уже есть).
   // Высоту даёт Reanimated по системным отступам — надёжнее событий Keyboard.
@@ -132,14 +138,6 @@ export default function ChatScreen() {
   const keyboardStyle = useAnimatedStyle(() => ({
     paddingBottom: Math.max(0, keyboard.height.value - insets.bottom),
   }));
-
-  // Клавиатура выдвинулась — последние сообщения не должны уйти под неё
-  useEffect(() => {
-    const sub = Keyboard.addListener("keyboardDidShow", () =>
-      setTimeout(scrollToEnd, 50),
-    );
-    return () => sub.remove();
-  }, []);
 
   return (
     <Screen className="bg-background">
@@ -157,52 +155,54 @@ export default function ChatScreen() {
           )}
         </View>
 
-        <FlatList
-          ref={listRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          className="flex-1"
-          contentContainerStyle={{ gap: 10, paddingVertical: 12, flexGrow: 1 }}
-          onContentSizeChange={scrollToEnd}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) =>
-            item.role === "panda" ? (
-              <PandaBubble message={item} />
-            ) : (
-              <UserBubble message={item} />
-            )
-          }
-          ListEmptyComponent={
-            <View className="flex-1 items-center justify-center px-6 gap-2">
-              <Hanzi size="lg">你好！</Hanzi>
-              <Text className="font-nunito text-body text-textSecondary text-center">
-                Напиши панде что-нибудь — по-русски или по-китайски. Она
-                отвечает словами, которые ты учишь.
-              </Text>
-            </View>
-          }
-          ListFooterComponent={
-            <View className="gap-2 pt-2">
-              {sending && (
-                <View className="self-start rounded-2xl rounded-tl-sm bg-surface px-4 py-3">
-                  <Text className="font-nunito text-body text-textSecondary">
-                    Панда думает…
+        {messages.length === 0 && !sending ? (
+          <View className="flex-1 items-center justify-center px-6 gap-2">
+            <Hanzi size="lg">你好！</Hanzi>
+            <Text className="font-nunito text-body text-textSecondary text-center">
+              Напиши панде что-нибудь — по-русски или по-китайски. Она отвечает
+              словами, которые ты учишь.
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            inverted
+            data={newestFirst}
+            keyExtractor={(item) => item.id}
+            className="flex-1"
+            contentContainerStyle={{ gap: 10, paddingVertical: 12 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            renderItem={({ item }) =>
+              item.role === "panda" ? (
+                <PandaBubble message={item} />
+              ) : (
+                <UserBubble message={item} />
+              )
+            }
+            // В перевёрнутом списке «шапка» — внизу, сразу над полем ввода
+            ListHeaderComponent={
+              <View className="gap-2">
+                {sending && (
+                  <View className="self-start rounded-2xl rounded-tl-sm bg-surface px-4 py-3">
+                    <Text className="font-nunito text-body text-textSecondary">
+                      Панда думает…
+                    </Text>
+                  </View>
+                )}
+                {error && (
+                  <Text className="font-nunito text-small text-error text-center">
+                    {ERROR_TEXT[error]}
                   </Text>
-                </View>
-              )}
-              {error && (
-                <Text className="font-nunito text-small text-error text-center">
-                  {ERROR_TEXT[error]}
-                </Text>
-              )}
-              {messagesLeft === 0 && !error && (
-                <Text className="font-nunito text-small text-textSecondary text-center">
-                  На сегодня сообщения кончились. Панда ждёт тебя завтра!
-                </Text>
-              )}
-            </View>
-          }
-        />
+                )}
+                {messagesLeft === 0 && !error && (
+                  <Text className="font-nunito text-small text-textSecondary text-center">
+                    На сегодня сообщения кончились. Панда ждёт тебя завтра!
+                  </Text>
+                )}
+              </View>
+            }
+          />
+        )}
 
         {/* Поле ввода */}
         <View className="flex-row items-end gap-2 pt-2 pb-2">
