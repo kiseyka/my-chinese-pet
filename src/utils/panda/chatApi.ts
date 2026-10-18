@@ -9,10 +9,11 @@ import type { ChatRole } from "@/store/pandaChatStore";
 const CHAT_URL = process.env.EXPO_PUBLIC_PANDA_CHAT_URL;
 
 /** Модель иногда думает долго; дольше ждать нет смысла. */
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 45_000;
 
 export interface ChatRequest {
-  messages: { role: ChatRole; text: string }[];
+  /** ru — перевод реплики панды: модель видит в истории тот же формат, что должна выдать. */
+  messages: { role: ChatRole; text: string; ru?: string }[];
   known: string[];
   stage?: { title: string; words: string[] };
 }
@@ -26,7 +27,8 @@ export interface PandaReply {
 /** Почему не получилось: каждой причине — своя фраза на экране. */
 export type ChatErrorKind =
   | "no_url" // адрес сервера не задан
-  | "offline" // нет сети или сервер не ответил вовремя
+  | "offline" // нет сети
+  | "timeout" // сервер не ответил вовремя
   | "quota" // бесплатные запросы на сегодня кончились
   | "failed"; // сервер или модель ответили ошибкой
 
@@ -51,7 +53,7 @@ export async function askPanda(request: ChatRequest): Promise<PandaReply> {
       signal: controller.signal,
     });
   } catch {
-    throw new ChatError("offline");
+    throw new ChatError(controller.signal.aborted ? "timeout" : "offline");
   } finally {
     clearTimeout(timer);
   }

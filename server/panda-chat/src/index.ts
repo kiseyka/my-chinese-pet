@@ -3,7 +3,7 @@
 // ЧАТ С ПАНДОЙ — сервер-посредник между приложением и моделью Cloudflare Workers AI.
 //
 // Приложение шлёт POST с историей и словами пользователя:
-//   { messages: [{ role: "user" | "panda", text }], known: ["你", "好"], stage?: { title, words } }
+//   { messages: [{ role: "user" | "panda", text, ru? }], known: ["你", "好"], stage?: { title, words } }
 // Сервер собирает промпт панды, спрашивает модель и отвечает:
 //   200 { reply: { zh, pinyin, ru } }
 //   400 { error: "bad_request" }  — приложение прислало что-то не то
@@ -12,6 +12,10 @@
 //
 // Ключей здесь нет: модель доступна через привязку AI (wrangler.jsonc).
 // Модель меняется одной строкой — MODEL ниже.
+// Модель пишет только иероглифы и перевод. Пиньинь считает библиотека pinyin-pro:
+// она не путает тоны так, как модель, и знает изменения тонов у 不 и 一.
+
+import { pinyin } from "pinyin-pro";
 
 interface Env {
   AI: Ai;
@@ -27,13 +31,15 @@ const MAX_KNOWN_WORDS = 150;
 const MAX_STAGE_WORDS = 20;
 const MAX_WORD_LENGTH = 8;
 /** Ответ панды короткий; запас — на случай, если модель всё же начнёт «думать». */
-const MAX_TOKENS = 400;
+const MAX_TOKENS = 300;
 
 type ChatRole = "user" | "panda";
 
 interface ChatMessage {
   role: ChatRole;
   text: string;
+  /** Перевод реплики панды — чтобы в истории модель видела тот же формат, что должна выдать. */
+  ru?: string;
 }
 
 interface ChatRequest {
@@ -80,10 +86,16 @@ function parseRequest(body: unknown): ChatRequest | null {
   const messages: ChatMessage[] = [];
   for (const item of raw.messages.slice(-MAX_HISTORY)) {
     if (!item || typeof item !== "object") return null;
-    const { role, text } = item as Record<string, unknown>;
+    const { role, text, ru } = item as Record<string, unknown>;
     if ((role !== "user" && role !== "panda") || !isString(text)) return null;
     const trimmed = text.trim().slice(0, MAX_MESSAGE_LENGTH);
-    if (trimmed) messages.push({ role, text: trimmed });
+    if (!trimmed) continue;
+    messages.push({
+      role,
+      text: trimmed,
+      ...(role === "panda" &&
+        isString(ru) && { ru: ru.trim().slice(0, MAX_MESSAGE_LENGTH) }),
+    });
   }
   // Последнее сообщение — от пользователя, иначе отвечать не на что
   if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
@@ -108,7 +120,9 @@ function parseRequest(body: unknown): ChatRequest | null {
 
 function buildSystemPrompt({ known, stage }: ChatRequest): string {
   const knownLine =
-    known.length > 0 ? known.join(" ") : "(almost none yet — use only the simplest HSK 1 words)";
+    known.length > 0
+      ? known.join(" ")
+      : "(almost none yet — use only the simplest HSK 1 words)";
   const stageLine = stage
     ? `${stage.title}: ${stage.words.join(" ")}`
     : "(no topic — chat about everyday things)";
@@ -121,10 +135,11 @@ How to reply:
 - The user may write in Russian, Chinese or pinyin. Always answer in Chinese anyway.
 - Keep the conversation going: often ask a simple question about the topic.
 - If the user's Chinese has a mistake, do not explain it. Just use the correct form naturally in your reply.
+- If the user does not understand you, say the same thing again in even simpler Chinese.
 - If the user asks for something unrelated, unsafe or inappropriate, gently change the subject back to everyday chat.
 
-Output ONLY a JSON object, nothing else:
-{"zh": "<your reply in Chinese>", "pinyin": "<pinyin with tone marks, words separated by spaces>", "ru": "<natural Russian translation>"}
+Every reply, including later ones, is ONLY a JSON object, nothing else:
+{"zh": "<your reply in Chinese>", "ru": "<natural Russian translation of zh>"}
 
 KNOWN WORDS: ${knownLine}
 TOPIC WORDS: ${stageLine}
@@ -134,16 +149,51 @@ TOPIC WORDS: ${stageLine}
 function toModelMessages(request: ChatRequest) {
   return [
     { role: "system", content: buildSystemPrompt(request) },
-    ...request.messages.map((message) => ({
-      role: message.role === "panda" ? "assistant" : "user",
-      content: message.text,
-    })),
+    ...request.messages.map((message) =>
+      message.role === "panda"
+        ? {
+            role: "assistant",
+            content: JSON.stringify({ zh: message.text, ru: message.ru ?? "" }),
+          }
+        : { role: "user", content: message.text },
+    ),
   ];
 }
 
 // ── Ответ модели ─────────────────────────────────────────────────────────────
 
-const CJK = /[一-鿿]/;
+const HAN = /\p{Script=Han}/u;
+
+/** Китайская пунктуация → обычная, чтобы пиньинь читался: «hěn hǎo! nǐ ne?» */
+const PUNCTUATION: Record<string, string> = {
+  "，": ",",
+  "。": ".",
+  "！": "!",
+  "？": "?",
+  "：": ":",
+  "；": ";",
+  "、": ",",
+  "（": "(",
+  "）": ")",
+  "“": '"',
+  "”": '"',
+};
+
+/** Пиньинь с тонами: слоги через пробел, знаки препинания прижаты к слогу. */
+function toPinyin(zh: string): string {
+  const syllables = pinyin(zh, { type: "array", nonZh: "consecutive" });
+  let result = "";
+  for (const part of syllables) {
+    const item = part.trim();
+    if (!item) continue;
+    const mapped = Array.from(item)
+      .map((ch) => PUNCTUATION[ch] ?? ch)
+      .join("");
+    const isPunctuation = !/\p{L}/u.test(mapped);
+    result += isPunctuation || !result ? mapped : ` ${mapped}`;
+  }
+  return result.trim();
+}
 
 /** Текст из ответа модели: у новых моделей — choices[0].message.content, у старых — response. */
 function extractText(result: unknown): string {
@@ -162,11 +212,15 @@ function parseReply(text: string): PandaReply | null {
   const end = cleaned.lastIndexOf("}");
   if (start !== -1 && end > start) {
     try {
-      const data = JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
-      if (isString(data.zh) && CJK.test(data.zh)) {
+      const data = JSON.parse(cleaned.slice(start, end + 1)) as Record<
+        string,
+        unknown
+      >;
+      if (isString(data.zh) && HAN.test(data.zh)) {
+        const zh = data.zh.trim().slice(0, 120);
         return {
-          zh: data.zh.trim().slice(0, 120),
-          pinyin: isString(data.pinyin) ? data.pinyin.trim().slice(0, 300) : "",
+          zh,
+          pinyin: toPinyin(zh),
           ru: isString(data.ru) ? data.ru.trim().slice(0, 300) : "",
         };
       }
@@ -176,8 +230,9 @@ function parseReply(text: string): PandaReply | null {
   }
 
   // Модель забыла про JSON, но ответила по-китайски — показываем как есть
-  if (CJK.test(cleaned) && !cleaned.includes("{")) {
-    return { zh: cleaned.slice(0, 120), pinyin: "", ru: "" };
+  if (HAN.test(cleaned) && !cleaned.includes("{")) {
+    const zh = cleaned.slice(0, 120);
+    return { zh, pinyin: toPinyin(zh), ru: "" };
   }
   return null;
 }
@@ -206,19 +261,25 @@ export default {
     const chat = parseRequest(body);
     if (!chat) return json({ error: "bad_request" }, 400);
 
+    const startedAt = Date.now();
     let result: unknown;
     try {
-      result = await env.AI.run(MODEL as any, {
-        messages: toModelMessages(chat),
-        max_tokens: MAX_TOKENS,
-        temperature: 0.7,
-      } as any);
+      result = await env.AI.run(
+        MODEL as any,
+        {
+          messages: toModelMessages(chat),
+          max_tokens: MAX_TOKENS,
+          temperature: 0.7,
+        } as any,
+      );
     } catch (error) {
       console.error("AI error", error);
-      return json({ error: isQuotaError(error) ? "quota" : "model" }, isQuotaError(error) ? 429 : 502);
+      const quota = isQuotaError(error);
+      return json({ error: quota ? "quota" : "model" }, quota ? 429 : 502);
     }
 
     const text = extractText(result);
+    console.log(`Model answered in ${Date.now() - startedAt} ms`);
     const reply = parseReply(text);
     if (!reply) {
       console.error("Unparsable reply", text.slice(0, 500));

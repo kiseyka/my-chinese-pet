@@ -41,6 +41,7 @@ const ERROR_TEXT: Record<ChatErrorKind, string> = {
   no_url:
     "Чат ещё не подключён: нет адреса сервера (EXPO_PUBLIC_PANDA_CHAT_URL).",
   offline: "Панда не услышала — нет связи. Попробуй ещё раз.",
+  timeout: "Панда думала слишком долго и сбилась. Попробуй ещё раз.",
   quota: "Панда устала болтать сегодня. Приходи завтра!",
   failed: "Панда задумалась и ничего не ответила. Попробуй ещё раз.",
 };
@@ -129,7 +130,7 @@ export default function ChatScreen() {
       const history = usePandaChatStore
         .getState()
         .messages.slice(-HISTORY_SIZE)
-        .map(({ role, text }) => ({ role, text }));
+        .map(({ role, text, ru }) => ({ role, text, ru }));
       const context = getChatContext(
         useWordProgressStore.getState().flashcardWords,
       );
