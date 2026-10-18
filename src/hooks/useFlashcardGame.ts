@@ -74,6 +74,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
 
       finishTraining({
         gameId: "flashcards",
+        answers: total,
         rewards: {
           xp: score,
           coins: calculateCoinsEarned(getAccuracy(score, total)),

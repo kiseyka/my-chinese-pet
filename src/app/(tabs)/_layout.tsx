@@ -1,3 +1,4 @@
+import { useDailyVisit } from "@/hooks/useDailyVisit";
 import { colors } from "@/theme/colors";
 import { useFonts } from "expo-font";
 import { Tabs, usePathname } from "expo-router";
@@ -9,6 +10,8 @@ export default function TabLayout() {
   const pathname = usePathname();
 
   const insets = useSafeAreaInsets();
+  // Журнал занятий: день засчитывается при входе в приложение
+  useDailyVisit();
   const [loaded] = useFonts({
     NotoSansSC: require("../../../assets/fonts/NotoSerifSC-Regular.ttf"),
     NotoSansSCBold: require("../../../assets/fonts/NotoSerifSC-Bold.ttf"),

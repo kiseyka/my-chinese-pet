@@ -183,6 +183,7 @@ export function finishWritingLesson(
 
   finishTraining({
     gameId: "writing",
+    answers: total,
     rewards: {
       xp: score,
       coins: calculateCoinsEarned(getAccuracy(score, total)),

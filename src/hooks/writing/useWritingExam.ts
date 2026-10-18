@@ -17,7 +17,11 @@ import type { Word } from "@/content/flashcards/types";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import type { HanziData } from "@/types/hanzi";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
-import { getAccuracy, grantRewards } from "@/utils/finishTraining";
+import {
+  getAccuracy,
+  grantRewards,
+  logTraining,
+} from "@/utils/finishTraining";
 import {
   checkStroke,
   resample,
@@ -240,6 +244,7 @@ export function useWritingExam(buildWords: () => Word[]) {
 
     // Награда: опыт за каждое сданное слово, монеты — по доле сданных
     const passed = nextOutcomes.filter((o) => o.verdict === "passed").length;
+    logTraining(nextOutcomes.length);
     grantRewards({
       xp: passed,
       coins: calculateCoinsEarned(getAccuracy(passed, nextOutcomes.length)),

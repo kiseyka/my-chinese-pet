@@ -9,7 +9,11 @@
 import type { Word } from "@/content/flashcards/types";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
-import { getAccuracy, grantRewards } from "@/utils/finishTraining";
+import {
+  getAccuracy,
+  grantRewards,
+  logTraining,
+} from "@/utils/finishTraining";
 import {
   buildReadingExamQuestion,
   type ReadingExamQuestion,
@@ -79,6 +83,7 @@ export function useReadingExam(words: Word[]) {
     isFinishing.current = true;
 
     const passed = outcomes.filter((o) => o.verdict === "passed").length;
+    logTraining(outcomes.length);
     grantRewards({
       xp: passed,
       coins: calculateCoinsEarned(getAccuracy(passed, outcomes.length)),

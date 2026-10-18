@@ -46,9 +46,10 @@ export function useSelfCheckGame({ setId }: { setId: string }) {
     isCorrect: (_word, answer) => answer === "know",
     resultExtra: (_word, answer) => ({ selfCheck: answer }),
 
-    onFinish: () => {
+    onFinish: (words) => {
       finishTraining({
         gameId: "flashcards",
+        answers: words.length,
         mode: SELF_CHECK_MODE,
         rewards: { xp: 0, coins: 0 },
       });

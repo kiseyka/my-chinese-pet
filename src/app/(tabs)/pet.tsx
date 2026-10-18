@@ -10,7 +10,7 @@ import { NavIconButton } from "@/components/ui/NavIconButton";
 import { usePandaDialog } from "@/hooks/panda/usePandaDialog";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const PandaScreen = () => {
   const router = useRouter();
@@ -23,7 +23,14 @@ const PandaScreen = () => {
   return (
     <Screen className="bg-[#EDE0CE]">
       <View className="flex-row justify-between items-center px-2 z-10">
-        <View className="flex-col gap-1" style={{ width: "50%" }}>
+        {/* Уровень и опыт — вход в профиль */}
+        <Pressable
+          onPress={() => router.push("/profile")}
+          className="flex-col gap-1 active:opacity-70"
+          style={{ width: "50%" }}
+          accessibilityRole="button"
+          accessibilityLabel="Профиль"
+        >
           <Text className="font-nunito text-lg tracking-wide text-text">
             УРОВЕНЬ {level}
           </Text>
@@ -43,7 +50,7 @@ const PandaScreen = () => {
               {xpIntoLevel} / {xpForNextLevel}
             </Text>
           </View>
-        </View>
+        </Pressable>
 
         {/* Правая колонка: монеты */}
         <CoinBalance />
