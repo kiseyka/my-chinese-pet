@@ -9,6 +9,7 @@
 //   закладка — «Повторение» письма сразу, без панели (на экзамен слово попадает
 //   только с 3 точками, закладка на это не влияет);
 //   плюс — панель слова (onOpenWord): наборы, новый набор, озвучка.
+// Тап по написанию иероглифа — сохранить его в галерею (значок в углу превью).
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
@@ -21,7 +22,12 @@ import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
-import { HanziView } from "../canvas/HanziView";
+import { useState } from "react";
+import {
+  GallerySaveDialog,
+  type GalleryCandidate,
+} from "../gallery/GallerySaveDialog";
+import { SavableHanzi } from "../gallery/SavableHanzi";
 
 /** Размер превью твоего написания одного иероглифа. */
 const PREVIEW_SIZE = 52;
@@ -66,6 +72,9 @@ export function WritingResultsList({
   onOpenWord,
 }: WritingResultsListProps) {
   const { t } = useTranslation(["sets"]);
+  const [toSave, setToSave] = useState<GalleryCandidate | null>(null);
+  const askSave = (hanzi: string, strokes: GalleryCandidate["strokes"]) =>
+    setToSave({ hanzi, strokes });
 
   const review = useWordProgressStore((s) => s.review);
   const toggleReview = useWordProgressStore(
@@ -105,17 +114,18 @@ export function WritingResultsList({
         className="gap-2 rounded-2xl bg-surface py-3 pl-3 pr-2"
       >
         <View className="flex-row items-center gap-3">
-          {/* Твоё написание */}
-          <Pressable
-            onPress={() => onOpenWord(toWord(item))}
-            className="flex-row gap-1 active:opacity-70"
-            accessibilityRole="button"
-            accessibilityLabel={`${item.hanzi}: твоё написание`}
-          >
+          {/* Твоё написание: тап по иероглифу — в галерею */}
+          <View className="flex-row gap-1">
             {item.raws.map((raw, index) => (
-              <HanziView key={index} size={PREVIEW_SIZE} rawStrokes={raw} />
+              <SavableHanzi
+                key={index}
+                hanzi={Array.from(item.hanzi)[index] ?? item.hanzi}
+                strokes={raw}
+                size={PREVIEW_SIZE}
+                onSave={askSave}
+              />
             ))}
-          </Pressable>
+          </View>
 
           {/* Слово, перевод, точки */}
           <Pressable
@@ -200,6 +210,8 @@ export function WritingResultsList({
 
   return (
     <View className="gap-8">
+      <GallerySaveDialog candidate={toSave} onClose={() => setToSave(null)} />
+
       {/* С подсказками или похвала */}
       {withHints.length > 0 ? (
         <View className="gap-3">
@@ -248,7 +260,8 @@ export function WritingResultsList({
       )}
 
       <Text className="text-center font-nunito text-small text-textSecondary">
-        Закладка — в повторение, плюс — в любой набор.
+        Закладка — в повторение, плюс — в любой набор.{"\n"}Тап по своему
+        написанию — сохранить его в галерею.
       </Text>
     </View>
   );
