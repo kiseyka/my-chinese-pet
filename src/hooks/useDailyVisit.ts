@@ -40,7 +40,10 @@ export function useDailyVisit() {
   useEffect(() => {
     const mark = () => useActivityStore.getState().markVisit();
 
-    const unsubscribers = [
+    // Массив создаётся до подписок: если стор уже загружен, обработчик
+    // срабатывает сразу, внутри whenHydrated
+    const unsubscribers: Array<() => void> = [];
+    unsubscribers.push(
       whenHydrated(useActivityStore.persist, () => {
         mark();
         if (useActivityStore.getState().backfilled) return;
@@ -50,7 +53,7 @@ export function useDailyVisit() {
           ),
         );
       }),
-    ];
+    );
 
     const subscription = AppState.addEventListener("change", (status) => {
       if (status === "active" && useActivityStore.persist.hasHydrated()) {
