@@ -1,10 +1,10 @@
-// src/components/profile/VisitCalendar.tsx
+// src/components/profile/StudyCalendar.tsx
 //
-// Календарь входов: месяц сеткой (с понедельника), стрелки — соседние месяцы.
-//   тёмный кружок — в этот день были тренировки;
-//   светлый — заходили без тренировок;
-//   просто число — пропущенный день; рамка — сегодня.
-// Листать можно от месяца первого входа до текущего.
+// Календарь занятий: месяц сеткой (с понедельника), стрелки — соседние месяцы.
+//   кружок — день обучения (была тренировка или экзамен);
+//   просто число — день без занятий; рамка — сегодня.
+// Листать можно от месяца первого занятия до текущего.
+// Без своей подложки: показывается в панели (CalendarSheet в профиле).
 
 import ChevronLeftIcon from "@/assets/images/icons/chevron-left.svg";
 import ChevronRightIcon from "@/assets/images/icons/chevron-right.svg";
@@ -32,7 +32,7 @@ const WEEKDAYS = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
 /** Номер месяца с начала эпохи: удобно сравнивать и листать. */
 const monthIndex = (date: Date) => date.getFullYear() * 12 + date.getMonth();
 
-export function VisitCalendar({ days }: { days: ActivityDays }) {
+export function StudyCalendar({ days }: { days: ActivityDays }) {
   const today = new Date();
   const todayKey = dayKey(today);
   const lastMonth = monthIndex(today);
@@ -58,20 +58,13 @@ export function VisitCalendar({ days }: { days: ActivityDays }) {
     ];
   }, [year, month]);
 
-  let visited = 0;
-  let trained = 0;
-  for (const date of cells) {
-    const day = date && days[dayKey(date)];
-    if (!day) continue;
-    visited += 1;
-    if (day.trainings > 0) trained += 1;
-  }
+  const studied = cells.filter((date) => date && days[dayKey(date)]).length;
 
   const canBack = shown > firstMonth;
   const canForward = shown < lastMonth;
 
   return (
-    <View className="rounded-2xl bg-surface p-4">
+    <View>
       <View className="mb-3 flex-row items-center justify-between">
         <ArrowButton
           disabled={!canBack}
@@ -84,7 +77,7 @@ export function VisitCalendar({ days }: { days: ActivityDays }) {
             {MONTHS[month]} {year}
           </Text>
           <Text className="font-nunito text-caption text-textSecondary">
-            заходили {visited} · занимались {trained}
+            {studied > 0 ? `занятий: ${studied}` : "без занятий"}
           </Text>
         </View>
         <ArrowButton
@@ -116,15 +109,9 @@ export function VisitCalendar({ days }: { days: ActivityDays }) {
           const isToday = key === todayKey;
           const isFuture = date.getTime() > today.getTime() && !isToday;
 
-          const circle = day
-            ? day.trainings > 0
-              ? "bg-primary"
-              : "bg-primary/20"
-            : "";
+          const circle = day ? "bg-primary" : "";
           const text = day
-            ? day.trainings > 0
-              ? "text-white font-nunitoBold"
-              : "text-text font-nunitoMedium"
+            ? "text-white font-nunitoBold"
             : isFuture
               ? "text-textSecondary/40 font-nunito"
               : "text-textSecondary font-nunito";
@@ -147,10 +134,6 @@ export function VisitCalendar({ days }: { days: ActivityDays }) {
         })}
       </View>
 
-      <View className="mt-2 flex-row justify-center gap-4">
-        <Legend tone="bg-primary" label="занимались" />
-        <Legend tone="bg-primary/20" label="заходили" />
-      </View>
     </View>
   );
 }
@@ -180,16 +163,5 @@ function ArrowButton({
     >
       <Icon width={22} height={22} color={colors.text} />
     </Pressable>
-  );
-}
-
-function Legend({ tone, label }: { tone: string; label: string }) {
-  return (
-    <View className="flex-row items-center gap-1.5">
-      <View className={`h-3 w-3 rounded-full ${tone}`} />
-      <Text className="font-nunito text-caption text-textSecondary">
-        {label}
-      </Text>
-    </View>
   );
 }

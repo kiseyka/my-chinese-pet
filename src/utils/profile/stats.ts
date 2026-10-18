@@ -79,6 +79,30 @@ function skillStats(
   return { started, learned, examsPassed };
 }
 
+/**
+ * Полностью изученные слова: сдан экзамен по переводу и, если слово можно
+ * писать, по письму. Последние сданные — первыми.
+ */
+export function getFullyLearnedWords(
+  readingExams: ExamMap,
+  writingExams: ExamMap,
+): Word[] {
+  const writable = writableIds();
+  const learnedAt = (word: Word): number | null => {
+    const reading = readingExams[word.vocabularyId]?.passedAt;
+    if (!reading) return null;
+    if (!writable.has(word.vocabularyId)) return reading;
+    const writing = writingExams[word.vocabularyId]?.passedAt;
+    return writing ? Math.max(reading, writing) : null;
+  };
+
+  return allWords
+    .map((word) => ({ word, at: learnedAt(word) }))
+    .filter((item): item is { word: Word; at: number } => item.at !== null)
+    .sort((a, b) => b.at - a.at)
+    .map((item) => item.word);
+}
+
 export function getProfileStats(
   progress: ProgressMap,
   readingExams: ExamMap,
@@ -87,12 +111,7 @@ export function getProfileStats(
   const writable = writableIds();
   const writableWords = allWords.filter((w) => writable.has(w.vocabularyId));
 
-  const fullyLearned = allWords.filter(
-    (word) =>
-      !!readingExams[word.vocabularyId]?.passedAt &&
-      (!writable.has(word.vocabularyId) ||
-        !!writingExams[word.vocabularyId]?.passedAt),
-  ).length;
+  const fullyLearned = getFullyLearnedWords(readingExams, writingExams).length;
 
   const path = getPathProgress(progress);
   const current =
