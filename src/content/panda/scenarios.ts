@@ -20,8 +20,8 @@ export type DialogReply = {
    * на месте, кнопку можно нажимать повторно.
    */
   speak?: boolean;
-  /** Добавить слово в избранное. */
-  favorite?: boolean;
+  /** Добавить слово в «Повторение». */
+  review?: boolean;
   /** Пул ответных реплик панды. Если его нет — диалог просто закрывается. */
   response?: string[];
   /** Только для вариантов квиза: верный ли это ответ. */
@@ -94,9 +94,9 @@ export const scenarios: Record<ScenarioId, DialogScenario> = {
     ],
     replies: [
       {
-        label: "В избранное",
-        favorite: true,
-        response: ["Добавила в избранное. Вернёмся к нему."],
+        label: "В повторение",
+        review: true,
+        response: ["Добавила в повторение. Вернёмся к нему."],
       },
       { label: "Скажи вслух", speak: true },
       { label: "Не сейчас" },

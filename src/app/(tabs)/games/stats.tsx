@@ -6,6 +6,8 @@
 //   - Слова: у карточек — «Ошибки» и «Верно», у письма — «С подсказками» и
 //     «Без подсказок» (с твоим написанием); у обоих — «Повторение» своего навыка
 //     и панель слова (наборы). У тонов — ошибки.
+//   - После перевода этапа пути, когда перевод этапа пройден, а письмо ещё нет, —
+//     «Попробовать написать»: урок письма этого же этапа.
 //   - Внизу две кнопки: «Завершить» (к панде) и «Продолжить» — обратно на экран,
 //     откуда запускали тренировку (ступени, наборы, «Написание», путь).
 
@@ -23,6 +25,12 @@ import { describeStep, findWordStep } from "@/utils/flashcards/steps";
 import type { GameId } from "@/utils/finishTraining";
 import { formatDuration } from "@/utils/formatDuration";
 import { SELF_CHECK_MODE } from "@/hooks/useSelfCheckGame";
+import PencilIcon from "@/assets/images/icons/pencil.svg";
+import {
+  findPathStage,
+  getStageProgress,
+  PATH_TRAINING_PREFIX,
+} from "@/utils/path/stages";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useState, type ReactNode } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
@@ -37,8 +45,8 @@ const RETURN_TO: Record<GameId, Href> = {
 export default function GeneralStatsScreen() {
   const router = useRouter();
 
-  const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
-  const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
+  const review = useWordProgressStore((s) => s.review);
+  const toggleReview = useWordProgressStore((s) => s.toggleReview);
 
   const { gameId, mode } = useLocalSearchParams<{
     gameId?: GameId;
@@ -69,6 +77,20 @@ export default function GeneralStatsScreen() {
 
   // Запуск с пути — обратно на путь, иначе на экран своего режима
   const customReturnTo = useGameStore((s) => s.returnTo);
+
+  // Перевод этапа пути пройден, письмо ещё нет — предлагаем написать
+  const lastSourceId = useGameStore((s) => s.lastSourceId);
+  const flashcardWordsForPath = useWordProgressStore((s) => s.flashcardWords);
+  const writeNext = (() => {
+    if (gameId !== "flashcards" || isSelfCheck) return null;
+    if (!lastSourceId?.startsWith(PATH_TRAINING_PREFIX)) return null;
+    const stage = findPathStage(lastSourceId.slice(PATH_TRAINING_PREFIX.length));
+    if (!stage || stage.writable.length === 0) return null;
+    const progress = getStageProgress(stage, flashcardWordsForPath);
+    const reading = progress.tracks.find((t) => t.id === "reading");
+    const writing = progress.tracks.find((t) => t.id === "writing");
+    return reading?.passed && writing && !writing.passed ? stage : null;
+  })();
   const returnTo = customReturnTo ?? (gameId ? RETURN_TO[gameId] : "/games");
 
   return (
@@ -153,10 +175,8 @@ export default function GeneralStatsScreen() {
                 hanzi={item.hanzi}
                 pinyin={item.pinyin}
                 translation={item.translation}
-                isFavorite={
-                  vocabularyWords[item.vocabularyId]?.isFavorite ?? false
-                }
-                onToggleFavorite={() => toggleFavorite(item.vocabularyId)}
+                inReview={!!review[item.vocabularyId]}
+                onToggleReview={() => toggleReview(item.vocabularyId)}
               />
             ))}
           </View>
@@ -171,6 +191,24 @@ export default function GeneralStatsScreen() {
           </View>
         )}
       </ScrollView>
+
+      {writeNext && (
+        <Pressable
+          onPress={() =>
+            router.replace({
+              pathname: "/games/writing/path" as any,
+              params: { stage: writeNext.id },
+            })
+          }
+          className="mt-3 min-h-14 flex-row items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-surface px-4 active:opacity-80"
+          accessibilityRole="button"
+        >
+          <PencilIcon width={20} height={20} color={colors.primary} />
+          <Text className="font-nunitoBold text-body text-primary">
+            Перевод пройден — попробовать написать
+          </Text>
+        </Pressable>
+      )}
 
       {/* Внизу: к панде или обратно к выбору тренировки */}
       <View className="flex-row gap-3 pb-2 pt-3">

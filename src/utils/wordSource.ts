@@ -3,7 +3,6 @@
 // Списки слов для тренировок из «Словаря» и пути — одинаковые для карточек и письма.
 // id источника:
 //   «path:1:0»  — этап пути (тема);
-//   «favorites» — избранное;
 //   «dict:other» — «Другие слова» (без уровня HSK);
 //   «review»    — «Повторение» (вместе с иероглифами вида «char:么»);
 //   «set-…»     — свой набор.
@@ -22,9 +21,20 @@ import {
   NO_HSK_LEVEL,
 } from "@/utils/writing/words";
 
-export const FAVORITES_SOURCE = "favorites";
 export const OTHER_WORDS_SOURCE = "dict:other";
 export const REVIEW_SOURCE = "review";
+
+/**
+ * Слова по id из любого списка («Повторение», очередь): слова базы любой длины
+ * и иероглифы вида «char:么». Не findPracticeWords: тот знает только слова,
+ * которые можно писать (до 2 иероглифов), и молча терял бы 为什么 или 很高兴认识你.
+ */
+export function findAnyWords(ids: string[]): Word[] {
+  return ids.flatMap((id) => {
+    if (id.startsWith("char:")) return findPracticeWords([id]);
+    return findWords([id]);
+  });
+}
 
 /** id «Повторения» в порядке добавления. */
 export function getReviewIds(
@@ -44,14 +54,6 @@ export interface WordSource {
 export function resolveWordSource(id: string): WordSource | null {
   if (id.startsWith(PATH_TRAINING_PREFIX)) return findPathTraining(id);
 
-  if (id === FAVORITES_SOURCE) {
-    const favorites = useWordProgressStore.getState().vocabularyWords;
-    return {
-      title: "Избранное",
-      words: allWords.filter((word) => favorites[word.vocabularyId]?.isFavorite),
-    };
-  }
-
   if (id === OTHER_WORDS_SOURCE) {
     return {
       title: "Другие слова",
@@ -60,7 +62,7 @@ export function resolveWordSource(id: string): WordSource | null {
   }
 
   if (id === REVIEW_SOURCE) {
-    return { title: "Повторение", words: findPracticeWords(getReviewIds()) };
+    return { title: "Повторение", words: findAnyWords(getReviewIds()) };
   }
 
   const set = useCustomSetsStore.getState().sets.find((item) => item.id === id);

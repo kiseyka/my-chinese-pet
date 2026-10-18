@@ -22,6 +22,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { Hanzi } from "@/components/ui/Hanzi";
 import type { Word } from "@/content/flashcards/types";
 import { usePath } from "@/hooks/usePath";
+import { useWordProgressStore } from "@/store/wordProgressStore";
 import {
   findPathStage,
   getTrackDots,
@@ -48,6 +49,15 @@ export default function PathStageScreen() {
   const writableIds = useMemo(
     () => new Set(stage?.writable.map((w) => w.vocabularyId)),
     [stage],
+  );
+  const readingExams = useWordProgressStore((s) => s.readingExams);
+  const writingExams = useWordProgressStore((s) => s.writingExams);
+  const getExams = useCallback(
+    (word: Word) => ({
+      reading: !!readingExams[word.vocabularyId]?.passedAt,
+      writing: !!writingExams[word.vocabularyId]?.passedAt,
+    }),
+    [readingExams, writingExams],
   );
   const getDots = useCallback(
     (word: Word, track: TrackId) =>
@@ -180,6 +190,7 @@ export default function PathStageScreen() {
           <PathWordGrid
             words={stage.words}
             getDots={getDots}
+            getExams={getExams}
             onSelect={setOpened}
             horizontalInset={GRID_INSET}
           />

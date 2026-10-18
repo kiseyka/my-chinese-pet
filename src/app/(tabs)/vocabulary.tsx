@@ -5,12 +5,12 @@
 //   - сверху одной строкой «Экзамен» (по переводу и по письму; если есть что сдавать
 //     или скоро будет) и «Повторение»
 //     (если в нём есть слова);
-//   - чипсы: «Избранное», «Наборы», разделы HSK, «Другие слова»;
+//   - чипсы: «Наборы», разделы HSK, «Другие слова»;
 //   - слова раздела сгруппированы по темам — тем же, что этапы пути;
 //     у каждого слова две строки точек: перевод (зелёные) и письмо (тёмные);
-//   - у темы, набора, избранного и «Повторения» — «Тренировать»: выбор режима
+//   - у темы, набора и «Повторения» — «Тренировать»: выбор режима
 //     (TrainingChoiceSheet); у набора ещё карандаш — редактор (общий с карточками);
-//   - тап по слову — панель слова (DictionaryWordSheet): точки навыков, избранное,
+//   - тап по слову — панель слова (DictionaryWordSheet): точки навыков, «Повторение»,
 //     где слово на пути и «Показать», наборы.
 // Разделы, в которые уже заходили, остаются смонтированными и только прячутся —
 // повторное переключение чипсов мгновенное.
@@ -48,7 +48,7 @@ import { searchWords } from "@/utils/searchWords";
 import { formatExamWait, pluralWords } from "@/utils/writing/labels";
 import { colors } from "@/theme/colors";
 import {
-  FAVORITES_SOURCE,
+  findAnyWords,
   getReviewIds,
   REVIEW_SOURCE,
 } from "@/utils/wordSource";
@@ -73,14 +73,14 @@ import { FlatList, Pressable, Text, View } from "react-native";
 /** Отступы экрана (32) и карточки темы (2 × 12): на столько сетке меньше места. */
 const GRID_INSET = 32 + 24;
 
-/** Чипсы «Избранное» и «Наборы» (разделы HSK — числа от 0). */
-const FAVORITES = -1;
+/** Чипс «Наборы» (разделы HSK — числа от 0). */
 const SETS = -2;
 
 /** Строке результата поиска действие «добавить/убрать» не нужно. */
 const noop = () => {};
 
 type GetDots = (word: Word, track: TrackId) => number | undefined;
+type GetExams = (word: Word) => { reading: boolean; writing: boolean };
 
 export default function DictionaryScreen() {
   const router = useRouter();
@@ -96,6 +96,10 @@ export default function DictionaryScreen() {
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
 
   const [query, setQuery] = useState("");
+  // Ушли со «Словаря» — поиск сбрасывается: вернёмся к обычному виду
+  useFocusEffect(
+    useCallback(() => () => setQuery(""), []),
+  );
   const isSearching = query.trim().length > 0;
   const results = useMemo(
     () => (isSearching ? searchWords(allWords, query, (key) => t(key)) : []),
@@ -120,7 +124,6 @@ export default function DictionaryScreen() {
 
   const chips = useMemo(
     () => [
-      { key: FAVORITES, label: "Избранное" },
       { key: SETS, label: "Наборы" },
       ...levels.map((level) => ({
         key: level,
@@ -143,13 +146,24 @@ export default function DictionaryScreen() {
     [writableIds, flashcardWords],
   );
 
+  // Сданные экзамены — для золотых точек и «парадных» ячеек
+  const readingExamEntries = useWordProgressStore((s) => s.readingExams);
+  const writingExamEntries = useWordProgressStore((s) => s.writingExams);
+  const getExams = useCallback<GetExams>(
+    (word) => ({
+      reading: !!readingExamEntries[word.vocabularyId]?.passedAt,
+      writing: !!writingExamEntries[word.vocabularyId]?.passedAt,
+    }),
+    [readingExamEntries, writingExamEntries],
+  );
+
   const [opened, setOpened] = useState<Word | null>(null);
   const [training, setTraining] = useState<string | null>(null);
 
   // «Повторение» — одно на все навыки
   const review = useWordProgressStore((s) => s.review);
   const reviewWords = useMemo(
-    () => findPracticeWords(getReviewIds(review)),
+    () => findAnyWords(getReviewIds(review)),
     [review],
   );
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -373,6 +387,7 @@ export default function DictionaryScreen() {
             chip={item}
             visible={item === shownChip}
             getDots={getDots}
+            getExams={getExams}
             onSelect={setOpened}
             onTrain={setTraining}
             onEditSet={editSet}
@@ -392,6 +407,7 @@ const DictionarySection = memo(function DictionarySection({
   chip,
   visible,
   getDots,
+  getExams,
   onSelect,
   onTrain,
   onEditSet,
@@ -400,15 +416,13 @@ const DictionarySection = memo(function DictionarySection({
   chip: number;
   visible: boolean;
   getDots: GetDots;
+  getExams: GetExams;
   onSelect: (word: Word) => void;
   onTrain: (sourceId: string) => void;
   onEditSet: (setId: string) => void;
   onCreateSet: () => void;
 }) {
-  // Избранное и наборы меняются — подписываемся только в своих разделах
-  const vocabularyWords = useWordProgressStore((s) =>
-    chip === FAVORITES ? s.vocabularyWords : null,
-  );
+  // Наборы меняются — подписываемся только в своём разделе
   const sets = useCustomSetsStore((s) => (chip === SETS ? s.sets : null));
 
   const groups = useMemo<DictionaryGroup[]>(() => {
@@ -420,47 +434,24 @@ const DictionarySection = memo(function DictionarySection({
         sourceId: set.id,
       }));
     }
-    if (chip !== FAVORITES) return getDictionaryGroups(chip);
-    const favorites = allWords.filter(
-      (word) => vocabularyWords?.[word.vocabularyId]?.isFavorite,
-    );
-    return [
-      {
-        key: "favorites",
-        title: "Избранное",
-        words: favorites,
-        sourceId: FAVORITES_SOURCE,
-      },
-    ];
-  }, [chip, vocabularyWords, sets]);
+    return getDictionaryGroups(chip);
+  }, [chip, sets]);
 
   const renderGroup = useCallback(
     ({ item }: { item: DictionaryGroup }) => (
       <GroupCard
         group={item}
         getDots={getDots}
+        getExams={getExams}
         onSelect={onSelect}
         onTrain={onTrain}
         onEdit={chip === SETS ? onEditSet : undefined}
       />
     ),
-    [getDots, onSelect, onTrain, onEditSet, chip],
+    [getDots, getExams, onSelect, onTrain, onEditSet, chip],
   );
 
   const style = { display: visible ? ("flex" as const) : ("none" as const) };
-
-  if (chip === FAVORITES && groups[0].words.length === 0) {
-    return (
-      <View style={style} className="mt-4 gap-2 rounded-2xl bg-surface p-5">
-        <Text className="font-nunitoBold text-lead text-text">
-          Здесь будут твои любимые слова
-        </Text>
-        <Text className="font-nunito text-body text-textSecondary">
-          Открой слово и нажми «Добавить в избранное».
-        </Text>
-      </View>
-    );
-  }
 
   const newSet =
     chip === SETS ? (
@@ -506,12 +497,14 @@ const DictionarySection = memo(function DictionarySection({
 const GroupCard = memo(function GroupCard({
   group,
   getDots,
+  getExams,
   onSelect,
   onTrain,
   onEdit,
 }: {
   group: DictionaryGroup;
   getDots: GetDots;
+  getExams: GetExams;
   onSelect: (word: Word) => void;
   onTrain: (sourceId: string) => void;
   /** Только у своего набора: карандаш — редактор набора. */
@@ -568,6 +561,7 @@ const GroupCard = memo(function GroupCard({
       <PathWordGrid
         words={group.words}
         getDots={getDots}
+        getExams={getExams}
         onSelect={onSelect}
         horizontalInset={GRID_INSET}
       />
