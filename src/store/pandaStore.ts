@@ -3,6 +3,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import type { MilestoneSnapshot } from "@/utils/panda/milestones";
 import type { FlashcardQuestionResult } from "./gameStore";
 import type { WordLevel } from "./wordProgressStore";
 
@@ -19,13 +20,20 @@ export interface WordChange {
 }
 
 export interface PandaTrainingResult {
-  type: "flashcards_completed" | "writing_completed";
+  type: "flashcards_completed" | "writing_completed" | "exam_completed";
 
   score: number;
   total: number;
 
   results: FlashcardQuestionResult[];
   wordChanges: WordChange[];
+
+  /** Только у экзамена: навык и итог по словам. */
+  exam?: {
+    skill: "reading" | "writing";
+    passed: WordChange[];
+    failed: WordChange[];
+  };
 }
 
 const MAX_BOND = 100;
@@ -45,6 +53,12 @@ interface PandaState {
    */
   trainingsSinceChoice: number;
 
+  /**
+   * Вехи, которые панда уже отметила (этапы, разделы HSK, изученные слова).
+   * null — снимок ещё не сделан. Сохраняется. См. utils/panda/milestones.
+   */
+  milestones: MilestoneSnapshot | null;
+
   /** Результат последней тренировки, который панда ещё не прокомментировала. Не сохраняется. */
   pendingTrainingResult: PandaTrainingResult | null;
 }
@@ -55,6 +69,7 @@ interface PandaActions {
   /** Вызывается после каждой тренировки: hadChoices — был ли диалог с кнопками. */
   registerTraining: (hadChoices: boolean) => void;
   setPendingTrainingResult: (result: PandaTrainingResult) => void;
+  setMilestones: (snapshot: MilestoneSnapshot) => void;
   clearPendingTrainingResult: () => void;
 }
 
@@ -66,6 +81,7 @@ export const usePandaStore = create<PandaStore>()(
       bond: 0,
       recentWordIds: [],
       trainingsSinceChoice: 1,
+      milestones: null,
       pendingTrainingResult: null,
 
       increaseBond: (amount) =>
@@ -90,6 +106,8 @@ export const usePandaStore = create<PandaStore>()(
         set({ pendingTrainingResult: result }),
 
       clearPendingTrainingResult: () => set({ pendingTrainingResult: null }),
+
+      setMilestones: (snapshot) => set({ milestones: snapshot }),
     }),
     {
       name: "panda-store",
@@ -98,6 +116,7 @@ export const usePandaStore = create<PandaStore>()(
         bond: state.bond,
         recentWordIds: state.recentWordIds,
         trainingsSinceChoice: state.trainingsSinceChoice,
+        milestones: state.milestones,
       }),
     },
   ),

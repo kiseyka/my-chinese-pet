@@ -3,6 +3,7 @@
 import { usePandaStore } from "@/store/pandaStore";
 import { useProgressStore } from "@/store/userProgressStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
+import { collectNewMilestones } from "@/utils/panda/milestones";
 import {
   QUIZ_REWARD_COINS,
   buildDialog,
@@ -30,8 +31,13 @@ export function usePandaDialog() {
 
     const panda = usePandaStore.getState();
 
+    // Новые вехи пути с прошлого раза; снимок сразу обновляем — празднуем один раз
+    const { milestones, snapshot } = collectNewMilestones(panda.milestones);
+    panda.setMilestones(snapshot);
+
     const built = buildDialog(pendingResult, {
       recentWordIds: panda.recentWordIds,
+      milestones,
       // Выбор разрешён не чаще раза в две тренировки
       allowChoices: panda.trainingsSinceChoice >= 1,
     });
@@ -41,7 +47,7 @@ export function usePandaDialog() {
     panda.clearPendingTrainingResult();
 
     if (built) {
-      panda.rememberWord(built.word.vocabularyId);
+      if (built.word) panda.rememberWord(built.word.vocabularyId);
       setDialog(built);
       setStep(built.step);
     }
@@ -67,7 +73,7 @@ export function usePandaDialog() {
 
     // «Скажи вслух» — действие, а не ответ: диалог остаётся на месте
     if (reply.speak) {
-      speakChinese(dialog.word.hanzi);
+      if (dialog.word) speakChinese(dialog.word.hanzi);
       return;
     }
 
@@ -82,7 +88,7 @@ export function usePandaDialog() {
       usePandaStore.getState().increaseBond(reply.bond);
     }
 
-    if (reply.review) {
+    if (reply.review && dialog.word) {
       useWordProgressStore.getState().addToReview([dialog.word.vocabularyId]);
     }
 

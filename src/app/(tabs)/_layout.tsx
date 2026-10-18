@@ -1,3 +1,4 @@
+import { useMilestoneBaseline } from "@/hooks/panda/useMilestoneBaseline";
 import { useActivityBackfill } from "@/hooks/useActivityBackfill";
 import { colors } from "@/theme/colors";
 import { useFonts } from "expo-font";
@@ -12,6 +13,8 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   // Журнал занятий: один раз восстановить дни из старого прогресса
   useActivityBackfill();
+  // Панда: что уже пройдено до этого запуска, праздновать не нужно
+  useMilestoneBaseline();
   const [loaded] = useFonts({
     NotoSansSC: require("../../../assets/fonts/NotoSerifSC-Regular.ttf"),
     NotoSansSCBold: require("../../../assets/fonts/NotoSerifSC-Bold.ttf"),
