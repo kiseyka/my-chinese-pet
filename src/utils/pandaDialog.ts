@@ -7,14 +7,8 @@ import {
   type DialogReply,
   type ScenarioId,
 } from "@/content/panda/scenarios";
-import {
-  usePandaStore,
-  type PandaTrainingResult,
-  type WordChange,
-} from "@/store/pandaStore";
+import type { PandaTrainingResult, WordChange } from "@/store/pandaStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
-import type { Word } from "@/content/flashcards/types";
-import type { NewMilestones } from "@/utils/panda/milestones";
 import { shuffle } from "@/utils/shuffle";
 import i18n from "i18next";
 
@@ -43,10 +37,7 @@ export interface DialogStep {
 
 export interface PandaDialog {
   scenarioId: ScenarioId;
-  /** Слово, о котором речь (у этапов и разделов его нет). */
-  word?: WordChange;
-  /** Подстановки помимо слова: {stage}, {next}, {level}, {skill}, {count}. */
-  vars?: Record<string, string>;
+  word: WordChange;
   /** Полная фраза (с переводом), даже если на экране перевод скрыт. */
   phrase?: DialogPhrase;
   step: DialogStep;
@@ -54,8 +45,6 @@ export interface PandaDialog {
 
 interface BuildContext {
   recentWordIds: string[];
-  /** Новые вехи пути с прошлой тренировки (этапы, разделы, изученные слова). */
-  milestones?: NewMilestones;
   /** Можно ли сейчас показывать кнопки выбора. */
   allowChoices: boolean;
 }
@@ -75,150 +64,11 @@ function pickLine(key: string, lines: string[]): string {
   return lines[index];
 }
 
-export function fillTemplate(
-  template: string,
-  word?: WordChange,
-  vars: Record<string, string> = {},
-): string {
-  const values: Record<string, string> = {
-    ...vars,
-    ...(word && {
-      hanzi: word.hanzi,
-      pinyin: word.pinyin,
-      translation: word.translation,
-    }),
-  };
-  return template.replace(/\{(\w+)\}/g, (match, key) => values[key] ?? match);
-}
-
-/** Слово базы в виде WordChange (для подстановок и «Скажи вслух»). */
-export function toWordChange(word: Word): WordChange {
-  return {
-    vocabularyId: word.vocabularyId,
-    hanzi: word.hanzi,
-    pinyin: word.pinyin,
-    // В слове базы перевод — ключ i18n («words:…»)
-    translation: i18n.t(word.translation),
-    levelBefore: 3,
-    levelAfter: 3,
-    isCorrect: true,
-  };
-}
-
-/** Собирает диалог по сценарию: строка из пула, кнопки — если выбор разрешён. */
-function simpleDialog(
-  scenarioId: ScenarioId,
-  lines: string[],
-  lineKey: string,
-  context: BuildContext,
-  word?: WordChange,
-  vars?: Record<string, string>,
-): PandaDialog {
-  return {
-    scenarioId,
-    word,
-    vars,
-    step: {
-      text: fillTemplate(pickLine(lineKey, lines), word, vars),
-      replies: context.allowChoices ? scenarios[scenarioId].replies : [],
-    },
-  };
-}
-
-/** Вехи пути: самая крупная из новых. null — новых вех нет. */
-function buildMilestoneDialog(context: BuildContext): PandaDialog | null {
-  const m = context.milestones;
-  if (!m) return null;
-
-  if (m.passedLevels.length > 0) {
-    const level = String(Math.max(...m.passedLevels));
-    return simpleDialog(
-      "level_passed",
-      scenarios.level_passed.lines,
-      "level_passed",
-      context,
-      undefined,
-      { level },
-    );
-  }
-
-  if (m.masteredStages.length > 0) {
-    const stage = m.masteredStages[m.masteredStages.length - 1];
-    return simpleDialog(
-      "stage_mastered",
-      scenarios.stage_mastered.lines,
-      "stage_mastered",
-      context,
-      undefined,
-      { stage: stage.title },
-    );
-  }
-
-  if (m.passedStages.length > 0) {
-    const stage = m.passedStages[m.passedStages.length - 1];
-    const scenario = scenarios.stage_passed;
-    const final = !m.nextStage && scenario.finalLines;
-    return simpleDialog(
-      "stage_passed",
-      final ? scenario.finalLines! : scenario.lines,
-      final ? "stage_passed:final" : "stage_passed",
-      context,
-      undefined,
-      { stage: stage.title, next: m.nextStage?.title ?? "" },
-    );
-  }
-
-  if (m.learnedWords.length > 0) {
-    const candidates = m.learnedWords.map(toWordChange);
-    const word = pickWord(candidates, context.recentWordIds);
-    const scenario = scenarios.word_learned;
-    const many = candidates.length > 1 && scenario.manyLines;
-    return simpleDialog(
-      "word_learned",
-      many ? scenario.manyLines! : scenario.lines,
-      many ? "word_learned:many" : "word_learned",
-      context,
-      word,
-    );
-  }
-
-  return null;
-}
-
-/** Итог экзамена: сдано — похвала, не сдано ничего — поддержка. */
-function buildExamDialog(
-  result: PandaTrainingResult,
-  context: BuildContext,
-): PandaDialog | null {
-  const exam = result.exam;
-  if (!exam) return null;
-
-  const skill = exam.skill === "writing" ? "по письму" : "по переводу";
-
-  if (exam.passed.length > 0) {
-    const word = pickWord(exam.passed, context.recentWordIds);
-    const scenario = scenarios.exam_passed;
-    const many = exam.passed.length > 1 && scenario.manyLines;
-    return simpleDialog(
-      "exam_passed",
-      many ? scenario.manyLines! : scenario.lines,
-      many ? "exam_passed:many" : "exam_passed",
-      context,
-      word,
-      { skill, count: String(exam.passed.length) },
-    );
-  }
-
-  if (exam.failed.length > 0) {
-    return simpleDialog(
-      "exam_retry",
-      scenarios.exam_retry.lines,
-      "exam_retry",
-      context,
-    );
-  }
-
-  return null;
+export function fillTemplate(template: string, word: WordChange): string {
+  return template
+    .replace(/\{hanzi\}/g, word.hanzi)
+    .replace(/\{pinyin\}/g, word.pinyin)
+    .replace(/\{translation\}/g, word.translation);
 }
 
 // Предпочитаем слова, которые панда недавно не упоминала
@@ -335,13 +185,6 @@ export function buildDialog(
   result: PandaTrainingResult,
   context: BuildContext,
 ): PandaDialog | null {
-  // Вехи пути важнее всего, потом итог экзамена
-  const milestone = buildMilestoneDialog(context);
-  if (milestone) return milestone;
-
-  const examDialog = buildExamDialog(result, context);
-  if (examDialog) return examDialog;
-
   const mastered = result.wordChanges.filter(
     (c) => c.levelBefore < 3 && c.levelAfter === 3,
   );
@@ -426,7 +269,6 @@ export function buildResponseStep(
       text: fillTemplate(
         pickLine(`${dialog.scenarioId}:${reply.isCorrect}`, lines),
         dialog.word,
-        dialog.vars,
       ),
       phrase: dialog.phrase,
       replies: [],
@@ -438,30 +280,9 @@ export function buildResponseStep(
   const key = `${dialog.scenarioId}:${reply.label}`;
 
   return {
-    text: fillTemplate(pickLine(key, reply.response), dialog.word, dialog.vars),
+    text: fillTemplate(pickLine(key, reply.response), dialog.word),
     // Фраза остаётся на экране, пока диалог не закрыт
     phrase: dialog.phrase,
     replies: [],
   };
-}
-
-/** Итог экзамена для панды: она прокомментирует его на своём экране. */
-export function sendExamToPanda(
-  skill: "reading" | "writing",
-  outcomes: Array<{ word: Word; verdict: string }>,
-) {
-  const passed = outcomes.filter((o) => o.verdict === "passed");
-  const failed = outcomes.filter((o) => o.verdict !== "passed");
-  usePandaStore.getState().setPendingTrainingResult({
-    type: "exam_completed",
-    score: passed.length,
-    total: outcomes.length,
-    results: [],
-    wordChanges: [],
-    exam: {
-      skill,
-      passed: passed.map((o) => toWordChange(o.word)),
-      failed: failed.map((o) => toWordChange(o.word)),
-    },
-  });
 }

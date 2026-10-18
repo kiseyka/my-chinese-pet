@@ -1,0 +1,31 @@
+{
+  "news": {
+    "intro": "Вот что у нас нового:",
+    "more": "…и ещё немного хорошего!",
+    "levelPassed": "Весь HSK {{level}} пройден! Мы прошли целый раздел.",
+    "stageMastered": "Печать 印 на этапе «{{stage}}» — все слова освоены.",
+    "stagePassed": "Этап «{{stage}}» пройден, дальше — «{{next}}».",
+    "stagePassedLast": "Этап «{{stage}}» пройден — это был последний этап пути.",
+    "stagesPassed_one": "Пройден {{count}} этап, дальше — «{{next}}».",
+    "stagesPassed_few": "Пройдено {{count}} этапа, дальше — «{{next}}».",
+    "stagesPassed_many": "Пройдено {{count}} этапов, дальше — «{{next}}».",
+    "stagesPassed_other": "Пройдено {{count}} этапа, дальше — «{{next}}».",
+    "stagesPassedLast_one": "Пройден {{count}} этап — и весь путь позади!",
+    "stagesPassedLast_few": "Пройдено {{count}} этапа — и весь путь позади!",
+    "stagesPassedLast_many": "Пройдено {{count}} этапов — и весь путь позади!",
+    "stagesPassedLast_other": "Пройдено {{count}} этапа — и весь путь позади!",
+    "wordsLearned_one": "Слово {{words}} изучено полностью — все экзамены сданы.",
+    "wordsLearned_few": "{{count}} слова изучены полностью: {{words}}.",
+    "wordsLearned_many": "{{count}} слов изучено полностью: {{words}}.",
+    "wordsLearned_other": "{{count}} слова изучены полностью: {{words}}.",
+    "examPassed_one": "Экзамен {{skill}}: сдано {{count}} слово.",
+    "examPassed_few": "Экзамен {{skill}}: сдано {{count}} слова.",
+    "examPassed_many": "Экзамен {{skill}}: сдано {{count}} слов.",
+    "examPassed_other": "Экзамен {{skill}}: сдано {{count}} слова.",
+    "examRetry": "Экзамен {{skill}} пока не сдан — ничего, попробуем ещё.",
+    "skillReading": "по переводу",
+    "skillWriting": "по письму",
+    "hint": "Панде есть что рассказать",
+    "thanks": "Ура!"
+  }
+}
