@@ -41,7 +41,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /** Сколько последних сообщений отправлять серверу как историю. */
-const HISTORY_SIZE = 8;
+const HISTORY_SIZE = 12;
 const MAX_INPUT_LENGTH = 300;
 
 const ERROR_TEXT: Record<ChatErrorKind, string> = {

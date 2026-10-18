@@ -35,7 +35,7 @@ const DEFAULT_MODEL = "@cf/google/gemma-4-26b-a4b-it";
 const FALLBACK_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
 
 /** Сколько последних сообщений истории отправлять модели. */
-const MAX_HISTORY = 8;
+const MAX_HISTORY = 12;
 const MAX_MESSAGE_LENGTH = 300;
 const MAX_KNOWN_WORDS = 150;
 const MAX_STAGE_WORDS = 20;
