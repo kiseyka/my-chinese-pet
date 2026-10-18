@@ -8,8 +8,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-/** Сколько сообщений панде можно отправить за день. */
-export const DAILY_CHAT_LIMIT = 20;
+/**
+ * Сколько сообщений панде можно отправить за день.
+ * В разработке (__DEV__) лимита нет — удобно тестировать; в сборке для людей — 20.
+ */
+export const DAILY_CHAT_LIMIT = __DEV__ ? Infinity : 20;
 
 /** Сколько последних сообщений храним на телефоне. */
 const MAX_STORED_MESSAGES = 60;

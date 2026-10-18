@@ -171,9 +171,11 @@ export default function ChatScreen() {
           <Text className="flex-1 font-nunitoBold text-title text-text">
             Панда
           </Text>
-          <Text className="font-nunito text-small text-textSecondary">
-            Осталось сегодня: {messagesLeft}
-          </Text>
+          {Number.isFinite(messagesLeft) && (
+            <Text className="font-nunito text-small text-textSecondary">
+              Осталось сегодня: {messagesLeft}
+            </Text>
+          )}
         </View>
 
         <FlatList
