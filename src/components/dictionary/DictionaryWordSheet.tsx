@@ -2,7 +2,7 @@
 //
 // Панель слова в «Словаре». Зачем её открывают — по убыванию важности:
 //   1. посмотреть слово: иероглиф, пиньинь и перевод (тап по иероглифу — озвучка);
-//   2. отложить: «Повторение», «Избранное», «В набор» — одна строка компактных кнопок;
+//   2. отложить: «Повторение», «В набор» — одна строка компактных кнопок;
 //   3. потренировать письмо: «Написать» быстро или полностью.
 // Остальное — мелко внизу: точки перевода и письма, где слово на пути («Показать»).
 //
@@ -20,7 +20,6 @@ import ArrowLeft from "@/assets/images/icons/arrow-left.svg";
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import LayersIcon from "@/assets/images/icons/layers.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
-import StarIcon from "@/assets/images/icons/star.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { SetToggleList } from "@/components/word/SetToggleList";
@@ -57,10 +56,6 @@ export function DictionaryWordSheet({
 }: DictionaryWordSheetProps) {
   const { t } = useTranslation();
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
-  const vocabularyWords = useWordProgressStore(
-    (state) => state.vocabularyWords,
-  );
-  const toggleFavorite = useWordProgressStore((state) => state.toggleFavorite);
   const review = useWordProgressStore((state) => state.review);
   const readingExams = useWordProgressStore((state) => state.readingExams);
   const writingExams = useWordProgressStore((state) => state.writingExams);
@@ -111,9 +106,8 @@ export function DictionaryWordSheet({
         // кнопки «отложить», точки и «Написать»
         const target = part ?? shown;
         // Знак, которого нет в базе отдельным словом (char:么), можно только
-        // повторять и писать: в избранное и наборы попадают слова базы
+        // повторять и писать: в наборы попадают слова базы
         const isCharOnly = target.vocabularyId.startsWith("char:");
-        const isFavorite = !!vocabularyWords[target.vocabularyId]?.isFavorite;
         const inReview = !!review[target.vocabularyId];
         const setCount = sets.filter((set) =>
           set.wordIds.includes(target.vocabularyId),
@@ -135,14 +129,6 @@ export function DictionaryWordSheet({
                 active={inReview}
                 onPress={() => toggleReview(target.vocabularyId)}
               />
-              {!isCharOnly && (
-                <ActionChip
-                  Icon={StarIcon}
-                  label="Избранное"
-                  active={isFavorite}
-                  onPress={() => toggleFavorite(target.vocabularyId)}
-                />
-              )}
               {!isCharOnly && (
                 <ActionChip
                   Icon={LayersIcon}

@@ -3,7 +3,6 @@
 // Списки слов для тренировок из «Словаря» и пути — одинаковые для карточек и письма.
 // id источника:
 //   «path:1:0»  — этап пути (тема);
-//   «favorites» — избранное;
 //   «dict:other» — «Другие слова» (без уровня HSK);
 //   «review»    — «Повторение» (вместе с иероглифами вида «char:么»);
 //   «set-…»     — свой набор.
@@ -22,7 +21,6 @@ import {
   NO_HSK_LEVEL,
 } from "@/utils/writing/words";
 
-export const FAVORITES_SOURCE = "favorites";
 export const OTHER_WORDS_SOURCE = "dict:other";
 export const REVIEW_SOURCE = "review";
 
@@ -55,14 +53,6 @@ export interface WordSource {
 /** Слова и название источника по id. null — такого источника нет. */
 export function resolveWordSource(id: string): WordSource | null {
   if (id.startsWith(PATH_TRAINING_PREFIX)) return findPathTraining(id);
-
-  if (id === FAVORITES_SOURCE) {
-    const favorites = useWordProgressStore.getState().vocabularyWords;
-    return {
-      title: "Избранное",
-      words: allWords.filter((word) => favorites[word.vocabularyId]?.isFavorite),
-    };
-  }
 
   if (id === OTHER_WORDS_SOURCE) {
     return {

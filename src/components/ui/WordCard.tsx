@@ -1,7 +1,9 @@
-// components/ui/WordCard.tsx  (в модалке он импортируется из ui, поправь путь, если он другой)
+// components/ui/WordCard.tsx
+//
+// Строка слова на экране результатов: иероглиф, пиньинь, перевод, звук и «Повторение».
 
 import VolumeOnIcon from "@/assets/images/icons/volume.svg";
-import { FavoriteButton } from "@/components/ui/FavoriteButton";
+import { ReviewButton } from "@/components/ui/ReviewButton";
 import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { useTranslation } from "react-i18next";
@@ -12,8 +14,8 @@ interface Props {
   pinyin: string;
   translation: string;
 
-  isFavorite: boolean;
-  onToggleFavorite: () => void;
+  inReview: boolean;
+  onToggleReview: () => void;
 
   /** Уровень изучения: сколько точек показать. Без него точек нет. */
   level?: WordLevel;
@@ -23,8 +25,8 @@ export function WordCard({
   hanzi,
   pinyin,
   translation,
-  isFavorite,
-  onToggleFavorite,
+  inReview,
+  onToggleReview,
   level,
 }: Props) {
   const { t } = useTranslation(["sets"]);
@@ -69,9 +71,9 @@ export function WordCard({
           />
         </TouchableOpacity>
 
-        <FavoriteButton
-          isFavorite={isFavorite}
-          onToggle={onToggleFavorite}
+        <ReviewButton
+          inReview={inReview}
+          onToggle={onToggleReview}
           size={22}
         />
       </View>

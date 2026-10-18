@@ -45,8 +45,8 @@ const RETURN_TO: Record<GameId, Href> = {
 export default function GeneralStatsScreen() {
   const router = useRouter();
 
-  const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
-  const toggleFavorite = useWordProgressStore((s) => s.toggleFavorite);
+  const review = useWordProgressStore((s) => s.review);
+  const toggleReview = useWordProgressStore((s) => s.toggleReview);
 
   const { gameId, mode } = useLocalSearchParams<{
     gameId?: GameId;
@@ -175,10 +175,8 @@ export default function GeneralStatsScreen() {
                 hanzi={item.hanzi}
                 pinyin={item.pinyin}
                 translation={item.translation}
-                isFavorite={
-                  vocabularyWords[item.vocabularyId]?.isFavorite ?? false
-                }
-                onToggleFavorite={() => toggleFavorite(item.vocabularyId)}
+                inReview={!!review[item.vocabularyId]}
+                onToggleReview={() => toggleReview(item.vocabularyId)}
               />
             ))}
           </View>

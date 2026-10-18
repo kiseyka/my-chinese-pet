@@ -1,7 +1,7 @@
 // app/(tabs)/games/writing/path.tsx
 //
 // Тренировка письма по списку слов из «Словаря» или пути:
-//   source = «path:1:0» (этап), «favorites», «dict:other» — см. utils/wordSource.ts;
+//   source = «path:1:0» (этап), «dict:other» — см. utils/wordSource.ts;
 //   stage = «1:0» — то же, что source=path:1:0 (так запускает путь).
 // Из слов источника берутся те, что можно писать: 1 новое слово + 2 повторения.
 

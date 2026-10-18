@@ -82,11 +82,8 @@ export function usePandaDialog() {
       usePandaStore.getState().increaseBond(reply.bond);
     }
 
-    if (reply.favorite) {
-      useWordProgressStore.getState().updateVocabularyWordProgress({
-        wordId: dialog.word.vocabularyId,
-        isFavorite: true,
-      });
+    if (reply.review) {
+      useWordProgressStore.getState().addToReview([dialog.word.vocabularyId]);
     }
 
     const next = buildResponseStep(dialog, reply);

@@ -13,6 +13,7 @@ interface FlashcardSetProgress {
 }
 
 interface VocabularyWordProgress {
+  /** Осталось от «Избранного» (убрано из приложения): в сохранённых данных, нигде не показывается. */
   isFavorite: boolean;
   isKnown: boolean;
 }
@@ -85,7 +86,6 @@ interface WordProgressActions {
     isFavorite?: boolean;
     isKnown?: boolean;
   }) => void;
-  toggleFavorite: (wordId: string) => void;
   /** Добавляет слово в «Повторение» или убирает оттуда. */
   toggleReview: (wordId: string) => void;
   /** Добавляет несколько слов в «Повторение» (уже добавленные пропускает). */
@@ -335,21 +335,6 @@ export const useWordProgressStore = create<WordProgressStore>()(
           const updated: VocabularyWordProgress = {
             isFavorite: isFavorite ?? previous?.isFavorite ?? false,
             isKnown: isKnown ?? previous?.isKnown ?? false,
-          };
-
-          return {
-            vocabularyWords: { ...state.vocabularyWords, [wordId]: updated },
-          };
-        });
-      },
-
-      toggleFavorite: (wordId) => {
-        set((state) => {
-          const previous = state.vocabularyWords[wordId];
-
-          const updated: VocabularyWordProgress = {
-            isFavorite: !(previous?.isFavorite ?? false),
-            isKnown: previous?.isKnown ?? false,
           };
 
           return {
