@@ -1,0 +1,35 @@
+{
+  "later": "Not now",
+  "gotIt": "Got it",
+  "showTranslation": "Show translation",
+  "write": "Write",
+  "phraseHint": "Tap a word to see what it means.",
+  "riddle": {
+    "pick": [
+      "How do you say “{{word}}” in Chinese?",
+      "Help me remember: which one is “{{word}}”?",
+      "I was wondering… Where is “{{word}}” here?"
+    ],
+    "write": [
+      "Will you show me how to write “{{word}}”?",
+      "Can you write “{{word}}” for me? I want to see how you do it.",
+      "I forgot how to write “{{word}}”. Remind me?"
+    ],
+    "correct": ["Exactly!", "Yes, that's it!", "Right, thank you!"],
+    "wrong": "Almost! Here's the right one:"
+  },
+  "riddleWrite": {
+    "task": "Write",
+    "clean": "Not a single mistake!",
+    "mistakes": "You did it! Mistakes: {{count}}",
+    "hint": "I showed you one stroke — keep going",
+    "done": "Done",
+    "saveHint": "Tap your writing to save it to the gallery"
+  },
+  "profile": {
+    "title": "Panda's phrases",
+    "empty": "Phrases the panda tells you will gather here.",
+    "translation": "Translation",
+    "hide": "Hide"
+  }
+}

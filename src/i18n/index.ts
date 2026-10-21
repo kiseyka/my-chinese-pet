@@ -19,6 +19,8 @@ import enPandaNews from "./locales/en/panda/news.json";
 import enPhrases from "./locales/en/panda/phrases.json";
 import ruPandaNews from "./locales/ru/panda/news.json";
 import ruPhrases from "./locales/ru/panda/phrases.json";
+import enThoughts from "./locales/en/panda/thoughts.json";
+import ruThoughts from "./locales/ru/panda/thoughts.json";
 
 /**
  * Переводы слов — пространство имён «words», ключ — id слова.
@@ -38,6 +40,7 @@ const resources = {
     common: enCommon,
     panda: enPandaNews,
     pandaPhrases: enPhrases,
+    pandaThoughts: enThoughts,
     words: wordTranslations("en"),
   },
   ru: {
@@ -46,6 +49,7 @@ const resources = {
     common: ruCommon,
     panda: ruPandaNews,
     pandaPhrases: ruPhrases,
+    pandaThoughts: ruThoughts,
     words: wordTranslations("ru"),
   },
   zh: { translation: zh },
@@ -59,7 +63,7 @@ i18n.use(initReactI18next).init({
   lng: systemLanguage,
   fallbackLng: "en",
   defaultNS: "translation",
-  ns: ["translation", "sets", "common", "panda", "pandaPhrases", "words"],
+  ns: ["translation", "sets", "common", "panda", "pandaPhrases", "pandaThoughts", "words"],
   interpolation: {
     escapeValue: false,
   },

@@ -88,7 +88,7 @@ function centerOf(points: Point[]): Point {
 }
 
 /** Сдвигает линию пользователя так, чтобы её центр совпал с центром нужной черты. */
-function moveIntoPlace(points: Point[], median: number[][]): Point[] {
+export function moveIntoPlace(points: Point[], median: number[][]): Point[] {
   const reference = median.map(([x, y]) => ({ x, y }));
   const from = centerOf(resample(points, 20));
   const to = centerOf(resample(reference, 20));

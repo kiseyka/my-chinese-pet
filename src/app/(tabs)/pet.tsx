@@ -6,6 +6,8 @@ import shopImg from "@/assets/images/shop.png";
 import { CoinBalance } from "@/components/CoinBalance";
 import { Screen } from "@/components/layout/Screen";
 import { PandaScene } from "@/components/panda/PandaScene";
+import { PandaThoughtSheet } from "@/components/panda/PandaThoughtSheet";
+import { usePandaThought } from "@/hooks/panda/usePandaThought";
 import { NavIconButton } from "@/components/ui/NavIconButton";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { colors } from "@/theme/colors";
@@ -18,6 +20,8 @@ const PandaScreen = () => {
   const xp = useProgressStore((s) => s.xp);
   const { level, xpIntoLevel, xpForNextLevel } = getLevelInfo(xp);
   const progressPercent = Math.min(100, (xpIntoLevel / xpForNextLevel) * 100);
+  // Мысли панды: облачко над головой, реплика по тапу (utils/panda/thoughts)
+  const thought = usePandaThought();
 
   return (
     <Screen className="bg-[#EDE0CE]">
@@ -82,14 +86,17 @@ const PandaScreen = () => {
             bottom: 0,
           }}
         >
-          <PandaScene />
+          <PandaScene
+            hasThought={thought.hasCloud}
+            onPandaPress={thought.tapPanda}
+          />
         </View>
       </View>
 
       <View className="flex-1" />
 
-      {/* Новости панды пока не показываются: копятся тихо (utils/panda/news),
-          вернуть плашку — usePandaNews + PandaDialogBubble, когда будут тексты/анимации */}
+      {/* Новости панды не показываются: копятся тихо (utils/panda/news).
+          Панда говорит только по тапу на облачко — см. PandaThoughtSheet */}
       <View className="flex-1" />
 
       {/* Ряд навигационных иконок — обе просто переводят на отдельный
@@ -107,6 +114,13 @@ const PandaScreen = () => {
           onPress={() => router.push("/shop")}
         />
       </View>
+
+      <PandaThoughtSheet
+        thought={thought.openThought}
+        onClose={thought.close}
+        onLater={thought.later}
+        onDone={thought.done}
+      />
     </Screen>
   );
 };

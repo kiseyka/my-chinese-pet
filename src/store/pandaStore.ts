@@ -5,6 +5,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { PandaNews } from "@/utils/panda/news";
 import type { MilestoneSnapshot } from "@/utils/panda/milestones";
+import type { PandaThought, ThoughtKind } from "@/utils/panda/thoughts";
 import type { FlashcardQuestionResult } from "./gameStore";
 import type { WordLevel } from "./wordProgressStore";
 
@@ -32,6 +33,14 @@ export interface PandaTrainingResult {
 
 const MAX_BOND = 100;
 const RECENT_WORDS_LIMIT = 6;
+/** Сколько последних слов загадок помнить, чтобы не загадывать одно и то же. */
+const RECENT_RIDDLES_LIMIT = 8;
+
+/** Фраза в коллекции профиля («Фразы панды»). */
+export interface CollectedPhrase {
+  phraseId: string;
+  at: number;
+}
 
 interface PandaState {
   /** Привязанность: только растёт, никогда не уменьшается. Сохраняется. */
@@ -59,6 +68,24 @@ interface PandaState {
    */
   news: PandaNews[];
 
+  /**
+   * Мысль панды — облачко «…» над головой. Одна за раз; висит, пока пользователь
+   * не тапнет и не ответит (или «Не сейчас»). Сохраняется. См. utils/panda/thoughts.
+   */
+  thought: PandaThought | null;
+  /** Когда появилась последняя мысль (для паузы между мыслями). */
+  lastThoughtAt: number;
+  /** Какие мысли уже появлялись сегодня (не больше одной каждого вида). */
+  thoughtsToday: { day: string; kinds: ThoughtKind[] };
+  /** «Не сейчас»: вид мысли → день, до конца которого его не предлагать. */
+  snoozed: Partial<Record<ThoughtKind, string>>;
+  /** Фразы, которые панда уже рассказала (новых нет — фраз не предлагает). */
+  seenPhraseIds: string[];
+  /** Коллекция «Фразы панды» в профиле, новые в конце. */
+  collectedPhrases: CollectedPhrase[];
+  /** Последние слова загадок. */
+  recentRiddleWordIds: string[];
+
   /** Результат последней тренировки, который панда ещё не прокомментировала. Не сохраняется. */
   pendingTrainingResult: PandaTrainingResult | null;
 }
@@ -73,6 +100,12 @@ interface PandaActions {
   addNews: (items: PandaNews[]) => void;
   clearNews: () => void;
   clearPendingTrainingResult: () => void;
+  /** Появилась мысль: облачко над головой. day — сегодняшний день. */
+  showThought: (thought: PandaThought, day: string) => void;
+  /** Мысль закрыта: done — ответил, later — «Не сейчас» (этот вид до завтра не предлагать). */
+  resolveThought: (result: "done" | "later", day: string) => void;
+  /** Фраза рассказана: больше не предлагать и положить в коллекцию профиля. */
+  collectPhrase: (phraseId: string) => void;
 }
 
 type PandaStore = PandaState & PandaActions;
@@ -86,6 +119,13 @@ export const usePandaStore = create<PandaStore>()(
       milestones: null,
       news: [],
       pendingTrainingResult: null,
+      thought: null,
+      lastThoughtAt: 0,
+      thoughtsToday: { day: "", kinds: [] },
+      snoozed: {},
+      seenPhraseIds: [],
+      collectedPhrases: [],
+      recentRiddleWordIds: [],
 
       increaseBond: (amount) =>
         set((state) => ({
@@ -118,6 +158,53 @@ export const usePandaStore = create<PandaStore>()(
         ),
 
       clearNews: () => set({ news: [] }),
+
+      showThought: (thought, day) =>
+        set((state) => {
+          const kinds =
+            state.thoughtsToday.day === day ? state.thoughtsToday.kinds : [];
+          return {
+            thought,
+            lastThoughtAt: thought.createdAt,
+            thoughtsToday: { day, kinds: [...kinds, thought.kind] },
+            recentRiddleWordIds:
+              thought.kind === "riddle"
+                ? [
+                    thought.wordId,
+                    ...state.recentRiddleWordIds.filter(
+                      (id) => id !== thought.wordId,
+                    ),
+                  ].slice(0, RECENT_RIDDLES_LIMIT)
+                : state.recentRiddleWordIds,
+          };
+        }),
+
+      resolveThought: (result, day) =>
+        set((state) => {
+          if (!state.thought) return state;
+          if (result === "later") {
+            return {
+              thought: null,
+              snoozed: { ...state.snoozed, [state.thought.kind]: day },
+            };
+          }
+          return {
+            thought: null,
+            bond: Math.min(MAX_BOND, state.bond + 1),
+          };
+        }),
+
+      collectPhrase: (phraseId) =>
+        set((state) => ({
+          seenPhraseIds: state.seenPhraseIds.includes(phraseId)
+            ? state.seenPhraseIds
+            : [...state.seenPhraseIds, phraseId],
+          collectedPhrases: state.collectedPhrases.some(
+            (item) => item.phraseId === phraseId,
+          )
+            ? state.collectedPhrases
+            : [...state.collectedPhrases, { phraseId, at: Date.now() }],
+        })),
     }),
     {
       name: "panda-store",
@@ -128,6 +215,13 @@ export const usePandaStore = create<PandaStore>()(
         trainingsSinceChoice: state.trainingsSinceChoice,
         milestones: state.milestones,
         news: state.news,
+        thought: state.thought,
+        lastThoughtAt: state.lastThoughtAt,
+        thoughtsToday: state.thoughtsToday,
+        snoozed: state.snoozed,
+        seenPhraseIds: state.seenPhraseIds,
+        collectedPhrases: state.collectedPhrases,
+        recentRiddleWordIds: state.recentRiddleWordIds,
       }),
     },
   ),
