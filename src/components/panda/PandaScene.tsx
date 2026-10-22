@@ -48,7 +48,7 @@ const PANDA_HIT_AREA: {
 } = { left: "25%", top: "40%", width: "44%", height: "44%" };
 
 /** Показать область тапа полупрозрачной рамкой (для подгонки). */
-const SHOW_HIT_AREA = true as boolean;
+const SHOW_HIT_AREA = false as boolean;
 
 const HIT_AREA_DEBUG_STYLE = {
   borderWidth: 2,
