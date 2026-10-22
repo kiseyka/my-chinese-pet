@@ -1,8 +1,8 @@
 // src/components/panda/PandaPlaySheet.tsx
 //
 // Тап по панде без облачка — панда предлагает поиграть (utils/panda/play):
-//   меню    — «Чем займёмся?»: «Угадай слово», «Послушай и угадай» (+2 монеты),
-//             «Допиши черту» (+1…2), «Напиши слово» (+3…5);
+//   меню    — «Чем займёмся?»: «Угадай слово», «Послушай и угадай», «Допиши черту»
+//             (+1 опыт), «Напиши слово» (+1, без ошибок +2);
 //   pick, listen — загадка прямо в панели; после ответа «Ещё» (если игры остались)
 //             и «Готово»;
 //   stroke, write — экран письма /panda-riddle (source=play, у stroke — mode=stroke);
@@ -30,8 +30,9 @@ import {
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Image, Pressable, Text, View } from "react-native";
-import CoinImg from "@/assets/images/coin.png";
+import { Pressable, Text, View } from "react-native";
+import ZapIcon from "@/assets/images/icons/zap.svg";
+import { colors } from "@/theme/colors";
 import { MainButton, PickRiddle, WriteRiddle } from "./PandaRiddles";
 
 type Step =
@@ -187,14 +188,14 @@ function PlayContent({ onClose }: { onClose: () => void }) {
         <PlayCard
           title={t("play.stroke")}
           subtitle={canStroke ? t("play.strokeHint") : t("play.writeLocked")}
-          reward={`+${STROKE_REWARD}–${STROKE_PERFECT_REWARD}`}
+          reward={rewardRange(STROKE_REWARD, STROKE_PERFECT_REWARD)}
           disabled={!canStroke}
           onPress={() => start("stroke")}
         />
         <PlayCard
           title={t("play.write")}
           subtitle={canWrite ? t("play.writeHint") : t("play.writeLocked")}
-          reward={`+${WRITE_REWARD}–${WRITE_PERFECT_REWARD}`}
+          reward={rewardRange(WRITE_REWARD, WRITE_PERFECT_REWARD)}
           disabled={!canWrite}
           onPress={() => start("write")}
         />
@@ -249,7 +250,7 @@ function PlayCard({
       </View>
       <View className="flex-row items-center gap-1">
         <Text className="font-nunitoBold text-body text-text">{reward}</Text>
-        <Image source={CoinImg} style={{ width: 20, height: 20 }} />
+        <ZapIcon width={18} height={18} color={colors.primary} />
       </View>
     </Pressable>
   );
@@ -265,4 +266,9 @@ function formatWait(
   if (hours === 0) return t("play.minutes", { count: rest });
   if (rest === 0) return t("play.hours", { count: hours });
   return `${t("play.hours", { count: hours })} ${t("play.minutes", { count: rest })}`;
+}
+
+/** «+1» или «+1–2». */
+function rewardRange(min: number, max: number) {
+  return min === max ? `+${min}` : `+${min}–${max}`;
 }

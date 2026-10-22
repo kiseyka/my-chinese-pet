@@ -2,13 +2,14 @@
 //
 // Загадки панды — общие для мысли с облачком и для игры по тапу (PandaPlaySheet):
 //   PickRiddle  — «Как по-китайски …?» и три похожих иероглифа; после ответа —
-//                 правильный с пиньинем; если за верный ответ есть награда — «+N».
+//                 правильный с пиньинем; если за верный ответ есть опыт — «+N».
 //                 listen — вместо перевода панда произносит слово (сразу и по кнопке),
 //                 перевод появляется после ответа;
 //   WriteRiddle — «Покажешь, как пишется …?» → экран письма /panda-riddle.
 // MainButton — главная кнопка панели (во всю ширину).
 
-import CoinImg from "@/assets/images/coin.png";
+import ZapIcon from "@/assets/images/icons/zap.svg";
+import { colors } from "@/theme/colors";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
 import type { Word } from "@/content/flashcards/types";
@@ -19,7 +20,7 @@ import { useRouter } from "expo-router";
 import VolumeIcon from "@/assets/images/icons/volume.svg";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 /** Сколько вариантов в загадке (правильный + неправильные). */
 const RIDDLE_OPTIONS = 3;
@@ -44,7 +45,7 @@ export function PickRiddle({
   variant: number;
   /** «Послушай и угадай»: вопрос — звук, а не перевод. */
   listen?: boolean;
-  /** Монеты за верный ответ (показываются «+N» после ответа). */
+  /** Опыт за верный ответ (показывается «+N» после ответа). */
   reward?: number;
   /** Ответили: верно или нет. */
   onAnswer?: (correct: boolean) => void;
@@ -159,7 +160,7 @@ export function PickRiddle({
             </Text>
           )}
         </View>
-        {!!reward && correct && <RewardBadge coins={reward} />}
+        {!!reward && correct && <RewardBadge xp={reward} />}
       </View>
 
       {actions(answered)}
@@ -202,12 +203,12 @@ export function WriteRiddle({
   );
 }
 
-/** «+3 🪙» — сколько монет дала игра. */
-export function RewardBadge({ coins }: { coins: number }) {
+/** «+1 ⚡» — сколько опыта дала игра (значок — как у опыта в профиле). */
+export function RewardBadge({ xp }: { xp: number }) {
   return (
-    <View className="flex-row items-center gap-1 rounded-full bg-gold/15 px-3 py-1">
-      <Text className="font-nunitoBold text-body text-text">+{coins}</Text>
-      <Image source={CoinImg} style={{ width: 20, height: 20 }} />
+    <View className="flex-row items-center gap-1 rounded-full bg-primary/15 px-3 py-1">
+      <Text className="font-nunitoBold text-body text-text">+{xp}</Text>
+      <ZapIcon width={18} height={18} color={colors.primary} />
     </View>
   );
 }

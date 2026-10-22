@@ -1,7 +1,7 @@
 // app/(tabs)/panda-riddle.tsx
 //
 // Загадка панды «напиши слово»: мысль с облачком (source=thought, utils/panda/thoughts)
-// или игра по тапу на панду (source=play, utils/panda/play — с монетами за слово):
+// или игра по тапу на панду (source=play, utils/panda/play — с опытом за слово):
 // сверху пиньинь и перевод, слово пишется по памяти (логика — useRiddleWriting).
 // В конце — эталон и твоё написание (тап по своему — в галерею), «Готово» закрывает
 // мысль и возвращает к панде. Ушли раньше — мысль остаётся, облачко ждёт.
@@ -94,7 +94,7 @@ function RiddleWriting({ word, isPlay }: { word: Word; isPlay: boolean }) {
 
   const { chars, charIndex, charData, phase } = riddle;
 
-  // Игра по тапу: монеты и привязанность — один раз, как только слово написано
+  // Игра по тапу: опыт и привязанность — один раз, как только слово написано
   const reward =
     riddle.mistakes === 0 ? WRITE_PERFECT_REWARD : WRITE_REWARD;
   const rewarded = useRef(false);
@@ -155,7 +155,7 @@ function RiddleWriting({ word, isPlay }: { word: Word; isPlay: boolean }) {
               ? t("riddleWrite.clean")
               : t("riddleWrite.mistakes", { count: riddle.mistakes })}
           </Text>
-          {isPlay && <RewardBadge coins={reward} />}
+          {isPlay && <RewardBadge xp={reward} />}
         </View>
 
         <PillButton label={t("riddleWrite.done")} onPress={finish} />
@@ -257,7 +257,7 @@ function MissingStroke({ word }: { word: Word }) {
             <Text className="font-nunitoBold text-title text-text">
               {game.mistakes === 0 ? t("stroke.clean") : t("stroke.done")}
             </Text>
-            <RewardBadge coins={reward} />
+            <RewardBadge xp={reward} />
           </View>
           <PillButton
             label={t("riddleWrite.done")}

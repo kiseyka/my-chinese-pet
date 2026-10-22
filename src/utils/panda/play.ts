@@ -15,11 +15,10 @@
 // первые этапы пути. Для «угадай» и «послушай» — слова до 2 иероглифов.
 // Последние загаданные не повторяются.
 //
-// Награды (решено: монеты — только за то, что похоже на тренировку):
-//   верный ответ в pick и listen — PICK_REWARD монет;
-//   дописанная черта — STROKE_REWARD (без ошибок — STROKE_PERFECT_REWARD);
-//   написанное слово — WRITE_REWARD, без единой ошибки — WRITE_PERFECT_REWARD;
-//   любая доигранная игра — привязанность +1 (recordPlay).
+// Награды (решено 23 октября): только опыт, как в тренировках — 1 за верный ответ,
+// 2 за слово, написанное без ошибок. Монет нет: за тренировку их максимум 5, и слово
+// у панды не должно стоить почти столько же. Привязанность +1 за доигранную игру —
+// внутренний счётчик, на экране её нет: отношения с пандой = уровень опыта.
 // Точки слов игры не меняют.
 
 import type { Word } from "@/content/flashcards/types";
@@ -38,11 +37,13 @@ export type PlayKind = "pick" | "listen" | "stroke" | "write";
 export const PLAYS_PER_WINDOW = 15;
 export const PLAY_WINDOW_MS = 3 * 60 * 60 * 1000;
 
-export const PICK_REWARD = 2;
+// Награда — опыт, как в тренировках: 1 опыт за верный ответ (монеты здесь не дают —
+// иначе слово у панды стоило бы почти как целая тренировка)
+export const PICK_REWARD = 1;
 export const STROKE_REWARD = 1;
-export const STROKE_PERFECT_REWARD = 2;
-export const WRITE_REWARD = 3;
-export const WRITE_PERFECT_REWARD = 5;
+export const STROKE_PERFECT_REWARD = 1;
+export const WRITE_REWARD = 1;
+export const WRITE_PERFECT_REWARD = 2;
 
 /** Сколько игр ещё можно сейчас (за последние 3 часа). */
 export function getPlaysLeft(playTimes: number[], now = Date.now()): number {
@@ -129,8 +130,8 @@ export function pickPlayWord(kind: PlayKind): Word | undefined {
   );
 }
 
-/** Игра доиграна: монеты (если есть), привязанность, лимит. */
-export function finishPlay(wordId: string, coins: number) {
-  if (coins > 0) useProgressStore.getState().addCoins(coins);
+/** Игра доиграна: опыт (если есть), привязанность, лимит. */
+export function finishPlay(wordId: string, xp: number) {
+  if (xp > 0) useProgressStore.getState().addXp(xp);
   usePandaStore.getState().recordPlay(wordId, Date.now());
 }
