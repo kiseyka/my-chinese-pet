@@ -37,5 +37,7 @@
   "pandaName": "Панда",
   "review": "Повторение",
   "toStage": "Этап",
-  "notInDictionary": "Этого слова пока нет в словаре"
+  "notInDictionary": "Этого слова пока нет в словаре",
+  "yourAnswer": "Твой ответ:",
+  "translation": "Перевод"
 }

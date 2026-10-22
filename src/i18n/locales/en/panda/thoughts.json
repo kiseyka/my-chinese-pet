@@ -37,5 +37,7 @@
   "pandaName": "Panda",
   "review": "Review",
   "toStage": "Stage",
-  "notInDictionary": "This word isn't in the dictionary yet"
+  "notInDictionary": "This word isn't in the dictionary yet",
+  "yourAnswer": "Your answer:",
+  "translation": "Translation"
 }
