@@ -2,7 +2,9 @@
 //
 // Загадки панды — общие для мысли с облачком и для игры по тапу (PandaPlaySheet):
 //   PickRiddle  — «Как по-китайски …?» и три похожих иероглифа; после ответа —
-//                 правильный с пиньинем; если за верный ответ есть награда — «+N»;
+//                 правильный с пиньинем; если за верный ответ есть награда — «+N».
+//                 listen — вместо перевода панда произносит слово (сразу и по кнопке),
+//                 перевод появляется после ответа;
 //   WriteRiddle — «Покажешь, как пишется …?» → экран письма /panda-riddle.
 // MainButton — главная кнопка панели (во всю ширину).
 
@@ -14,7 +16,8 @@ import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { buildReadingExamQuestion } from "@/utils/readingExam";
 import { shuffle } from "@/utils/shuffle";
 import { useRouter } from "expo-router";
-import { useMemo, useState, type ReactNode } from "react";
+import VolumeIcon from "@/assets/images/icons/volume.svg";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Image, Pressable, Text, View } from "react-native";
 
@@ -35,9 +38,12 @@ export function PickRiddle({
   reward,
   onAnswer,
   actions,
+  listen = false,
 }: {
   word: Word;
   variant: number;
+  /** «Послушай и угадай»: вопрос — звук, а не перевод. */
+  listen?: boolean;
   /** Монеты за верный ответ (показываются «+N» после ответа). */
   reward?: number;
   /** Ответили: верно или нет. */
@@ -49,7 +55,18 @@ export function PickRiddle({
   const { t: tp } = useTranslation("pandaThoughts");
   const { speakForced } = useSpeakHanzi();
   const translation = t(word.translation);
-  const question = useLine("riddle.pick", variant, translation);
+  const question = useLine(
+    listen ? "riddle.listen" : "riddle.pick",
+    variant,
+    translation,
+  );
+
+  // Послушай и угадай: панда сразу произносит слово
+  useEffect(() => {
+    if (listen) speakForced(word.hanzi, { rate: 0.8 });
+    // Один раз на загадку
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const praise = useLine("riddle.correct", variant, translation);
 
   // Похожие иероглифы, как на экзамене по переводу, но вариантов три
@@ -74,7 +91,21 @@ export function PickRiddle({
 
   return (
     <View className="gap-5">
-      <Text className="font-nunito text-title text-text">{question}</Text>
+      {listen ? (
+        <View className="flex-row items-center gap-4">
+          <Pressable
+            onPress={() => speakForced(word.hanzi, { rate: 0.8 })}
+            className="h-16 w-16 items-center justify-center rounded-full bg-primary active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel={tp("listen")}
+          >
+            <VolumeIcon width={30} height={30} color="#FFFFFF" />
+          </Pressable>
+          <Text className="flex-1 font-nunito text-title text-text">{question}</Text>
+        </View>
+      ) : (
+        <Text className="font-nunito text-title text-text">{question}</Text>
+      )}
 
       <View className="flex-row gap-3">
         {options.map((option) => {
@@ -107,7 +138,7 @@ export function PickRiddle({
 
       {/* Место под ответом есть всегда — окно не прыгает после выбора */}
       <View
-        className="min-h-16 flex-row items-start justify-between gap-3"
+        className={`flex-row items-start justify-between gap-3 ${listen ? "min-h-24" : "min-h-16"}`}
         style={{ opacity: answered ? 1 : 0 }}
       >
         <View className="flex-1 gap-1">
@@ -122,6 +153,11 @@ export function PickRiddle({
             <Hanzi size="sm">{word.hanzi}</Hanzi>
             <Pinyin size="sm">{word.pinyin}</Pinyin>
           </Pressable>
+          {listen && (
+            <Text className="font-nunito text-small text-textSecondary" numberOfLines={2}>
+              {translation}
+            </Text>
+          )}
         </View>
         {!!reward && correct && <RewardBadge coins={reward} />}
       </View>

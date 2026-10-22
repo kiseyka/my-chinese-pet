@@ -1,9 +1,11 @@
 // src/components/panda/PandaPlaySheet.tsx
 //
 // Тап по панде без облачка — панда предлагает поиграть (utils/panda/play):
-//   меню    — «Чем займёмся?»: «Угадай слово» (+2 монеты) и «Напиши слово» (+3…5);
-//   pick    — загадка прямо в панели; после ответа «Ещё» (если игры остались) и «Готово»;
-//   write   — уходит на экран письма /panda-riddle (source=play);
+//   меню    — «Чем займёмся?»: «Угадай слово», «Послушай и угадай» (+2 монеты),
+//             «Допиши черту» (+1…2), «Напиши слово» (+3…5);
+//   pick, listen — загадка прямо в панели; после ответа «Ещё» (если игры остались)
+//             и «Готово»;
+//   stroke, write — экран письма /panda-riddle (source=play, у stroke — mode=stroke);
 //   устала  — игры кончились (15 за 3 часа): «Давай отдохнём, приходи через …»;
 //   пусто   — слов ещё нет: «Сначала выучи пару слов на пути» и кнопка «К пути».
 // Позже сюда же: погладить, покормить (когда будут анимации).
@@ -14,6 +16,8 @@ import type { Word } from "@/content/flashcards/types";
 import { usePandaStore } from "@/store/pandaStore";
 import {
   PICK_REWARD,
+  STROKE_PERFECT_REWARD,
+  STROKE_REWARD,
   WRITE_PERFECT_REWARD,
   WRITE_REWARD,
   canPlay,
@@ -32,7 +36,7 @@ import { MainButton, PickRiddle, WriteRiddle } from "./PandaRiddles";
 
 type Step =
   | { kind: "menu" }
-  | { kind: "pick"; word: Word; variant: number }
+  | { kind: "pick" | "listen"; word: Word; variant: number }
   | { kind: "write"; word: Word; variant: number };
 
 interface PandaPlaySheetProps {
@@ -60,17 +64,28 @@ function PlayContent({ onClose }: { onClose: () => void }) {
   const start = (kind: PlayKind) => {
     const word = pickPlayWord(kind);
     if (!word) return;
+    // «Допиши черту» — на экране письма (холст в панели мешал бы свайпу панели)
+    if (kind === "stroke") {
+      onClose();
+      router.push({
+        pathname: "/panda-riddle",
+        params: { wordId: word.vocabularyId, source: "play", mode: "stroke" },
+      });
+      return;
+    }
     setStep({ kind, word, variant: Date.now() });
   };
 
-  if (step.kind === "pick") {
+  if (step.kind === "pick" || step.kind === "listen") {
     const { word } = step;
     return (
       <View className="gap-5">
         <Header />
         <PickRiddle
+          key={step.variant}
           word={word}
           variant={step.variant}
+          listen={step.kind === "listen"}
           reward={PICK_REWARD}
           onAnswer={(correct) =>
             finishPlay(word.vocabularyId, correct ? PICK_REWARD : 0)
@@ -113,6 +128,7 @@ function PlayContent({ onClose }: { onClose: () => void }) {
   // Меню
   const canPick = canPlay("pick");
   const canWrite = canPlay("write");
+  const canStroke = canPlay("stroke");
 
   if (!canPick) {
     return (
@@ -161,6 +177,19 @@ function PlayContent({ onClose }: { onClose: () => void }) {
           subtitle={t("play.pickHint")}
           reward={`+${PICK_REWARD}`}
           onPress={() => start("pick")}
+        />
+        <PlayCard
+          title={t("play.listen")}
+          subtitle={t("play.listenHint")}
+          reward={`+${PICK_REWARD}`}
+          onPress={() => start("listen")}
+        />
+        <PlayCard
+          title={t("play.stroke")}
+          subtitle={canStroke ? t("play.strokeHint") : t("play.writeLocked")}
+          reward={`+${STROKE_REWARD}–${STROKE_PERFECT_REWARD}`}
+          disabled={!canStroke}
+          onPress={() => start("stroke")}
         />
         <PlayCard
           title={t("play.write")}

@@ -6,13 +6,17 @@
 // панда отдыхает. Обе цифры можно менять здесь.
 //
 // Игры — загадки по твоим словам (их не может кончиться, в отличие от фраз):
-//   pick  — по переводу выбрать иероглиф из трёх;
-//   write — написать слово по памяти (только слова, которые уже писали).
+//   pick   — по переводу выбрать иероглиф из трёх;
+//   listen — панда произносит слово, выбрать иероглиф из трёх;
+//   stroke — у иероглифа не хватает одной черты, дописать её (любые слова, которые
+//            можно писать — это проще, чем писать целиком);
+//   write  — написать слово по памяти (только слова, которые уже писали).
 // Слова: сначала «Повторение», потом любые начатые (хотя бы 1 точка); последние
 // загаданные не повторяются.
 //
 // Награды (решено: монеты — только за то, что похоже на тренировку):
-//   верный ответ в pick — PICK_REWARD монет;
+//   верный ответ в pick и listen — PICK_REWARD монет;
+//   дописанная черта — STROKE_REWARD (без ошибок — STROKE_PERFECT_REWARD);
 //   написанное слово — WRITE_REWARD, без единой ошибки — WRITE_PERFECT_REWARD;
 //   любая доигранная игра — привязанность +1 (recordPlay).
 // Точки слов игры не меняют.
@@ -25,12 +29,14 @@ import { useWordProgressStore } from "@/store/wordProgressStore";
 import { shuffle } from "@/utils/shuffle";
 import { getWritableWords } from "@/utils/writing/words";
 
-export type PlayKind = "pick" | "write";
+export type PlayKind = "pick" | "listen" | "stroke" | "write";
 
 export const PLAYS_PER_WINDOW = 15;
 export const PLAY_WINDOW_MS = 3 * 60 * 60 * 1000;
 
 export const PICK_REWARD = 2;
+export const STROKE_REWARD = 1;
+export const STROKE_PERFECT_REWARD = 2;
 export const WRITE_REWARD = 3;
 export const WRITE_PERFECT_REWARD = 5;
 
@@ -57,8 +63,9 @@ function candidateWords(kind: PlayKind): Word[] {
   const recent = new Set(usePandaStore.getState().recentRiddleWordIds);
 
   const fits = (word: Word) => {
-    if (kind === "pick") return true;
+    if (kind === "pick" || kind === "listen") return true;
     if (getWritableWords([word]).length === 0) return false;
+    if (kind === "stroke") return true;
     return (flashcardWords[word.vocabularyId]?.writing.streak ?? 0) > 0;
   };
 

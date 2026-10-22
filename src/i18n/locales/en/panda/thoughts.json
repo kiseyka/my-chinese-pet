@@ -35,7 +35,15 @@
       "Super!",
       "Right, just as I thought!"
     ],
-    "wrong": "Almost! Here's the right one:"
+    "wrong": "Almost! Here's the right one:",
+    "listen": [
+      "Listen! Which word is it?",
+      "Hear that? Find the word!",
+      "I'll say a word — you find it!",
+      "Guess by ear!",
+      "What did I say? Find the character!",
+      "Listen carefully…"
+    ]
   },
   "riddleWrite": {
     "task": "Write",
@@ -78,6 +86,17 @@
     "minutes_one": "{{count}} minute",
     "minutes_other": "{{count}} minutes",
     "hours_one": "{{count}} hour",
-    "hours_other": "{{count}} hours"
+    "hours_other": "{{count}} hours",
+    "listen": "Listen and guess",
+    "listenHint": "The panda says a word — find the character",
+    "stroke": "Finish the stroke",
+    "strokeHint": "One stroke is missing from the character"
+  },
+  "stroke": {
+    "task": "Add the stroke",
+    "clean": "First try!",
+    "done": "Done!",
+    "hint": "I showed where the stroke goes — draw it",
+    "hintIdle": "Which stroke is missing?"
   }
 }
