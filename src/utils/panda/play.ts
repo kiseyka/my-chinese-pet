@@ -11,8 +11,9 @@
 //   stroke — у иероглифа не хватает одной черты, дописать её (любые слова, которые
 //            можно писать — это проще, чем писать целиком);
 //   write  — написать слово по памяти (только слова, которые уже писали).
-// Слова: сначала «Повторение», потом любые начатые (хотя бы 1 точка); последние
-// загаданные не повторяются.
+// Слова: начатые (хотя бы 1 точка), «Повторение» не используется; начатых нет —
+// первые этапы пути. Для «угадай» и «послушай» — слова до 2 иероглифов.
+// Последние загаданные не повторяются.
 //
 // Награды (решено: монеты — только за то, что похоже на тренировку):
 //   верный ответ в pick и listen — PICK_REWARD монет;
@@ -22,7 +23,10 @@
 // Точки слов игры не меняют.
 
 import type { Word } from "@/content/flashcards/types";
-import { allWords, findWord } from "@/content/words/vocabulary";
+import { allWords } from "@/content/words/vocabulary";
+import { getPathStages } from "@/utils/path/stages";
+import { buildReadingExamQuestion } from "@/utils/readingExam";
+import i18n from "i18next";
 import { usePandaStore } from "@/store/pandaStore";
 import { useProgressStore } from "@/store/userProgressStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
@@ -57,35 +61,52 @@ export function getMinutesUntilPlay(playTimes: number[], now = Date.now()): numb
   return Math.max(1, Math.ceil((oldest + PLAY_WINDOW_MS - now) / 60000));
 }
 
-/** Слова для загадок: «Повторение», потом начатые; без недавно загаданных. */
+/** Самое длинное слово для «угадай» и «послушай»: длинным не хватает похожих вариантов. */
+const MAX_GUESS_CHARS = 2;
+/** Сколько первых этапов пути брать, если начатых слов ещё нет. */
+const STARTER_STAGES = 2;
+
+const hanCount = (word: Word) =>
+  Array.from(word.hanzi).filter((ch) => /\p{Script=Han}/u.test(ch)).length;
+
+/** Подходит ли слово для этой игры. */
+function fitsKind(kind: PlayKind, word: Word): boolean {
+  if (kind === "pick" || kind === "listen") {
+    return hanCount(word) <= MAX_GUESS_CHARS;
+  }
+  if (getWritableWords([word]).length === 0) return false;
+  if (kind === "stroke") return true;
+  const progress = useWordProgressStore.getState().flashcardWords;
+  return (progress[word.vocabularyId]?.writing.streak ?? 0) > 0;
+}
+
+/**
+ * Слова для загадок:
+ *   1) начатые (хотя бы 1 точка перевода или письма) — «Повторение» не используется:
+ *      туда кладут и длинные фразы, и отдельные иероглифы, загадывать их неудобно;
+ *   2) начатых нет — первые этапы пути (HSK 1), чтобы новичку было во что поиграть.
+ * Без недавно загаданных, если есть другие.
+ */
 function candidateWords(kind: PlayKind): Word[] {
-  const { review, flashcardWords } = useWordProgressStore.getState();
+  const { flashcardWords } = useWordProgressStore.getState();
   const recent = new Set(usePandaStore.getState().recentRiddleWordIds);
 
-  const fits = (word: Word) => {
-    if (kind === "pick" || kind === "listen") return true;
-    if (getWritableWords([word]).length === 0) return false;
-    if (kind === "stroke") return true;
-    return (flashcardWords[word.vocabularyId]?.writing.streak ?? 0) > 0;
-  };
-
-  // Иероглифы «char:…» пропускаем: у них нет своего перевода
-  const reviewWords = Object.keys(review)
-    .map((id) => findWord(id))
-    .filter((word): word is Word => !!word && fits(word));
-
-  const startedWords = allWords.filter((word) => {
+  let words = allWords.filter((word) => {
     const progress = flashcardWords[word.vocabularyId];
     const started =
       !!progress && (progress.reading.streak > 0 || progress.writing.streak > 0);
-    return started && fits(word);
+    return started && fitsKind(kind, word);
   });
 
-  for (const list of [reviewWords, startedWords]) {
-    const fresh = list.filter((word) => !recent.has(word.vocabularyId));
-    if (fresh.length > 0) return shuffle(fresh);
+  if (words.length === 0) {
+    words = getPathStages()
+      .slice(0, STARTER_STAGES)
+      .flatMap((stage) => stage.words)
+      .filter((word) => fitsKind(kind, word));
   }
-  return shuffle(reviewWords.length > 0 ? reviewWords : startedWords);
+
+  const fresh = words.filter((word) => !recent.has(word.vocabularyId));
+  return shuffle(fresh.length > 0 ? fresh : words);
 }
 
 /** Есть ли из чего загадать (для кнопок меню). */
@@ -93,9 +114,19 @@ export function canPlay(kind: PlayKind): boolean {
   return candidateWords(kind).length > 0;
 }
 
-/** Слово для новой загадки или undefined, если загадать нечего. */
+/**
+ * Слово для новой загадки или undefined, если загадать нечего.
+ * Для «угадай» и «послушай» — только слово, к которому нашлись два похожих варианта
+ * (иначе на экране был бы один вариант).
+ */
 export function pickPlayWord(kind: PlayKind): Word | undefined {
-  return candidateWords(kind)[0];
+  const words = candidateWords(kind);
+  if (kind !== "pick" && kind !== "listen") return words[0];
+
+  const translate = (key: string) => i18n.t(key);
+  return words.find(
+    (word) => buildReadingExamQuestion(word, translate).options.length >= 3,
+  );
 }
 
 /** Игра доиграна: монеты (если есть), привязанность, лимит. */

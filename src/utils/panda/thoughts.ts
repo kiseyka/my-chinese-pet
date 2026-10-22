@@ -11,7 +11,8 @@
 //            (content/panda/thoughtPhrases.ts). Разобрал — фраза в коллекции профиля.
 //            У вопросов — варианты ответа; ответ запоминается и открывает фразы
 //            с requires («ты любишь зелёный — мой цветок тоже»);
-//   riddle — загадка по слову из «Повторения», если сегодня ещё не было тренировки:
+//   riddle — загадка по начатому слову (как в игре по тапу, utils/panda/play),
+//            если сегодня ещё не было тренировки:
 //            pick  — по переводу выбрать иероглиф из трёх;
 //            write — написать слово по памяти (если его уже писали).
 //            Точек не даёт, ошибка ничего не отнимает.
@@ -25,16 +26,14 @@
 //   - фразы не повторяются: рассказанная фраза больше не предлагается;
 //   - слово загадки не повторяется среди последних нескольких.
 
-import type { Word } from "@/content/flashcards/types";
 import { pandaPhrases, type PandaPhrase } from "@/content/panda/thoughtPhrases";
-import { allWords, findWord } from "@/content/words/vocabulary";
 import { useActivityStore } from "@/store/activityStore";
 import { usePandaStore } from "@/store/pandaStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { dayKey } from "@/utils/activity";
 import { shuffle } from "@/utils/shuffle";
-import { getWritableWords } from "@/utils/writing/words";
 import { getPhraseWords } from "./phraseSegments";
+import { pickPlayWord } from "./play";
 
 export type ThoughtKind = "phrase" | "riddle";
 export type RiddleForm = "pick" | "write";
@@ -87,26 +86,6 @@ export function getAvailablePhrases(): PandaPhrase[] {
   });
 }
 
-/** Слова «Повторения», по которым можно загадать загадку (новые первыми). */
-function getRiddleWords(): Word[] {
-  const { review } = useWordProgressStore.getState();
-  const recent = new Set(usePandaStore.getState().recentRiddleWordIds);
-
-  // Иероглифы «char:…» пропускаем: у них нет своего перевода, загадать нечего
-  const words = Object.keys(review)
-    .map((id) => findWord(id))
-    .filter((word): word is Word => !!word);
-
-  const fresh = words.filter((word) => !recent.has(word.vocabularyId));
-  return shuffle(fresh.length > 0 ? fresh : words);
-}
-
-function canWrite(word: Word): boolean {
-  if (getWritableWords([word]).length === 0) return false;
-  const progress = useWordProgressStore.getState().flashcardWords;
-  return (progress[word.vocabularyId]?.writing.streak ?? 0) > 0;
-}
-
 function buildPhraseThought(now: number): PandaThought | null {
   const [phrase] = shuffle(getAvailablePhrases());
   return phrase ? { kind: "phrase", phraseId: phrase.id, createdAt: now } : null;
@@ -116,12 +95,13 @@ function buildRiddleThought(now: number): PandaThought | null {
   // Загадка — повод вспомнить слова, когда сегодня ещё не занимались
   if (!TEST_MODE && useActivityStore.getState().days[dayKey(now)]) return null;
 
-  const [word] = getRiddleWords();
+  // Слова — те же, что в игре по тапу (utils/panda/play): начатые, короткие
+  const wantWrite = Math.random() < WRITE_RIDDLE_CHANCE;
+  const writeWord = wantWrite ? pickPlayWord("write") : undefined;
+  const word = writeWord ?? pickPlayWord("pick");
   if (!word) return null;
 
-  const form: RiddleForm =
-    canWrite(word) && Math.random() < WRITE_RIDDLE_CHANCE ? "write" : "pick";
-
+  const form: RiddleForm = writeWord ? "write" : "pick";
   return { kind: "riddle", form, wordId: word.vocabularyId, createdAt: now };
 }
 
@@ -188,21 +168,9 @@ function pickTestThought(type: TestThought, now: number): PandaThought | null {
     return phrase ? { kind: "phrase", phraseId: phrase.id, createdAt: now } : null;
   }
 
-  const progress = useWordProgressStore.getState().flashcardWords;
-  const fits = (word: Word) =>
-    type === "pick" || getWritableWords([word]).length > 0;
-
-  // Сначала «Повторение», потом начатые слова, потом любые
-  const candidates = [
-    getRiddleWords(),
-    shuffle(allWords.filter((w) => isStarted(progress, w.vocabularyId))),
-    shuffle(allWords),
-  ];
-  for (const list of candidates) {
-    const word = list.find(fits);
-    if (word) {
-      return { kind: "riddle", form: type, wordId: word.vocabularyId, createdAt: now };
-    }
+  const word = pickPlayWord(type);
+  if (word) {
+    return { kind: "riddle", form: type, wordId: word.vocabularyId, createdAt: now };
   }
   return null;
 }
