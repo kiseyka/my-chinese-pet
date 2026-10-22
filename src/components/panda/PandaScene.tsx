@@ -63,7 +63,7 @@ interface PandaSceneProps {
   style?: ViewStyle;
   /** Облачко мыслей над головой. */
   hasThought?: boolean;
-  /** Тап по панде (только когда есть облачко). */
+  /** Тап по панде: с облачком — открыть мысль, без него — игру. */
   onPandaPress?: () => void;
 }
 
@@ -91,7 +91,8 @@ export const PandaScene = ({
   const cloud = usePandaCloud(hasThought);
 
   const handlePress = () => {
-    cloud.tap();
+    // Анимация тапа — только у облачка; без него тап просто открывает игру
+    if (hasThought) cloud.tap();
     onPandaPress?.();
   };
 
@@ -132,9 +133,9 @@ export const PandaScene = ({
         onPlay={cloud.onPlay}
       />
 
-      {/* Область тапа по панде: работает, только когда есть облачко */}
+      {/* Область тапа по панде: с облачком — мысль, без него — игра */}
       <View
-        pointerEvents={hasThought && onPandaPress ? "box-none" : "none"}
+        pointerEvents={onPandaPress ? "box-none" : "none"}
         style={{
           position: "absolute",
           top: insets.bottom,
@@ -147,7 +148,7 @@ export const PandaScene = ({
         <Pressable
           onPress={handlePress}
           accessibilityRole="button"
-          accessibilityLabel="Панде есть что сказать"
+          accessibilityLabel={hasThought ? "Панде есть что сказать" : "Поиграть с пандой"}
           style={{
             position: "absolute",
             ...PANDA_HIT_AREA,

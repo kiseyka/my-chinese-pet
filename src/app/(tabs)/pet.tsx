@@ -6,12 +6,14 @@ import shopImg from "@/assets/images/shop.png";
 import { CoinBalance } from "@/components/CoinBalance";
 import { Screen } from "@/components/layout/Screen";
 import { PandaScene } from "@/components/panda/PandaScene";
+import { PandaPlaySheet } from "@/components/panda/PandaPlaySheet";
 import { PandaThoughtSheet } from "@/components/panda/PandaThoughtSheet";
 import { usePandaThought } from "@/hooks/panda/usePandaThought";
 import { NavIconButton } from "@/components/ui/NavIconButton";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const PandaScreen = () => {
@@ -22,6 +24,12 @@ const PandaScreen = () => {
   const progressPercent = Math.min(100, (xpIntoLevel / xpForNextLevel) * 100);
   // Мысли панды: облачко над головой, реплика по тапу (utils/panda/thoughts)
   const thought = usePandaThought();
+  // Тап без облачка — игра с пандой (utils/panda/play). Число — новое меню при каждом открытии
+  const [playId, setPlayId] = useState<number | null>(null);
+  const tapPanda = () => {
+    if (thought.thought) thought.tapPanda();
+    else setPlayId(Date.now());
+  };
 
   return (
     <Screen className="bg-[#EDE0CE]">
@@ -88,7 +96,7 @@ const PandaScreen = () => {
         >
           <PandaScene
             hasThought={thought.hasCloud}
-            onPandaPress={thought.tapPanda}
+            onPandaPress={tapPanda}
           />
         </View>
       </View>
@@ -120,6 +128,7 @@ const PandaScreen = () => {
         onClose={thought.close}
         onDone={thought.done}
       />
+      <PandaPlaySheet openId={playId} onClose={() => setPlayId(null)} />
     </Screen>
   );
 };

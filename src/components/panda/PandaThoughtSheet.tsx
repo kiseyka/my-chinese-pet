@@ -12,24 +12,15 @@
 // мимо: мысль остаётся, облачко ждёт до конца дня.
 
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { Hanzi } from "@/components/ui/Hanzi";
-import { Pinyin } from "@/components/ui/Pinyin";
-import type { Word } from "@/content/flashcards/types";
 import { findPandaPhrase } from "@/content/panda/thoughtPhrases";
 import { findWord } from "@/content/words/vocabulary";
-import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { usePandaStore } from "@/store/pandaStore";
 import type { PandaThought } from "@/utils/panda/thoughts";
-import { buildReadingExamQuestion } from "@/utils/readingExam";
-import { shuffle } from "@/utils/shuffle";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { View } from "react-native";
 import { PandaPhraseView } from "./PandaPhraseView";
-
-/** Сколько вариантов в загадке (правильный + неправильные). */
-const RIDDLE_OPTIONS = 3;
+import { MainButton, PickRiddle, WriteRiddle } from "./PandaRiddles";
 
 interface PandaThoughtSheetProps {
   thought: PandaThought | null;
@@ -72,12 +63,23 @@ function ThoughtContent({
 
   const word = findWord(thought.wordId);
   // Слово убрали из базы — просто закрываем мысль
-  if (!word) return <MainButton label="OK" onPress={onDone} />;
+  if (!word) return <GotIt onPress={onDone} disabled={false} />;
 
   return thought.form === "write" ? (
-    <WriteRiddle word={word} variant={thought.createdAt} onClose={onClose} />
+    <WriteRiddle
+      word={word}
+      variant={thought.createdAt}
+      source="thought"
+      onClose={onClose}
+    />
   ) : (
-    <PickRiddle word={word} variant={thought.createdAt} onDone={onDone} />
+    <PickRiddle
+      word={word}
+      variant={thought.createdAt}
+      actions={(answered) => (
+        <GotIt onPress={onDone} disabled={!answered} />
+      )}
+    />
   );
 }
 
@@ -96,7 +98,7 @@ function PhraseThought({
   const phrase = findPandaPhrase(thought.phraseId);
   const [answer, setAnswer] = useState<string | undefined>();
 
-  if (!phrase) return <MainButton label="OK" onPress={onDone} />;
+  if (!phrase) return <GotIt onPress={onDone} disabled={false} />;
 
   // У вопроса «Понятно» — после ответа
   const waitsForAnswer = !!phrase.replies && !answer;
@@ -115,167 +117,16 @@ function PhraseThought({
         from="pet"
         onLeave={onClose}
       />
-      <MainButton
-        label={t("gotIt")}
-        onPress={finish}
-        disabled={waitsForAnswer}
-      />
+      <GotIt onPress={finish} disabled={waitsForAnswer} />
     </View>
   );
 }
 
-// ── Загадки ──────────────────────────────────────────────────────────────────
-
-/** Реплика из списка вариантов — одна и та же для одной мысли. */
-function useLine(key: string, variant: number, word: string): string {
+function GotIt({ onPress, disabled }: { onPress: () => void; disabled: boolean }) {
   const { t } = useTranslation("pandaThoughts");
-  const lines = t(key, { returnObjects: true, word }) as unknown;
-  if (!Array.isArray(lines) || lines.length === 0) return "";
-  return String(lines[variant % lines.length]);
-}
-
-function PickRiddle({
-  word,
-  variant,
-  onDone,
-}: {
-  word: Word;
-  variant: number;
-  onDone: () => void;
-}) {
-  const { t } = useTranslation();
-  const { t: tp } = useTranslation("pandaThoughts");
-  const { speakForced } = useSpeakHanzi();
-  const translation = t(word.translation);
-  const question = useLine("riddle.pick", variant, translation);
-  const praise = useLine("riddle.correct", variant, translation);
-
-  // Похожие иероглифы, как на экзамене по переводу, но вариантов три
-  const options = useMemo(() => {
-    const { options: all } = buildReadingExamQuestion(word, t);
-    const others = all.filter((o) => o.vocabularyId !== word.vocabularyId);
-    return shuffle([word, ...others.slice(0, RIDDLE_OPTIONS - 1)]);
-    // Варианты собираются один раз на мысль
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [word.vocabularyId]);
-
-  const [picked, setPicked] = useState<Word | null>(null);
-  const answered = picked !== null;
-  const correct = picked?.vocabularyId === word.vocabularyId;
-
-  const pick = (option: Word) => {
-    if (answered) return;
-    setPicked(option);
-    speakForced(word.hanzi);
-  };
-
   return (
-    <View className="gap-5">
-      <Text className="font-nunito text-title text-text">{question}</Text>
-
-      <View className="flex-row gap-3">
-        {options.map((option) => {
-          const isAnswer = option.vocabularyId === word.vocabularyId;
-          const isPicked = option.vocabularyId === picked?.vocabularyId;
-          const style = !answered
-            ? "border-primary/30 bg-surface"
-            : isAnswer
-              ? "border-primary bg-primary/15"
-              : isPicked
-                ? "border-error bg-error/10"
-                : "border-border bg-surface opacity-50";
-
-          return (
-            <Pressable
-              key={option.vocabularyId}
-              onPress={() => pick(option)}
-              disabled={answered}
-              className={`min-h-20 flex-1 items-center justify-center rounded-2xl border-2 py-3 active:opacity-70 ${style}`}
-              accessibilityRole="button"
-              accessibilityLabel={option.hanzi}
-            >
-              <Hanzi size={Array.from(option.hanzi).length > 2 ? 24 : 32}>
-                {option.hanzi}
-              </Hanzi>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Место под ответом есть всегда — окно не прыгает после выбора */}
-      <View className="min-h-16 gap-1" style={{ opacity: answered ? 1 : 0 }}>
-        <Text className="font-nunitoBold text-body text-text">
-          {correct ? praise : tp("riddle.wrong")}
-        </Text>
-        <Pressable
-          onPress={() => speakForced(word.hanzi)}
-          disabled={!answered}
-          className="flex-row items-center gap-3 self-start active:opacity-70"
-        >
-          <Hanzi size="sm">{word.hanzi}</Hanzi>
-          <Pinyin size="sm">{word.pinyin}</Pinyin>
-        </Pressable>
-      </View>
-
-      <MainButton label={tp("gotIt")} onPress={onDone} disabled={!answered} />
+    <View className="flex-row">
+      <MainButton label={t("gotIt")} onPress={onPress} disabled={disabled} />
     </View>
-  );
-}
-
-function WriteRiddle({
-  word,
-  variant,
-  onClose,
-}: {
-  word: Word;
-  variant: number;
-  onClose: () => void;
-}) {
-  const router = useRouter();
-  const { t } = useTranslation();
-  const { t: tp } = useTranslation("pandaThoughts");
-  const question = useLine("riddle.write", variant, t(word.translation));
-
-  // Мысль закроет экран письма, когда слово будет написано.
-  // Ушли с него раньше — облачко останется
-  const write = () => {
-    onClose();
-    router.push({
-      pathname: "/panda-riddle",
-      params: { wordId: word.vocabularyId },
-    });
-  };
-
-  return (
-    <View className="gap-5">
-      <Text className="font-nunito text-title text-text">{question}</Text>
-      <MainButton label={tp("write")} onPress={write} />
-    </View>
-  );
-}
-
-// ── Кнопка ───────────────────────────────────────────────────────────────────
-
-function MainButton({
-  label,
-  onPress,
-  disabled = false,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      className={`min-h-12 items-center justify-center rounded-full bg-primary px-6 py-3 active:opacity-70 ${
-        disabled ? "opacity-40" : ""
-      }`}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-    >
-      <Text className="font-nunito text-body text-white">{label}</Text>
-    </Pressable>
   );
 }

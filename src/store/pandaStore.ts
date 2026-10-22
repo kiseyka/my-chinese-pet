@@ -31,7 +31,6 @@ export interface PandaTrainingResult {
   wordChanges: WordChange[];
 }
 
-const MAX_BOND = 100;
 const RECENT_WORDS_LIMIT = 6;
 /** Сколько последних слов загадок помнить, чтобы не загадывать одно и то же. */
 const RECENT_RIDDLES_LIMIT = 8;
@@ -43,7 +42,10 @@ export interface CollectedPhrase {
 }
 
 interface PandaState {
-  /** Привязанность: только растёт, никогда не уменьшается. Сохраняется. */
+  /**
+   * Привязанность: только растёт, никогда не уменьшается и не упирается в потолок
+   * (позже — уровни дружбы, как уровни опыта). Сохраняется.
+   */
   bond: number;
 
   /** Последние слова, которые панда уже упоминала (защита от повторов). Сохраняется. */
@@ -90,6 +92,11 @@ interface PandaState {
    * По ним открываются фразы с requires — панда помнит, что ей сказали.
    */
   answers: Record<string, string>;
+  /**
+   * Когда были игры по тапу на панду (без облачка) — для лимита «3 в час».
+   * Хранятся только за последний час. См. utils/panda/play.
+   */
+  playTimes: number[];
 
   /** Результат последней тренировки, который панда ещё не прокомментировала. Не сохраняется. */
   pendingTrainingResult: PandaTrainingResult | null;
@@ -114,6 +121,8 @@ interface PandaActions {
    * replyId — что пользователь ответил, если это был вопрос.
    */
   collectPhrase: (phraseId: string, replyId?: string) => void;
+  /** Сыграли по тапу: запомнить время, слово, привязанность +1. */
+  recordPlay: (wordId: string, now: number) => void;
 }
 
 type PandaStore = PandaState & PandaActions;
@@ -135,10 +144,11 @@ export const usePandaStore = create<PandaStore>()(
       collectedPhrases: [],
       recentRiddleWordIds: [],
       answers: {},
+      playTimes: [],
 
       increaseBond: (amount) =>
         set((state) => ({
-          bond: Math.min(MAX_BOND, state.bond + Math.max(0, amount)),
+          bond: state.bond + Math.max(0, amount),
         })),
 
       rememberWord: (wordId) =>
@@ -199,9 +209,22 @@ export const usePandaStore = create<PandaStore>()(
           }
           return {
             thought: null,
-            bond: Math.min(MAX_BOND, state.bond + 1),
+            bond: state.bond + 1,
           };
         }),
+
+      recordPlay: (wordId, now) =>
+        set((state) => ({
+          playTimes: [
+            ...state.playTimes.filter((time) => now - time < 60 * 60 * 1000),
+            now,
+          ],
+          recentRiddleWordIds: [
+            wordId,
+            ...state.recentRiddleWordIds.filter((id) => id !== wordId),
+          ].slice(0, RECENT_RIDDLES_LIMIT),
+          bond: state.bond + 1,
+        })),
 
       collectPhrase: (phraseId, replyId) =>
         set((state) => ({
@@ -235,6 +258,7 @@ export const usePandaStore = create<PandaStore>()(
         collectedPhrases: state.collectedPhrases,
         recentRiddleWordIds: state.recentRiddleWordIds,
         answers: state.answers,
+        playTimes: state.playTimes,
       }),
     },
   ),

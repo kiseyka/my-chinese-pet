@@ -39,5 +39,21 @@
   "toStage": "Stage",
   "notInDictionary": "This word isn't in the dictionary yet",
   "yourAnswer": "Your answer:",
-  "translation": "Translation"
+  "translation": "Translation",
+  "play": {
+    "question": "Shall we play? What do you want to do?",
+    "pick": "Guess the word",
+    "pickHint": "Pick the character by its meaning",
+    "write": "Write a word",
+    "writeHint": "From memory, no outline",
+    "writeLocked": "Practise writing at least one word first",
+    "left_one": "{{count}} more game this hour",
+    "left_other": "{{count}} more games this hour",
+    "more": "More",
+    "done": "Done",
+    "ok": "Okay",
+    "tired": "I'm a little tired. Let's rest — come back in {{minutes}} min!",
+    "empty": "Let's learn a couple of words on the path first — then I can give you riddles!",
+    "toPath": "To the path"
+  }
 }

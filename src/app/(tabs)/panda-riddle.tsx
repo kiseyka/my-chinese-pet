@@ -1,6 +1,7 @@
 // app/(tabs)/panda-riddle.tsx
 //
-// Загадка панды «напиши слово» (мысль riddle/write, см. utils/panda/thoughts):
+// Загадка панды «напиши слово»: мысль с облачком (source=thought, utils/panda/thoughts)
+// или игра по тапу на панду (source=play, utils/panda/play — с монетами за слово):
 // сверху пиньинь и перевод, слово пишется по памяти (логика — useRiddleWriting).
 // В конце — эталон и твоё написание (тап по своему — в галерею), «Готово» закрывает
 // мысль и возвращает к панде. Ушли раньше — мысль остаётся, облачко ждёт.
@@ -29,10 +30,16 @@ import { useRiddleWriting } from "@/hooks/panda/useRiddleWriting";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { useCanvasSize } from "@/hooks/writing/useCanvasSize";
 import { usePandaStore } from "@/store/pandaStore";
+import { RewardBadge } from "@/components/panda/PandaRiddles";
+import {
+  WRITE_PERFECT_REWARD,
+  WRITE_REWARD,
+  finishPlay,
+} from "@/utils/panda/play";
 import { resolveThought } from "@/utils/panda/thoughts";
 import { syllableOf } from "@/utils/writing/words";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -40,7 +47,10 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 const RESULT_SIZE = 96;
 
 export default function PandaRiddleRoute() {
-  const { wordId } = useLocalSearchParams<{ wordId?: string }>();
+  const { wordId, source } = useLocalSearchParams<{
+    wordId?: string;
+    source?: string;
+  }>();
   // Экран остаётся смонтированным между заходами — каждый заход начинаем заново
   const [visit, setVisit] = useState(0);
   useFocusEffect(useCallback(() => setVisit((n) => n + 1), []));
@@ -53,13 +63,19 @@ export default function PandaRiddleRoute() {
         <View className="flex-row items-center pb-3 pr-4">
           <BackButton href="/pet" />
         </View>
-        {word && <RiddleWriting key={`${word.vocabularyId}-${visit}`} word={word} />}
+        {word && (
+          <RiddleWriting
+            key={`${word.vocabularyId}-${visit}`}
+            word={word}
+            isPlay={source === "play"}
+          />
+        )}
       </Screen>
     </GestureHandlerRootView>
   );
 }
 
-function RiddleWriting({ word }: { word: Word }) {
+function RiddleWriting({ word, isPlay }: { word: Word; isPlay: boolean }) {
   const router = useRouter();
   const { t } = useTranslation("pandaThoughts");
   const size = useCanvasSize();
@@ -68,6 +84,17 @@ function RiddleWriting({ word }: { word: Word }) {
   const [toSave, setToSave] = useState<GalleryCandidate | null>(null);
 
   const { chars, charIndex, charData, phase } = riddle;
+
+  // Игра по тапу: монеты и привязанность — один раз, как только слово написано
+  const reward =
+    riddle.mistakes === 0 ? WRITE_PERFECT_REWARD : WRITE_REWARD;
+  const rewarded = useRef(false);
+  useEffect(() => {
+    if (!isPlay || phase !== "done" || rewarded.current) return;
+    rewarded.current = true;
+    finishPlay(word.vocabularyId, reward);
+  }, [isPlay, phase, reward, word.vocabularyId]);
+
   if (!chars || !charData) return null;
 
   const hanziList = Array.from(word.hanzi);
@@ -113,11 +140,14 @@ function RiddleWriting({ word }: { word: Word }) {
           </Text>
         </View>
 
-        <Text className="text-center font-nunitoBold text-title text-text">
-          {riddle.mistakes === 0
-            ? t("riddleWrite.clean")
-            : t("riddleWrite.mistakes", { count: riddle.mistakes })}
-        </Text>
+        <View className="items-center gap-2">
+          <Text className="text-center font-nunitoBold text-title text-text">
+            {riddle.mistakes === 0
+              ? t("riddleWrite.clean")
+              : t("riddleWrite.mistakes", { count: riddle.mistakes })}
+          </Text>
+          {isPlay && <RewardBadge coins={reward} />}
+        </View>
 
         <PillButton label={t("riddleWrite.done")} onPress={finish} />
 
