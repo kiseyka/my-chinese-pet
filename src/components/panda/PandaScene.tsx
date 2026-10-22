@@ -1,7 +1,7 @@
 // src/components/panda/PandaScene.tsx
 //
 // Комната (фон) и панда. У панды облачко мыслей — слой Layer_thought в её
-// State Machine 1 (assets/motion/panda_02.riv), входы:
+// State Machine 1 (assets/motion/panda.riv), входы:
 //   hasThought (bool) — облачко видно: idle → waiting_look (лучики один раз) → waiting;
 //   look (trigger)    — ещё раз лучики (возвращение на экран, пока облачко висит);
 //   tap (trigger)     — сжатие и свечение при тапе, потом облачко пропадает.

@@ -7,7 +7,6 @@ import { CoinBalance } from "@/components/CoinBalance";
 import { Screen } from "@/components/layout/Screen";
 import { PandaScene } from "@/components/panda/PandaScene";
 import { PandaThoughtSheet } from "@/components/panda/PandaThoughtSheet";
-import { ThoughtTestPanel } from "@/components/panda/ThoughtTestPanel";
 import { usePandaThought } from "@/hooks/panda/usePandaThought";
 import { NavIconButton } from "@/components/ui/NavIconButton";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
@@ -66,9 +65,6 @@ const PandaScreen = () => {
         {/* Правая колонка: монеты */}
         <CoinBalance />
       </View>
-
-      {/* Только в режиме разработки: запустить облачко для проверки */}
-      <ThoughtTestPanel />
 
       {/* Сцена с пандой — на весь экран под шапкой. */}
       <View
