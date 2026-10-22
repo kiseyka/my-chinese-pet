@@ -183,8 +183,11 @@ function StubCloud() {
 function usePandaCloud(hasThought: boolean) {
   const ref = useRef<RiveRef>(null);
   const [isReady, setIsReady] = useState(false);
-  /** Что сейчас выставлено в Rive. */
-  const shown = useRef(false);
+  /**
+   * Что сейчас выставлено в Rive. null — ещё ничего не отправляли: в файле у входа
+   * может стоять значение по умолчанию true, поэтому первое значение отправляем всегда.
+   */
+  const shown = useRef<boolean | null>(null);
   const lastTapAt = useRef(0);
 
   const setInput = useCallback((value: boolean) => {
@@ -208,6 +211,11 @@ function usePandaCloud(hasThought: boolean) {
 
   useEffect(() => {
     if (!isReady || shown.current === hasThought) return;
+    // Первый раз — сразу, без ожидания анимации тапа
+    if (shown.current === null) {
+      setInput(hasThought);
+      return;
+    }
 
     const sinceTap = Date.now() - lastTapAt.current;
     if (!hasThought && sinceTap < TAP_ANIMATION_MS) {
@@ -229,7 +237,7 @@ function usePandaCloud(hasThought: boolean) {
         isFirstFocus.current = false;
         return;
       }
-      if (isReady && shown.current) fire("look");
+      if (isReady && shown.current === true) fire("look");
     }, [isReady, fire]),
   );
 

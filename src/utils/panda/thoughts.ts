@@ -27,7 +27,7 @@
 
 import type { Word } from "@/content/flashcards/types";
 import { pandaPhrases, type PandaPhrase } from "@/content/panda/thoughtPhrases";
-import { findWord } from "@/content/words/vocabulary";
+import { allWords, findWord } from "@/content/words/vocabulary";
 import { useActivityStore } from "@/store/activityStore";
 import { usePandaStore } from "@/store/pandaStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
@@ -52,7 +52,7 @@ export const MAX_PER_DAY = 2;
  * «сегодня не было тренировки». Новая мысль появляется при каждом входе на экран панды
  * (если старую закрыли). Перед слиянием — вернуть false.
  */
-const TEST_MODE = false as boolean;
+const TEST_MODE = true as boolean;
 
 /** С какой вероятностью загадка просит написать слово (если его уже писали). */
 const WRITE_RIDDLE_CHANCE = 0.5;
@@ -168,4 +168,68 @@ export function createThoughtIfDue(now = Date.now()) {
 /** Мысль закрыта ответом. */
 export function resolveThought(result: "done") {
   usePandaStore.getState().resolveThought(result, dayKey());
+}
+// ── Проверка на телефоне ─────────────────────────────────────────────────────
+
+export type TestThought = "phrase" | "question" | "pick" | "write";
+
+/** Пауза между «убрать старое облачко» и «показать новое», чтобы Rive доиграл. */
+const TEST_SWAP_DELAY_MS = 500;
+
+function pickTestThought(type: TestThought, now: number): PandaThought | null {
+  if (type === "phrase" || type === "question") {
+    // Сначала фразы, которые прошли бы по правилам, иначе любая.
+    // «Вопрос» — только фразы с вариантами ответа
+    const fits = (p: PandaPhrase) => type === "phrase" || !!p.replies;
+    const available = getAvailablePhrases().filter(fits);
+    const [phrase] = shuffle(
+      available.length > 0 ? available : pandaPhrases.filter(fits),
+    );
+    return phrase ? { kind: "phrase", phraseId: phrase.id, createdAt: now } : null;
+  }
+
+  const progress = useWordProgressStore.getState().flashcardWords;
+  const fits = (word: Word) =>
+    type === "pick" || getWritableWords([word]).length > 0;
+
+  // Сначала «Повторение», потом начатые слова, потом любые
+  const candidates = [
+    getRiddleWords(),
+    shuffle(allWords.filter((w) => isStarted(progress, w.vocabularyId))),
+    shuffle(allWords),
+  ];
+  for (const list of candidates) {
+    const word = list.find(fits);
+    if (word) {
+      return { kind: "riddle", form: type, wordId: word.vocabularyId, createdAt: now };
+    }
+  }
+  return null;
+}
+
+/**
+ * Только для проверки (кнопки на экране панды в режиме разработки): сразу показывает
+ * облачко с мыслью нужного вида, без правил и лимитов, и не трогает дневной счёт.
+ * Уже висящее облачко сначала убирается — чтобы Rive заново проиграл появление.
+ */
+export function showTestThought(type: TestThought) {
+  const thought = pickTestThought(type, Date.now());
+  if (!thought) return;
+
+  if (!usePandaStore.getState().thought) {
+    usePandaStore.setState({ thought });
+    return;
+  }
+  usePandaStore.setState({ thought: null });
+  setTimeout(() => usePandaStore.setState({ thought }), TEST_SWAP_DELAY_MS);
+}
+
+/** Только для проверки: убрать облачко и сбросить паузу, лимиты и «Не сейчас». */
+export function resetTestThoughts() {
+  usePandaStore.setState({
+    thought: null,
+    lastThoughtAt: 0,
+    thoughtsToday: { day: "", kinds: [] },
+    snoozed: {},
+  });
 }

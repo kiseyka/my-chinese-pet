@@ -47,7 +47,10 @@
   },
   "profile": {
     "title": "Panda's phrases",
-    "empty": "Phrases the panda tells you will gather here."
+    "empty": "Phrases the panda tells you will gather here.",
+    "more_one": "Show {{count}} more",
+    "more_other": "Show {{count}} more",
+    "collapse": "Collapse"
   },
   "whyNote": "Why do people say this?",
   "listen": "Listen to the phrase",
