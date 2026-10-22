@@ -2,6 +2,8 @@
 //
 // Китайская фраза панды по словам: пиньинь над каждым словом (если включён глазиком),
 // знаки препинания прилипают к предыдущему слову — точка не уезжает одна на новую строку.
+// Скрытый пиньинь только прозрачный, а место под ним остаётся: переключение глазиком
+// не двигает фразу.
 // Если передан onWordPress, слова подчёркнуты тонкой линией и нажимаются.
 
 import { Hanzi } from "@/components/ui/Hanzi";
@@ -57,13 +59,15 @@ export function PandaText({
             <Pressable
               onPress={onWordPress ? () => onWordPress(word) : undefined}
               disabled={!onWordPress}
-              className={`items-center rounded-lg active:opacity-50 ${
-                showPinyin ? "px-1" : "mx-0.5"
-              } ${word === selected ? "bg-primary/15" : ""}`}
+              className={`items-center rounded-lg px-1 active:opacity-50 ${
+                word === selected ? "bg-primary/15" : ""
+              }`}
               accessibilityRole={onWordPress ? "button" : undefined}
               accessibilityLabel={word.text}
             >
-              {showPinyin && <Pinyin size="sm">{word.pinyin || " "}</Pinyin>}
+              <Pinyin size="sm" style={{ opacity: showPinyin ? 1 : 0 }}>
+                {word.pinyin || " "}
+              </Pinyin>
               {/* Линия под словом — рамкой, а не подчёркиванием текста:
                   цвет и толщина подчёркивания на Android не настраиваются */}
               <View
@@ -82,7 +86,7 @@ export function PandaText({
           )}
           {!!tail && (
             <View className="items-center">
-              {showPinyin && <Pinyin size="sm"> </Pinyin>}
+              <Pinyin size="sm"> </Pinyin>
               <Hanzi size={size}>{tail}</Hanzi>
             </View>
           )}

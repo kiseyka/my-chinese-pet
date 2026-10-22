@@ -71,3 +71,45 @@ export function getPhraseWords(phrase: PandaPhrase): Word[] | undefined {
 export function phraseText(phrase: PandaPhrase): string {
   return phrase.words.join("");
 }
+
+const MAX_WORD_CHARS = 4;
+
+/**
+ * Иероглифы внутри обычного текста (перевод, пояснение) по словам словаря:
+ * «Отвечают 吃了 или 还没» → «Отвечают », 吃, 了, « или », 还, 没.
+ * Самое длинное совпадение со словарём, до 4 иероглифов; нет в словаре — по одному.
+ */
+export function segmentMixedText(text: string): PhraseSegment[] {
+  const chars = Array.from(text);
+  const segments: PhraseSegment[] = [];
+
+  let i = 0;
+  while (i < chars.length) {
+    if (!HAN.test(chars[i])) {
+      let j = i;
+      while (j < chars.length && !HAN.test(chars[j])) j++;
+      segments.push({ text: chars.slice(i, j).join(""), pinyin: "", isHan: false });
+      i = j;
+      continue;
+    }
+
+    let length = 1;
+    let word: Word | undefined;
+    for (let n = Math.min(MAX_WORD_CHARS, chars.length - i); n >= 1; n--) {
+      const piece = chars.slice(i, i + n);
+      if (piece.some((ch) => !HAN.test(ch))) continue;
+      const found = findWordByHanzi(piece.join(""));
+      if (found) {
+        length = n;
+        word = found;
+        break;
+      }
+    }
+
+    const piece = chars.slice(i, i + length).join("");
+    segments.push({ text: piece, pinyin: word?.pinyin ?? "", isHan: true, word });
+    i += length;
+  }
+
+  return segments;
+}

@@ -4,8 +4,9 @@
 //   - при входе на экран — придумать мысль, если пора (utils/panda/thoughts);
 //   - облачко видно, пока мысль есть и реплика не открыта;
 //   - тап по панде — анимация тапа в Rive, затем реплика;
-//   - реплику закрыли тапом мимо — мысль остаётся, облачко возвращается;
-//   - «Не сейчас» / ответ — мысль закрывается (resolveThought).
+//   - реплику закрыли тапом мимо или смахнули — мысль остаётся, облачко возвращается
+//     (до конца дня, см. utils/panda/thoughts);
+//   - ответ — мысль закрывается (resolveThought).
 
 import { useActivityStore } from "@/store/activityStore";
 import { usePandaStore } from "@/store/pandaStore";
@@ -76,10 +77,6 @@ export function usePandaThought() {
     },
     /** Закрыли реплику тапом мимо — мысль остаётся. */
     close: () => setOpen(false),
-    later: () => {
-      setOpen(false);
-      resolveThought("later");
-    },
     done: () => {
       setOpen(false);
       resolveThought("done");

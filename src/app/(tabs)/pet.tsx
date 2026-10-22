@@ -122,7 +122,6 @@ const PandaScreen = () => {
       <PandaThoughtSheet
         thought={thought.openThought}
         onClose={thought.close}
-        onLater={thought.later}
         onDone={thought.done}
       />
     </Screen>

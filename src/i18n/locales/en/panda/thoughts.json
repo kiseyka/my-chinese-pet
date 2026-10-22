@@ -1,9 +1,8 @@
 {
-  "later": "Not now",
   "gotIt": "Got it",
   "showTranslation": "Show translation",
   "write": "Write",
-  "phraseHint": "Tap a word to see what it means.",
+  "phraseHint": "Tap a word and I'll show you what it means.",
   "riddle": {
     "pick": [
       "How do you say “{{word}}” in Chinese?",
@@ -32,10 +31,9 @@
   },
   "profile": {
     "title": "Panda's phrases",
-    "empty": "Phrases the panda tells you will gather here.",
-    "translation": "Translation",
-    "hide": "Hide",
-    "hideNote": "Hide note"
+    "empty": "Phrases the panda tells you will gather here."
   },
-  "whyNote": "Why do people say this?"
+  "whyNote": "Why do people say this?",
+  "inlineHint": "Tap a character in the text",
+  "listen": "Listen to the phrase"
 }

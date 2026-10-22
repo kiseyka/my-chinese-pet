@@ -2,7 +2,9 @@
 //
 // МЫСЛИ ПАНДЫ. Панда сама не заговаривает: когда ей есть что сказать, над головой
 // появляется облачко «…» и висит, пока пользователь не тапнет по панде. Тап — реплика
-// с вариантами ответа; «Не сейчас» убирает облачко без последствий.
+// (тап по облачку и есть «да, давай»). Смахнул реплику — облачко остаётся.
+// Непрочитанная мысль живёт до конца дня, потом тихо пропадает (фраза не считается
+// рассказанной и вернётся позже).
 //
 // Виды мыслей:
 //   phrase — короткая фраза на китайском из слов, которые пользователь уже изучает
@@ -17,7 +19,7 @@
 //   - одна мысль за раз, новая не появляется поверх старой;
 //   - не больше одной мысли каждого вида в день (то есть не больше MAX_PER_DAY);
 //   - между мыслями пауза MIN_GAP_MS — облачко не встречает после каждой тренировки;
-//   - «Не сейчас» — этот вид до завтра не предлагается;
+//   - мысль вчерашнего дня, которую так и не открыли, пропадает;
 //   - фразы не повторяются: рассказанная фраза больше не предлагается;
 //   - слово загадки не повторяется среди последних нескольких.
 
@@ -124,10 +126,17 @@ const BUILDERS: Record<ThoughtKind, (now: number) => PandaThought | null> = {
  */
 export function createThoughtIfDue(now = Date.now()) {
   const panda = usePandaStore.getState();
-  if (panda.thought) return;
+  const day = dayKey(now);
+
+  // Вчерашняя мысль, которую так и не открыли, тихо пропадает
+  if (panda.thought && dayKey(panda.thought.createdAt) !== day) {
+    usePandaStore.setState({ thought: null });
+  } else if (panda.thought) {
+    return;
+  }
+
   if (!TEST_MODE && now - panda.lastThoughtAt < MIN_GAP_MS) return;
 
-  const day = dayKey(now);
   const usedToday =
     panda.thoughtsToday.day === day ? panda.thoughtsToday.kinds : [];
   if (!TEST_MODE && usedToday.length >= MAX_PER_DAY) return;
@@ -146,8 +155,8 @@ export function createThoughtIfDue(now = Date.now()) {
   }
 }
 
-/** Закрыть мысль: done — ответил, later — «Не сейчас». */
-export function resolveThought(result: "done" | "later") {
+/** Мысль закрыта ответом. */
+export function resolveThought(result: "done") {
   usePandaStore.getState().resolveThought(result, dayKey());
 }
 
