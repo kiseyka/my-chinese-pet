@@ -614,6 +614,336 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Ты учишь китайский — я так рада!",
     en: "You're learning Chinese — I'm so happy!",
   },
+  // Ещё фразы с фактами и вопросами — черновик от Claude (23 октября)
+  {
+    id: "i-am-panda",
+    words: ["我", "是", "熊猫", "！"],
+    ru: "Я панда!",
+    en: "I'm a panda!",
+    note: {
+      ru: "熊猫 дословно «медведь-кошка»: 熊 — медведь, 猫 — кошка. А на Тайване говорят наоборот — 猫熊, «кошка-медведь». Животное одно, слова переставлены.",
+      en: "熊猫 literally means “bear-cat”: 熊 is bear, 猫 is cat. In Taiwan it's the other way round — 猫熊, “cat-bear”. Same animal, swapped words.",
+    },
+  },
+  {
+    id: "zao",
+    words: ["早", "！"],
+    ru: "Доброе утро!",
+    en: "Morning!",
+    note: {
+      ru: "早 — «рано». Это короткое 早上好 («доброе утро»): утром знакомым часто говорят просто 早！ Отвечают тем же словом.",
+      en: "早 means “early”. It's short for 早上好 (“good morning”): in the morning people often just say 早！ and get the same word back.",
+    },
+  },
+  {
+    id: "tea-question",
+    words: ["你", "喜欢", "喝", "茶", "吗", "？"],
+    ru: "Ты любишь чай?",
+    en: "Do you like tea?",
+    pinyin: { 吗: "ma" },
+    note: {
+      ru: "Русское «чай» пришло от 茶 chá — через северные сухопутные торговые пути. А английское tea — от южного диалекта Фуцзяни, где говорят «te»: туда приходили морские корабли. Одно слово — два пути по миру.",
+      en: "Russian «чай» comes from 茶 chá, via the northern overland trade routes. English “tea” comes from the southern Fujian dialect, where it's “te” — that's where the sea ships came. One word, two routes around the world.",
+    },
+    replies: [
+      {
+        id: "yes",
+        words: ["我", "很", "喜欢", "茶", "！"],
+        ru: "Очень люблю!",
+        en: "I love it!",
+        reaction: {
+          words: ["我们", "一起", "喝", "茶", "吧", "！"],
+          ru: "Давай вместе попьём!",
+          en: "Let's have some together!",
+          pinyin: { 一起: "yì qǐ" },
+        },
+      },
+      {
+        id: "no",
+        words: ["我", "不", "喜欢", "。"],
+        ru: "Не очень.",
+        en: "Not really.",
+        reaction: {
+          words: ["那", "我们", "喝", "水", "吧", "！"],
+          ru: "Тогда попьём воды!",
+          en: "Then let's drink water!",
+        },
+      },
+    ],
+  },
+  {
+    id: "what-food",
+    words: ["你", "喜欢", "吃", "什么", "？"],
+    ru: "Что ты любишь есть?",
+    en: "What do you like to eat?",
+    note: {
+      ru: "В Китае говорят «юг — рис, север — пшеница». На юге растёт рис, и его едят почти каждый день. На севере больше пшеницы — там любят лапшу, пельмени 饺子 и паровые булочки.",
+      en: "In China they say “rice in the south, wheat in the north”. The south grows rice and eats it almost daily. The north grows more wheat — noodles, 饺子 dumplings and steamed buns.",
+    },
+    replies: [
+      {
+        id: "rice",
+        words: ["我", "喜欢", "米饭", "。"],
+        ru: "Рис.",
+        en: "Rice.",
+        reaction: {
+          words: ["南方", "人", "也", "喜欢", "米饭", "！"],
+          ru: "На юге тоже любят рис!",
+          en: "Southerners love rice too!",
+        },
+      },
+      {
+        id: "noodles",
+        words: ["我", "喜欢", "面条", "。"],
+        ru: "Лапшу.",
+        en: "Noodles.",
+        reaction: {
+          words: ["北方", "人", "也", "喜欢", "面条", "！"],
+          ru: "На севере тоже любят лапшу!",
+          en: "Northerners love noodles too!",
+        },
+      },
+      {
+        id: "dumplings",
+        words: ["我", "喜欢", "饺子", "。"],
+        ru: "Пельмени.",
+        en: "Dumplings.",
+        reaction: {
+          words: ["我", "也", "想", "吃", "饺子", "！"],
+          ru: "Я тоже хочу пельменей!",
+          en: "I want dumplings too!",
+        },
+      },
+    ],
+  },
+  {
+    id: "weather-today",
+    words: ["今天", "天气", "怎么样", "？"],
+    ru: "Какая сегодня погода?",
+    en: "How's the weather today?",
+    replies: [
+      {
+        id: "good",
+        words: ["天气", "很", "好", "！"],
+        ru: "Отличная!",
+        en: "It's lovely!",
+        reaction: {
+          words: ["我们", "去", "公园", "吧", "！"],
+          ru: "Пойдём в парк!",
+          en: "Let's go to the park!",
+        },
+      },
+      {
+        id: "cold",
+        words: ["很", "冷", "。"],
+        ru: "Холодно.",
+        en: "It's cold.",
+        reaction: {
+          words: ["多", "穿", "衣服", "！"],
+          ru: "Оденься потеплее!",
+          en: "Dress warmly!",
+        },
+      },
+      {
+        id: "rain",
+        words: ["下雨", "了", "。"],
+        ru: "Идёт дождь.",
+        en: "It's raining.",
+        reaction: {
+          words: ["我们", "在", "家", "喝", "茶", "吧", "。"],
+          ru: "Тогда посидим дома с чаем.",
+          en: "Then let's stay home with tea.",
+        },
+      },
+    ],
+  },
+  {
+    id: "tired-question",
+    words: ["你", "累", "吗", "？"],
+    ru: "Устаёшь?",
+    en: "Are you tired?",
+    pinyin: { 吗: "ma" },
+    replies: [
+      {
+        id: "no",
+        words: ["不", "累", "！"],
+        ru: "Нет!",
+        en: "Not at all!",
+        pinyin: { 不: "bú" },
+        reaction: {
+          words: ["太", "好", "了", "！", "加油", "！"],
+          ru: "Здорово! Вперёд!",
+          en: "Great! Keep going!",
+        },
+      },
+      {
+        id: "a-bit",
+        words: ["有点儿", "累", "。"],
+        ru: "Немного.",
+        en: "A little.",
+        pinyin: { 有点儿: "yǒu diǎnr" },
+        reaction: {
+          words: ["我们", "休息", "一会儿", "吧", "。"],
+          ru: "Давай немного отдохнём.",
+          en: "Let's rest a bit.",
+          pinyin: { 一会儿: "yí huìr" },
+        },
+      },
+    ],
+  },
+  {
+    id: "lucky-number",
+    words: ["你", "喜欢", "什么", "数字", "？"],
+    ru: "Какое число тебе нравится?",
+    en: "What number do you like?",
+    note: {
+      ru: "У чисел в Китае есть «характер» — из-за похожих слов. 八 bā созвучно 发 «богатеть» — восьмёрка самая счастливая. 六 liù похоже на 流 «течь гладко». А 四 sì звучит почти как 死 «смерть» — в некоторых домах нет четвёртого этажа.",
+      en: "Numbers in China have a “character” because of similar-sounding words. 八 bā sounds like 发 “to prosper” — eight is the luckiest. 六 liù is like 流 “to flow smoothly”. And 四 sì sounds almost like 死 “death” — some buildings skip the 4th floor.",
+    },
+    replies: [
+      {
+        id: "eight",
+        words: ["我", "喜欢", "八", "。"],
+        ru: "Восемь.",
+        en: "Eight.",
+        reaction: {
+          words: ["八", "是", "好", "数字", "！"],
+          ru: "Восьмёрка — счастливое число!",
+          en: "Eight is a lucky number!",
+        },
+      },
+      {
+        id: "six",
+        words: ["我", "喜欢", "六", "。"],
+        ru: "Шесть.",
+        en: "Six.",
+        reaction: {
+          words: ["六", "也", "很", "好", "！"],
+          ru: "Шестёрка тоже хорошая!",
+          en: "Six is good too!",
+        },
+      },
+      {
+        id: "four",
+        words: ["我", "喜欢", "四", "。"],
+        ru: "Четыре.",
+        en: "Four.",
+        reaction: {
+          words: ["四", "？", "真", "的", "吗", "？"],
+          ru: "Четыре? Правда?",
+          en: "Four? Really?",
+          pinyin: { 吗: "ma" },
+        },
+      },
+    ],
+  },
+  {
+    id: "dong-xi",
+    words: ["你", "想", "买", "什么", "东西", "？"],
+    ru: "Что ты хочешь купить?",
+    en: "What do you want to buy?",
+    note: {
+      ru: "东西 — «восток-запад», а значит «вещь». Одна из версий: в старой столице Чанъань были два больших рынка, Восточный и Западный. «Пойти на восток и запад» значило пойти за покупками, а потом так стали называть сами покупки.",
+      en: "东西 is “east-west”, and it means “thing”. One theory: the old capital Chang'an had two big markets, East and West. “Going east and west” meant going shopping — and then the purchases themselves got the name.",
+    },
+  },
+  {
+    id: "middle-kingdom",
+    words: ["我", "想", "去", "中国", "！"],
+    ru: "Хочу поехать в Китай!",
+    en: "I want to go to China!",
+    note: {
+      ru: "中国 — «срединное государство»: 中 — середина, 国 — страна. Посмотри на 中: черта прямо через центр квадрата.",
+      en: "中国 means “middle kingdom”: 中 is middle, 国 is country. Look at 中: a stroke right through the middle of a square.",
+    },
+  },
+  {
+    id: "chopsticks",
+    words: ["我", "会", "用", "筷子", "！"],
+    ru: "Я умею есть палочками!",
+    en: "I can use chopsticks!",
+    note: {
+      ru: "Палочки нельзя втыкать в рис вертикально: так ставят благовония для умерших. Стучать ими по тарелке тоже не принято — так когда-то просили милостыню.",
+      en: "Don't stick chopsticks upright in rice: that's how incense is offered to the dead. Tapping them on a bowl is also rude — it's how beggars once asked for food.",
+    },
+  },
+  {
+    id: "red-color",
+    words: ["我", "喜欢", "红色", "的", "衣服", "。"],
+    ru: "Мне нравится красная одежда.",
+    en: "I like red clothes.",
+    note: {
+      ru: "Красный в Китае — цвет удачи и праздника. Невесты традиционно в красном, на Новый год дарят деньги в красных конвертах 红包.",
+      en: "Red is the colour of luck and celebration in China. Brides traditionally wear red, and at New Year money is given in red envelopes, 红包.",
+    },
+  },
+  {
+    id: "white-flowers",
+    words: ["白色", "的", "花", "很", "漂亮", "。"],
+    ru: "Белые цветы очень красивые.",
+    en: "White flowers are very pretty.",
+    note: {
+      ru: "Традиционно белый в Китае — цвет траура, поэтому белые цветы в подарок лучше не нести, особенно пожилым. Сейчас, правда, белое свадебное платье тоже стало обычным.",
+      en: "Traditionally white is the colour of mourning in China, so white flowers aren't a good gift, especially for older people. These days white wedding dresses are common too, though.",
+    },
+  },
+  {
+    id: "gift",
+    words: ["我", "想", "送", "你", "礼物", "！"],
+    ru: "Хочу подарить тебе подарок!",
+    en: "I want to give you a present!",
+    note: {
+      ru: "Часы в подарок — плохая примета: 送钟 «дарить часы» звучит как 送终 «провожать в последний путь». Груши тоже не дарят и не делят на двоих: 梨 lí созвучно 离 «расставаться».",
+      en: "A clock is a bad gift: 送钟 “give a clock” sounds like 送终 “see someone off to death”. Pears aren't given or shared either: 梨 lí sounds like 离 “to part”.",
+    },
+  },
+  {
+    id: "good-plus-verb",
+    words: ["饺子", "很", "好吃", "！"],
+    ru: "Пельмени очень вкусные!",
+    en: "Dumplings are delicious!",
+    note: {
+      ru: "Удобная схема: 好 + глагол = «приятно это делать». 好吃 — вкусно (хорошо есть), 好看 — красиво (хорошо смотреть), 好听 — приятно звучит (хорошо слушать).",
+      en: "A handy pattern: 好 + verb = “nice to do”. 好吃 — tasty (good to eat), 好看 — pretty (good to look at), 好听 — sounds nice (good to listen to).",
+    },
+  },
+  {
+    id: "hanzi-fun",
+    words: ["汉字", "很", "有意思", "！"],
+    ru: "Иероглифы такие интересные!",
+    en: "Chinese characters are so interesting!",
+    note: {
+      ru: "Каллиграфов раньше учили на одном иероглифе — 永 «вечность». В нём есть почти все основные черты: точка, горизонтальная, вертикальная, крюк, откидные. Это называют «восемь правил 永».",
+      en: "Calligraphers used to practise on one character — 永 “eternity”. It contains almost all the basic strokes: dot, horizontal, vertical, hook and sweeps. It's called “the eight principles of 永”.",
+    },
+  },
+  {
+    id: "uncle-aunt",
+    words: ["叔叔", "阿姨", "好", "！"],
+    ru: "Здравствуйте, дядя и тётя!",
+    en: "Hello, uncle and auntie!",
+    note: {
+      ru: "Дети и молодые часто зовут незнакомых взрослых 叔叔 «дядя» и 阿姨 «тётя» — продавщицу, соседа, водителя. Это вежливо и тепло, родство тут ни при чём.",
+      en: "Kids and young people often call adult strangers 叔叔 “uncle” and 阿姨 “auntie” — a shop assistant, a neighbour, a driver. It's polite and warm; no family ties needed.",
+    },
+  },
+  {
+    id: "cat-meow",
+    words: ["我", "喜欢", "猫", "！"],
+    ru: "Я люблю кошек!",
+    en: "I love cats!",
+    note: {
+      ru: "Прислушайся к 猫 māo — похоже на «мяу». Считается, что слово и появилось как подражание кошачьему голосу.",
+      en: "Listen to 猫 māo — it sounds like “meow”. The word is thought to have started as an imitation of a cat's call.",
+    },
+  },
+  {
+    id: "good-night",
+    words: ["晚安", "，", "做", "个", "好", "梦", "！"],
+    ru: "Спокойной ночи, сладких снов!",
+    en: "Good night, sweet dreams!",
+    pinyin: { 个: "ge" },
+  },
 ];
 
 const byId = new Map(pandaPhrases.map((phrase) => [phrase.id, phrase]));
