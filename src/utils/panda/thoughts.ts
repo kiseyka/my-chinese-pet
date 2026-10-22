@@ -224,12 +224,17 @@ export function showTestThought(type: TestThought) {
   setTimeout(() => usePandaStore.setState({ thought }), TEST_SWAP_DELAY_MS);
 }
 
-/** Только для проверки: убрать облачко и сбросить паузу, лимиты и «Не сейчас». */
+/**
+ * Только для проверки: убрать облачко, сбросить паузу и дневной лимит мыслей,
+ * лимит игр по тапу (15 за 3 часа) и список недавно загаданных слов.
+ */
 export function resetTestThoughts() {
   usePandaStore.setState({
     thought: null,
     lastThoughtAt: 0,
     thoughtsToday: { day: "", kinds: [] },
     snoozed: {},
+    playTimes: [],
+    recentRiddleWordIds: [],
   });
 }
