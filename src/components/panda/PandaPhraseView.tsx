@@ -10,7 +10,7 @@
 // Тап по слову (во фразе, в ответе панды, по иероглифу в пояснении) — тултип над словом
 // (если сверху нет места — под ним): пиньинь, перевод, «Повторение» и «Этап».
 // Тап мимо тултипа его закрывает.
-// Варианты ответа — в строку, только иероглифы; перевод вариантов — по значку 文A.
+// Варианты ответа — сеткой 2×2 или столбцом, только иероглифы; перевод — по значку 文A.
 // После ответа: свой ответ и реакция панды озвучиваются подряд, у обоих есть озвучка,
 // перевод реакции — по ссылке «Перевод».
 //
@@ -283,9 +283,13 @@ function TranslationReveal({
 
 // ── Ответы ───────────────────────────────────────────────────────────────────
 
+/** Длина ответа в иероглифах, с которой варианты идут в один столбец, а не 2×2. */
+const LONG_REPLY_CHARS = 5;
+
 /**
- * Варианты ответа в строку (с переносом), справа — как сообщения пользователя.
- * Только иероглифы (пиньинь — по глазику); перевод вариантов — по значку 文A.
+ * Варианты ответа: короткие — сеткой 2×2, длинные — столбцом на всю ширину.
+ * Только иероглифы (пиньинь — по глазику); перевод — по значку 文A. Место под
+ * пиньинь и перевод зарезервировано всегда, поэтому переключение ничего не двигает.
  */
 function ReplyOptions({
   replies,
@@ -296,6 +300,12 @@ function ReplyOptions({
 }) {
   const { t } = useTranslation("pandaThoughts");
   const [showTranslation, setShowTranslation] = useState(false);
+
+  const grid = replies.every(
+    (reply) =>
+      Array.from(phraseText(reply)).filter((ch) => /\p{Script=Han}/u.test(ch))
+        .length <= LONG_REPLY_CHARS,
+  );
 
   return (
     <View className="gap-2">
@@ -310,11 +320,12 @@ function ReplyOptions({
           onPress={() => setShowTranslation((v) => !v)}
         />
       </View>
-      <View className="flex-row flex-wrap justify-end gap-2">
+      <View className={grid ? "flex-row flex-wrap justify-between gap-y-2" : "gap-2"}>
         {replies.map((option) => (
           <ReplyOption
             key={option.id}
             reply={option}
+            grid={grid}
             showTranslation={showTranslation}
             onPress={() => onPick(option)}
           />
@@ -326,10 +337,12 @@ function ReplyOptions({
 
 function ReplyOption({
   reply,
+  grid,
   showTranslation,
   onPress,
 }: {
   reply: PhraseReply;
+  grid: boolean;
   showTranslation: boolean;
   onPress: () => void;
 }) {
@@ -338,16 +351,27 @@ function ReplyOption({
   return (
     <Pressable
       onPress={onPress}
-      className="items-end rounded-2xl rounded-br-md border border-primary/40 bg-surface px-3 py-1.5 active:bg-primary/10"
+      className={`rounded-2xl border border-primary/40 bg-surface px-3 py-2 active:bg-primary/10 ${
+        grid ? "items-center" : "items-start"
+      }`}
+      style={grid ? { width: "48.5%" } : undefined}
       accessibilityRole="button"
       accessibilityLabel={phraseText(reply)}
     >
       <PandaText segments={segments} size={22} />
-      {showTranslation && (
-        <Text className="font-nunito text-caption text-textSecondary">
-          {lineTranslation(reply)}
-        </Text>
-      )}
+      {/* Место под перевод есть всегда (две строки в сетке, одна в столбце) */}
+      <Text
+        className={`font-nunito text-caption text-textSecondary ${
+          grid ? "text-center" : ""
+        }`}
+        numberOfLines={grid ? 2 : 1}
+        style={{
+          opacity: showTranslation ? 1 : 0,
+          minHeight: grid ? 32 : 16,
+        }}
+      >
+        {lineTranslation(reply)}
+      </Text>
     </Pressable>
   );
 }
