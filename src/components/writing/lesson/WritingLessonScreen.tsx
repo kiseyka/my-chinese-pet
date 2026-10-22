@@ -190,6 +190,21 @@ function WritingLesson({ title, buildPlan }: WritingLessonProps) {
                   {lastReason ? MESSAGES[lastReason] : " "}
                   {hintIndex !== null ? ". Нужная черта подсвечена" : ""}
                 </Text>
+
+                {/* По памяти: не помнишь — контур всего иероглифа (считается подсказкой).
+                    Место под кнопку есть всегда, чтобы холст не прыгал */}
+                {stage.mode === "memory" && (
+                  <View
+                    style={{ opacity: lesson.canRevealOutline ? 1 : 0 }}
+                    pointerEvents={lesson.canRevealOutline ? "auto" : "none"}
+                  >
+                    <PillButton
+                      label="Не помню — показать контур"
+                      variant="secondary"
+                      onPress={lesson.revealOutline}
+                    />
+                  </View>
+                )}
               </>
             )}
           </>
