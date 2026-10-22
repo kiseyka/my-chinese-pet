@@ -93,8 +93,8 @@ interface PandaState {
    */
   answers: Record<string, string>;
   /**
-   * Когда были игры по тапу на панду (без облачка) — для лимита «3 в час».
-   * Хранятся только за последний час. См. utils/panda/play.
+   * Когда были игры по тапу на панду (без облачка) — для лимита игр.
+   * Хранятся только за последние сутки. См. utils/panda/play.
    */
   playTimes: number[];
 
@@ -216,7 +216,7 @@ export const usePandaStore = create<PandaStore>()(
       recordPlay: (wordId, now) =>
         set((state) => ({
           playTimes: [
-            ...state.playTimes.filter((time) => now - time < 60 * 60 * 1000),
+            ...state.playTimes.filter((time) => now - time < 24 * 60 * 60 * 1000),
             now,
           ],
           recentRiddleWordIds: [

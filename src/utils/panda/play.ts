@@ -2,7 +2,8 @@
 //
 // ИГРА С ПАНДОЙ ПО ТАПУ. Облачко (utils/panda/thoughts) — это когда панда начинает
 // сама, редко. А тап по панде без облачка — когда начинаешь ты: панда предлагает
-// поиграть. Лимит — PLAYS_PER_HOUR игр в час, потом панда отдыхает.
+// поиграть. Лимит — PLAYS_PER_WINDOW игр за PLAY_WINDOW_MS (15 за 3 часа), потом
+// панда отдыхает. Обе цифры можно менять здесь.
 //
 // Игры — загадки по твоим словам (их не может кончиться, в отличие от фраз):
 //   pick  — по переводу выбрать иероглиф из трёх;
@@ -26,24 +27,28 @@ import { getWritableWords } from "@/utils/writing/words";
 
 export type PlayKind = "pick" | "write";
 
-export const PLAYS_PER_HOUR = 3;
-const HOUR_MS = 60 * 60 * 1000;
+export const PLAYS_PER_WINDOW = 15;
+export const PLAY_WINDOW_MS = 3 * 60 * 60 * 1000;
 
 export const PICK_REWARD = 2;
 export const WRITE_REWARD = 3;
 export const WRITE_PERFECT_REWARD = 5;
 
-/** Сколько игр ещё можно в этот час. */
+/** Сколько игр ещё можно сейчас (за последние 3 часа). */
 export function getPlaysLeft(playTimes: number[], now = Date.now()): number {
-  const recent = playTimes.filter((time) => now - time < HOUR_MS);
-  return Math.max(0, PLAYS_PER_HOUR - recent.length);
+  const recent = playTimes.filter((time) => now - time < PLAY_WINDOW_MS);
+  return Math.max(0, PLAYS_PER_WINDOW - recent.length);
 }
 
 /** Через сколько минут освободится следующая игра (0 — уже можно). */
 export function getMinutesUntilPlay(playTimes: number[], now = Date.now()): number {
   if (getPlaysLeft(playTimes, now) > 0) return 0;
-  const oldest = Math.min(...playTimes.filter((time) => now - time < HOUR_MS));
-  return Math.max(1, Math.ceil((oldest + HOUR_MS - now) / 60000));
+  const recent = playTimes
+    .filter((time) => now - time < PLAY_WINDOW_MS)
+    .sort((a, b) => a - b);
+  // Освободится, когда самая старая из последних PLAYS_PER_WINDOW игр выйдет из окна
+  const oldest = recent[recent.length - PLAYS_PER_WINDOW];
+  return Math.max(1, Math.ceil((oldest + PLAY_WINDOW_MS - now) / 60000));
 }
 
 /** Слова для загадок: «Повторение», потом начатые; без недавно загаданных. */

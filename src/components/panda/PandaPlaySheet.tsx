@@ -4,7 +4,7 @@
 //   меню    — «Чем займёмся?»: «Угадай слово» (+2 монеты) и «Напиши слово» (+3…5);
 //   pick    — загадка прямо в панели; после ответа «Ещё» (если игры остались) и «Готово»;
 //   write   — уходит на экран письма /panda-riddle (source=play);
-//   устала  — игр в этот час больше нет: «Давай отдохнём, приходи через N мин»;
+//   устала  — игры кончились (15 за 3 часа): «Давай отдохнём, приходи через …»;
 //   пусто   — слов ещё нет: «Сначала выучи пару слов на пути» и кнопка «К пути».
 // Позже сюда же: погладить, покормить (когда будут анимации).
 
@@ -137,7 +137,11 @@ function PlayContent({ onClose }: { onClose: () => void }) {
       <View className="gap-5">
         <Header />
         <Text className="font-nunito text-lead text-text">
-          {t("play.tired", { minutes: getMinutesUntilPlay(playTimes) })}
+          {t("play.tired", {
+            time: formatWait(getMinutesUntilPlay(playTimes), (key, o) =>
+              t(key, o),
+            ),
+          })}
         </Text>
         <View className="flex-row">
           <MainButton label={t("play.ok")} onPress={onClose} />
@@ -220,4 +224,16 @@ function PlayCard({
       </View>
     </Pressable>
   );
+}
+
+/** «40 мин», «2 ч 15 мин». */
+function formatWait(
+  minutes: number,
+  t: (key: string, options: { count: number }) => string,
+) {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return t("play.minutes", { count: rest });
+  if (rest === 0) return t("play.hours", { count: hours });
+  return `${t("play.hours", { count: hours })} ${t("play.minutes", { count: rest })}`;
 }

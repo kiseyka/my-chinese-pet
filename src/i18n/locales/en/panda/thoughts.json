@@ -6,17 +6,34 @@
     "pick": [
       "How do you say “{{word}}” in Chinese?",
       "Help me remember: which one is “{{word}}”?",
-      "I was wondering… Where is “{{word}}” here?"
+      "I was wondering… Where is “{{word}}” here?",
+      "Can you guess which one is “{{word}}”?",
+      "I hid the word “{{word}}”. Can you find it?",
+      "Memory check! Show me “{{word}}”!",
+      "Oops, I mixed up my cards… Which one is “{{word}}”?",
+      "Riddle time! Which character means “{{word}}”?",
+      "I need the word “{{word}}”. Which one is it?",
+      "Quick, quick: where is “{{word}}”?"
     ],
     "write": [
       "Will you show me how to write “{{word}}”?",
       "Can you write “{{word}}” for me? I want to see how you do it.",
-      "I forgot how to write “{{word}}”. Remind me?"
+      "I forgot how to write “{{word}}”. Remind me?",
+      "Calligraphy lesson! Write “{{word}}”!",
+      "I've got a brush — you've got “{{word}}”. Will you write it?",
+      "I'd like “{{word}}” on my wall. Can you write it nicely?",
+      "I bet you remember how to write “{{word}}”!",
+      "Write “{{word}}” from memory — I'm not peeking!"
     ],
     "correct": [
       "Exactly!",
       "Yes, that's it!",
-      "Right, thank you!"
+      "Right, thank you!",
+      "Spot on!",
+      "Well done!",
+      "Aha, there it is!",
+      "Super!",
+      "Right, just as I thought!"
     ],
     "wrong": "Almost! Here's the right one:"
   },
@@ -47,13 +64,17 @@
     "write": "Write a word",
     "writeHint": "From memory, no outline",
     "writeLocked": "Practise writing at least one word first",
-    "left_one": "{{count}} more game this hour",
-    "left_other": "{{count}} more games this hour",
+    "left_one": "{{count}} more game",
+    "left_other": "{{count}} more games",
     "more": "More",
     "done": "Done",
     "ok": "Okay",
-    "tired": "I'm a little tired. Let's rest — come back in {{minutes}} min!",
+    "tired": "I'm a little tired. Let's rest — come back in {{time}}!",
     "empty": "Let's learn a couple of words on the path first — then I can give you riddles!",
-    "toPath": "To the path"
+    "toPath": "To the path",
+    "minutes_one": "{{count}} minute",
+    "minutes_other": "{{count}} minutes",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours"
   }
 }
