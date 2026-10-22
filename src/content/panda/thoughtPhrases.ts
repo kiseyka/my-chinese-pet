@@ -10,7 +10,9 @@
 //            отдельными элементами. Склеенные words — это и есть фраза;
 //   ru, en — перевод (под кнопкой «Покажи перевод»);
 //   pinyin — только если пиньинь слова во фразе отличается от словаря
-//            (изменение тона: { "一个": "yí gè" }). Остальное берётся из словаря.
+//            (изменение тона: { "一个": "yí gè" }). Остальное берётся из словаря;
+//   note   — необязательно: «Почему так говорят?» — откуда фраза, когда её говорят,
+//            чем отличается от похожих (ru, en). Показывается под кнопкой.
 //
 // Панда покажет фразу, только когда у пользователя есть хотя бы 1 точка (перевода
 // или письма) у каждого её слова. Проверка: node scripts/check-panda-phrases.mjs
@@ -22,6 +24,7 @@ export interface PandaPhrase {
   ru: string;
   en: string;
   pinyin?: Record<string, string>;
+  note?: { ru: string; en: string };
 }
 
 // Тестовые фразы — замени своими
@@ -230,6 +233,181 @@ export const pandaPhrases: PandaPhrase[] = [
     words: ["下雪", "了", "！", "我们", "出去", "吧", "！"],
     ru: "Пошёл снег! Пойдём на улицу!",
     en: "It's snowing! Let's go outside!",
+  },
+  // Разговорные фразы с пояснением «Почему так говорят?» — черновик от Claude
+  {
+    id: "chi-le-ma",
+    words: ["你", "吃", "了", "吗", "？"],
+    ru: "Привет! (дословно: «Ты поел?»)",
+    en: "Hi! (literally: “Have you eaten?”)",
+    pinyin: { 吗: "ma" },
+    note: {
+      ru: "Это приветствие, а не вопрос про еду. Так показывают заботу: «у тебя всё хорошо?». Обычай связывают со старой сельской книгой правил вежливости эпохи Сун: гость спрашивал, поел ли хозяин, и если нет — ждал за дверью, чтобы не мешать обеду. Отвечают коротко: 吃了 (поел) или 还没 (ещё нет). Сейчас так говорят реже, чаще старшие.",
+      en: "It's a greeting, not a question about food — a way to show you care. The custom is traced to an old Song-dynasty village etiquette book: a visitor asked if the host had eaten, and if not, waited outside so as not to interrupt the meal. Short answers: 吃了 (I have) or 还没 (not yet). Today it's less common, more often said by older people.",
+    },
+  },
+  {
+    id: "bai-bai",
+    words: ["拜拜", "！"],
+    ru: "Пока-пока!",
+    en: "Bye-bye!",
+    note: {
+      ru: "Это заимствование из английского bye-bye — звучит почти так же. 拜拜 — лёгкое прощание с друзьями, в мессенджерах. 再见 («снова увидимся») — обычное, подходит для всех. В речи часто слышно báibái, хотя в словарях пишут bàibài.",
+      en: "A loanword from English “bye-bye” — it sounds almost the same. 拜拜 is a casual goodbye for friends and chats. 再见 (“see again”) is the standard one, fine with anyone. In speech you'll often hear báibái, though dictionaries write bàibài.",
+    },
+  },
+  {
+    id: "hui-tou-jian",
+    words: ["回头见", "！"],
+    ru: "Ещё увидимся!",
+    en: "See you later!",
+    note: {
+      ru: "Дословно «обернусь — увижу»: значит, встретимся скоро. Так прощаются с одноклассниками или коллегами. А если знаешь, когда увидитесь, время ставят перед 见: 明天见 — до завтра.",
+      en: "Literally “turn your head and see”: we'll meet again soon. Said to classmates or coworkers. If you know when you'll meet, the time goes before 见: 明天见 — see you tomorrow.",
+    },
+  },
+  {
+    id: "hao-jiu-bu-jian",
+    words: ["好久不见", "！"],
+    ru: "Давно не виделись!",
+    en: "Long time no see!",
+    note: {
+      ru: "Дословно «очень долго не видеть». Английское long time no see звучит слово в слово так же и выглядит как калька с китайского — но откуда оно на самом деле, лингвисты спорят: есть и версия про упрощённый английский индейцев Северной Америки.",
+      en: "Literally “very long not see”. English “long time no see” matches it word for word and looks like a calque from Chinese — but linguists still argue about its origin; there's also a theory it comes from Native American pidgin English.",
+    },
+  },
+  {
+    id: "jia-you",
+    words: ["学习", "汉语", "，", "加油", "！"],
+    ru: "Учишь китайский — давай, вперёд!",
+    en: "Learning Chinese — go for it!",
+    note: {
+      ru: "加油 дословно «добавь масла», как заправить машину. Так подбадривают всех: спортсменов, друзей перед экзаменом, себя.",
+      en: "加油 literally means “add oil”, like refuelling a car. It's how you cheer on anyone: athletes, friends before an exam, yourself.",
+    },
+  },
+  {
+    id: "xin-ku-le",
+    words: ["今天", "辛苦了", "！"],
+    ru: "Спасибо за сегодняшние труды!",
+    en: "Thanks for your hard work today!",
+    note: {
+      ru: "辛苦 — «горько и тяжело». 辛苦了 говорят тому, кто потрудился: коллегам после работы, курьеру, другу после трудного дня. Это не жалость, а благодарность за усилия.",
+      en: "辛苦 means “bitter and hard”. 辛苦了 is said to someone who worked hard: coworkers after work, a courier, a friend after a tough day. It's not pity — it's thanks for the effort.",
+    },
+  },
+  {
+    id: "man-zou",
+    words: ["慢", "走", "！"],
+    ru: "Счастливо! (дословно: «Иди медленно»)",
+    en: "Take care! (literally: “Walk slowly”)",
+    note: {
+      ru: "Так хозяева, продавцы или официанты прощаются с уходящим гостем: не спеши, береги себя по дороге. Сам уходящий так не говорит.",
+      en: "Hosts, shopkeepers or waiters say this to a leaving guest: don't hurry, take care on the way. The person leaving doesn't say it.",
+    },
+  },
+  {
+    id: "na-li-na-li",
+    words: ["你", "说", "我", "可爱", "？", "哪里", "哪里", "！"],
+    ru: "Говоришь, я милая? Да что ты, что ты!",
+    en: "You say I'm cute? Oh, not at all!",
+    pinyin: { 哪里: "nǎ li" },
+    note: {
+      ru: "哪里哪里 дословно «где? где?» — «где же тут хорошее?». Так скромно отвечают на похвалу. Сейчас это звучит немного официально: молодые чаще просто говорят 谢谢.",
+      en: "哪里哪里 is literally “where? where?” — “where's the good part?”. It's a modest reply to a compliment. Today it sounds a bit formal; younger people often just say 谢谢.",
+    },
+  },
+  {
+    id: "gan-bei",
+    words: ["喝", "茶", "，", "干杯", "！"],
+    ru: "Пьём чай — до дна!",
+    en: "Let's drink tea — cheers!",
+    note: {
+      ru: "干杯 дословно «сухой бокал» — то есть выпить до дна. Но допивать необязательно: после тоста достаточно сделать глоток.",
+      en: "干杯 literally means “dry cup” — drink it all. But you don't have to finish: a sip after the toast is fine.",
+    },
+  },
+  {
+    id: "nin-hao",
+    words: ["您好", "！"],
+    ru: "Здравствуйте!",
+    en: "Hello! (polite)",
+    note: {
+      ru: "您 — вежливое «вы»: к старшим, учителям, незнакомым. Посмотри на иероглиф: это 你 («ты»), а под ним 心 — «сердце». Получается «ты» с уважением от сердца.",
+      en: "您 is the polite “you”: for elders, teachers, strangers. Look at the character: it's 你 (“you”) with 心 (“heart”) underneath — “you”, with respect from the heart.",
+    },
+  },
+  {
+    id: "bu-ke-qi",
+    words: ["不客气", "！"],
+    ru: "Не за что!",
+    en: "You're welcome!",
+    pinyin: { 不客气: "bú kè qi" },
+    note: {
+      ru: "Дословно «не будь гостем»: не церемонься, мы свои. Так отвечают на 谢谢. Ещё говорят 不用谢 — «не нужно благодарить».",
+      en: "Literally “don't be a guest”: no need for ceremony, we're close. It's the reply to 谢谢. People also say 不用谢 — “no need to thank”.",
+    },
+  },
+  {
+    id: "mei-guan-xi",
+    words: ["没关系", "！"],
+    ru: "Ничего страшного!",
+    en: "No worries!",
+    note: {
+      ru: "Дословно «нет связи»: это ни на что не влияет, не переживай. Классический ответ на 对不起 (прости).",
+      en: "Literally “no connection”: it doesn't matter, don't worry. The classic reply to 对不起 (sorry).",
+    },
+  },
+  {
+    id: "duo-he-re-shui",
+    words: ["多", "喝", "热", "水", "！"],
+    ru: "Пей побольше горячей воды!",
+    en: "Drink more hot water!",
+    note: {
+      ru: "Самый частый китайский совет при любом недомогании: простуда, усталость, болит живот. В интернете фраза стала мемом про заботу «для галочки» — когда больше сказать нечего.",
+      en: "The most common Chinese advice for any ailment: a cold, tiredness, a stomach ache. Online it became a meme about token care — what you say when you have nothing else to offer.",
+    },
+  },
+  {
+    id: "sui-bian",
+    words: ["吃", "什么", "？", "随便", "！"],
+    ru: "Что поедим? — Да всё равно!",
+    en: "What shall we eat? — Whatever!",
+    note: {
+      ru: "随便 — «как удобно, как угодно». Это самый частый ответ на «что будем есть?», и над ним шутят: «随便» — самое трудное блюдо, его нет ни в одном меню.",
+      en: "随便 means “as you like, whatever”. It's the most common answer to “what shall we eat?”, and people joke that “随便” is the hardest dish — no menu has it.",
+    },
+  },
+  {
+    id: "li-hai",
+    words: ["你", "真", "厉害", "！"],
+    ru: "Ну ты даёшь, круто!",
+    en: "You're amazing!",
+    note: {
+      ru: "Раньше 厉害 значило «суровый, жёсткий, страшный». Сейчас это главная разговорная похвала: «круто, впечатляет».",
+      en: "厉害 used to mean “harsh, fierce, terrible”. Now it's the go-to casual praise: “awesome, impressive”.",
+    },
+  },
+  {
+    id: "wei-ni-hao",
+    words: ["喂", "？", "你好", "！"],
+    ru: "Алло? Привет!",
+    en: "Hello? (on the phone)",
+    pinyin: { 喂: "wéi" },
+    note: {
+      ru: "喂 по телефону обычно звучит вторым тоном — wéi, мягко, как «алло?». А wèi четвёртым тоном — резкое «эй!», им окликают.",
+      en: "On the phone 喂 is usually said with the second tone — wéi, soft, like “hello?”. With the fourth tone, wèi, it's a sharp “hey!” to call someone.",
+    },
+  },
+  {
+    id: "chi-bao-le",
+    words: ["我", "吃", "饱", "了", "！"],
+    ru: "Я наелась!",
+    en: "I'm full!",
+    note: {
+      ru: "Хозяева в Китае подкладывают гостю еду, пока тарелка не опустеет. 我吃饱了 — вежливый способ сказать «спасибо, больше не нужно».",
+      en: "Chinese hosts keep adding food to a guest's plate while it's empty. 我吃饱了 is the polite way to say “thank you, I'm done”.",
+    },
   },
 ];
 

@@ -15,7 +15,11 @@
       "Can you write “{{word}}” for me? I want to see how you do it.",
       "I forgot how to write “{{word}}”. Remind me?"
     ],
-    "correct": ["Exactly!", "Yes, that's it!", "Right, thank you!"],
+    "correct": [
+      "Exactly!",
+      "Yes, that's it!",
+      "Right, thank you!"
+    ],
     "wrong": "Almost! Here's the right one:"
   },
   "riddleWrite": {
@@ -30,6 +34,8 @@
     "title": "Panda's phrases",
     "empty": "Phrases the panda tells you will gather here.",
     "translation": "Translation",
-    "hide": "Hide"
-  }
+    "hide": "Hide",
+    "hideNote": "Hide note"
+  },
+  "whyNote": "Why do people say this?"
 }

@@ -55,20 +55,40 @@ export function ProfilePandaPhrases() {
 function PhraseRow({ phrase }: { phrase: PandaPhrase }) {
   const { t } = useTranslation("pandaThoughts");
   const [open, setOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
 
   return (
     <View className="gap-1">
-      <PandaPhraseView phrase={phrase} showTranslation={open} size={24} />
-      <Pressable
-        onPress={() => setOpen((v) => !v)}
-        hitSlop={8}
-        className="self-start py-1 active:opacity-60"
-        accessibilityRole="button"
-      >
-        <Text className="font-nunito text-small text-primary">
-          {open ? t("profile.hide") : t("profile.translation")}
-        </Text>
-      </Pressable>
+      <PandaPhraseView
+        phrase={phrase}
+        showTranslation={open}
+        showNote={noteOpen}
+        size={24}
+      />
+      <View className="flex-row gap-5">
+        <Pressable
+          onPress={() => setOpen((v) => !v)}
+          hitSlop={8}
+          className="py-1 active:opacity-60"
+          accessibilityRole="button"
+        >
+          <Text className="font-nunito text-small text-primary">
+            {open ? t("profile.hide") : t("profile.translation")}
+          </Text>
+        </Pressable>
+        {phrase.note && (
+          <Pressable
+            onPress={() => setNoteOpen((v) => !v)}
+            hitSlop={8}
+            className="py-1 active:opacity-60"
+            accessibilityRole="button"
+          >
+            <Text className="font-nunito text-small text-primary">
+              {noteOpen ? t("profile.hideNote") : t("whyNote")}
+            </Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }

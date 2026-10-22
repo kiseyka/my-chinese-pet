@@ -24,16 +24,25 @@ import { PandaText } from "./PandaText";
 interface PandaPhraseViewProps {
   phrase: PandaPhrase;
   showTranslation: boolean;
+  showNote?: boolean;
   size?: number;
 }
 
+const isRussian = () => !!i18n.language?.startsWith("ru");
+
 export function phraseTranslation(phrase: PandaPhrase): string {
-  return i18n.language?.startsWith("ru") ? phrase.ru : phrase.en || phrase.ru;
+  return isRussian() ? phrase.ru : phrase.en || phrase.ru;
+}
+
+export function phraseNote(phrase: PandaPhrase): string | undefined {
+  if (!phrase.note) return undefined;
+  return isRussian() ? phrase.note.ru : phrase.note.en || phrase.note.ru;
 }
 
 export function PandaPhraseView({
   phrase,
   showTranslation,
+  showNote = false,
   size,
 }: PandaPhraseViewProps) {
   const { t } = useTranslation();
@@ -88,6 +97,14 @@ export function PandaPhraseView({
         <Text className="font-nunito text-lead text-text">
           {phraseTranslation(phrase)}
         </Text>
+      )}
+
+      {showNote && phrase.note && (
+        <View className="rounded-2xl bg-primary/10 px-4 py-3">
+          <Text className="font-nunito text-body text-text">
+            {phraseNote(phrase)}
+          </Text>
+        </View>
       )}
     </View>
   );

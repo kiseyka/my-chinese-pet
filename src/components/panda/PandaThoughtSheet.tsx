@@ -110,6 +110,7 @@ function PhraseThought({
   const { t } = useTranslation("pandaThoughts");
   const phrase = findPandaPhrase(thought.phraseId);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showNote, setShowNote] = useState(false);
 
   if (!phrase) {
     return <Actions onLater={onLater} primary={{ label: "OK", onPress: onDone }} />;
@@ -129,7 +130,25 @@ function PhraseThought({
         <PinyinToggle />
       </View>
 
-      <PandaPhraseView phrase={phrase} showTranslation={showTranslation} />
+      <PandaPhraseView
+        phrase={phrase}
+        showTranslation={showTranslation}
+        showNote={showNote}
+      />
+
+      {/* У разговорных фраз — откуда фраза и когда её говорят */}
+      {phrase.note && !showNote && (
+        <Pressable
+          onPress={() => setShowNote(true)}
+          hitSlop={8}
+          className="-mt-2 self-start active:opacity-60"
+          accessibilityRole="button"
+        >
+          <Text className="font-nunito text-body text-primary">
+            {t("whyNote")}
+          </Text>
+        </Pressable>
+      )}
 
       <Actions
         onLater={onLater}
