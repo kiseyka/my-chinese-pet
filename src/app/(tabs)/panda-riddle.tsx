@@ -51,9 +51,11 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 const RESULT_SIZE = 96;
 
 export default function PandaRiddleRoute() {
-  const { wordId, source, mode } = useLocalSearchParams<{
+  const { wordId, source, mode, outline } = useLocalSearchParams<{
     wordId?: string;
     source?: string;
+    /** 1 — сразу писать по контуру («Не помню — по контуру»). */
+    outline?: string;
     /** stroke — «Допиши черту» (игра по тапу), иначе — написать слово целиком. */
     mode?: string;
   }>();
@@ -77,6 +79,7 @@ export default function PandaRiddleRoute() {
             key={`${word.vocabularyId}-${visit}`}
             word={word}
             isPlay={source === "play"}
+            startWithOutline={outline === "1"}
           />
         )}
       </Screen>
@@ -84,19 +87,35 @@ export default function PandaRiddleRoute() {
   );
 }
 
-function RiddleWriting({ word, isPlay }: { word: Word; isPlay: boolean }) {
+function RiddleWriting({
+  word,
+  isPlay,
+  startWithOutline,
+}: {
+  word: Word;
+  isPlay: boolean;
+  startWithOutline: boolean;
+}) {
   const router = useRouter();
   const { t } = useTranslation("pandaThoughts");
   const size = useCanvasSize();
   const { speakForced } = useSpeakHanzi();
   const riddle = useRiddleWriting(word);
   const [toSave, setToSave] = useState<GalleryCandidate | null>(null);
+  // Контур: не помнишь — пиши по контуру. Включить можно в любой момент, выключить — тоже
+  const [outline, setOutline] = useState(startWithOutline);
+  const [outlineUsed, setOutlineUsed] = useState(startWithOutline);
+  const toggleOutline = () => {
+    setOutline((on) => !on);
+    setOutlineUsed(true);
+  };
 
   const { chars, charIndex, charData, phase } = riddle;
 
-  // Игра по тапу: опыт и привязанность — один раз, как только слово написано
+  // Игра по тапу: опыт и привязанность — один раз, как только слово написано.
+  // По памяти без ошибок — больше; с контуром — обычный опыт
   const reward =
-    riddle.mistakes === 0 ? WRITE_PERFECT_REWARD : WRITE_REWARD;
+    riddle.mistakes === 0 && !outlineUsed ? WRITE_PERFECT_REWARD : WRITE_REWARD;
   const rewarded = useRef(false);
   useEffect(() => {
     if (!isPlay || phase !== "done" || rewarded.current) return;
@@ -151,9 +170,11 @@ function RiddleWriting({ word, isPlay }: { word: Word; isPlay: boolean }) {
 
         <View className="items-center gap-2">
           <Text className="text-center font-nunitoBold text-title text-text">
-            {riddle.mistakes === 0
-              ? t("riddleWrite.clean")
-              : t("riddleWrite.mistakes", { count: riddle.mistakes })}
+            {outlineUsed
+              ? t("riddleWrite.withOutline")
+              : riddle.mistakes === 0
+                ? t("riddleWrite.clean")
+                : t("riddleWrite.mistakes", { count: riddle.mistakes })}
           </Text>
           {isPlay && <RewardBadge xp={reward} />}
         </View>
@@ -182,7 +203,13 @@ function RiddleWriting({ word, isPlay }: { word: Word; isPlay: boolean }) {
         key={`${word.vocabularyId}-${charIndex}`}
         size={size}
         strokes={charData.strokes}
-        outlineIndices={riddle.hintIndex !== null ? [riddle.hintIndex] : []}
+        outlineIndices={
+          outline
+            ? charData.strokes.map((_, i) => i)
+            : riddle.hintIndex !== null
+              ? [riddle.hintIndex]
+              : []
+        }
         snappedIndices={[]}
         rawStrokes={riddle.rawStrokes}
         hintIndex={riddle.hintIndex}
@@ -191,8 +218,14 @@ function RiddleWriting({ word, isPlay }: { word: Word; isPlay: boolean }) {
       />
 
       <Text className="min-h-6 text-center font-nunito text-body text-textSecondary">
-        {riddle.isHinting ? t("riddleWrite.hint") : " "}
+        {riddle.isHinting && !outline ? t("riddleWrite.hint") : " "}
       </Text>
+
+      <PillButton
+        label={outline ? t("riddleWrite.hideOutline") : t("riddleWrite.showOutline")}
+        variant="secondary"
+        onPress={toggleOutline}
+      />
     </View>
   );
 }

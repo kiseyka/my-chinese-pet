@@ -5,7 +5,8 @@
 //                 правильный с пиньинем; если за верный ответ есть опыт — «+N».
 //                 listen — вместо перевода панда произносит слово (сразу и по кнопке),
 //                 перевод появляется после ответа;
-//   WriteRiddle — «Покажешь, как пишется …?» → экран письма /panda-riddle.
+//   WriteRiddle — «Покажешь, как пишется …?» → экран письма /panda-riddle: «Написать»
+//                 (по памяти) или «Не помню — по контуру».
 // MainButton — главная кнопка панели (во всю ширину).
 
 import ZapIcon from "@/assets/images/icons/zap.svg";
@@ -185,19 +186,25 @@ export function WriteRiddle({
   const { t: tp } = useTranslation("pandaThoughts");
   const question = useLine("riddle.write", variant, t(word.translation));
 
-  const write = () => {
+  const write = (outline: boolean) => {
     onClose();
     router.push({
       pathname: "/panda-riddle",
-      params: { wordId: word.vocabularyId, source },
+      params: { wordId: word.vocabularyId, source, ...(outline && { outline: "1" }) },
     });
   };
 
   return (
     <View className="gap-5">
       <Text className="font-nunito text-title text-text">{question}</Text>
-      <View className="flex-row">
-        <MainButton label={tp("write")} onPress={write} />
+      {/* Не помнишь — можно написать по контуру */}
+      <View className="flex-row gap-3">
+        <MainButton
+          label={tp("writeOutline")}
+          variant="secondary"
+          onPress={() => write(true)}
+        />
+        <MainButton label={tp("write")} onPress={() => write(false)} />
       </View>
     </View>
   );

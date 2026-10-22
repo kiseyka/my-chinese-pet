@@ -1,7 +1,7 @@
 {
   "gotIt": "Got it",
   "showTranslation": "Show translation",
-  "write": "Write",
+  "write": "From memory",
   "riddle": {
     "pick": [
       "How do you say “{{word}}” in Chinese?",
@@ -51,7 +51,10 @@
     "mistakes": "You did it! Mistakes: {{count}}",
     "hint": "I showed you one stroke — keep going",
     "done": "Done",
-    "saveHint": "Tap your writing to save it to the gallery"
+    "saveHint": "Tap your writing to save it to the gallery",
+    "withOutline": "Done! Next time from memory?",
+    "showOutline": "I don't remember — show outline",
+    "hideOutline": "Hide outline"
   },
   "profile": {
     "title": "Panda's phrases",
@@ -98,5 +101,6 @@
     "done": "Done!",
     "hint": "I showed where the stroke goes — draw it",
     "hintIdle": "Which stroke is missing?"
-  }
+  },
+  "writeOutline": "With outline"
 }
