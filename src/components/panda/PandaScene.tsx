@@ -21,7 +21,13 @@ import { useApplyRiveInputs } from "@/hooks/useApplyRiveInputs";
 import { useRoomStore } from "@/store/roomStore";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, Text, View, ViewStyle, type DimensionValue } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+  ViewStyle,
+  type DimensionValue,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Rive, { Fit, type RiveRef } from "rive-react-native";
 
@@ -39,10 +45,10 @@ const PANDA_HIT_AREA: {
   top: DimensionValue;
   width: DimensionValue;
   height: DimensionValue;
-} = { left: "28%", top: "36%", width: "44%", height: "44%" };
+} = { left: "25%", top: "40%", width: "44%", height: "44%" };
 
 /** Показать область тапа полупрозрачной рамкой (для подгонки). */
-const SHOW_HIT_AREA = false as boolean;
+const SHOW_HIT_AREA = true as boolean;
 
 const HIT_AREA_DEBUG_STYLE = {
   borderWidth: 2,
@@ -112,7 +118,7 @@ export const PandaScene = ({
       {/* Панда: до самого низа экрана */}
       <Rive
         ref={cloud.ref}
-        source={require("@/assets/motion/panda_02.riv")}
+        source={require("@/assets/motion/panda.riv")}
         stateMachineName={PANDA_STATE_MACHINE}
         fit={Fit.Fill}
         style={{
