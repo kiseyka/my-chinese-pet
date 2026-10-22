@@ -8,23 +8,40 @@
 //            уже были и какие лежат в коллекции профиля);
 //   words  — фраза по словам, как в словаре (好看, а не 好 + 看); знаки препинания —
 //            отдельными элементами. Склеенные words — это и есть фраза;
-//   ru, en — перевод (под кнопкой «Покажи перевод»);
+//   ru, en — перевод (под плашкой «Показать перевод»);
 //   pinyin — только если пиньинь слова во фразе отличается от словаря
 //            (изменение тона: { "一个": "yí gè" }). Остальное берётся из словаря;
 //   note   — необязательно: «Почему так говорят?» — откуда фраза, когда её говорят,
-//            чем отличается от похожих (ru, en). Показывается под кнопкой.
+//            чем отличается от похожих (ru, en). Показывается сразу под фразой;
+//   replies — необязательно, у вопросов: варианты ответа (тоже по-китайски, с переводом)
+//            и реакция панды на каждый (reaction). Ответ запоминается (pandaStore.answers);
+//   requires — необязательно: фраза появится, только если на вопрос phraseId ответили
+//            replyId. Так панда «помнит» ответы: «ты любишь зелёный — мой цветок тоже».
 //
 // Панда покажет фразу, только когда у пользователя есть хотя бы 1 точка (перевода
-// или письма) у каждого её слова. Проверка: node scripts/check-panda-phrases.mjs
+// или письма) у каждого её слова. Проверка: node --no-warnings --experimental-strip-types scripts/check-panda-phrases.mjs
 // (слова, которых нет в словаре, и склейку).
 
-export interface PandaPhrase {
-  id: string;
+/** Строка по-китайски с переводом: реплика, ответ, реакция. */
+export interface PhraseLine {
   words: string[];
   ru: string;
   en: string;
   pinyin?: Record<string, string>;
+}
+
+export interface PhraseReply extends PhraseLine {
+  /** Ключ ответа, после выхода НЕ МЕНЯТЬ (по нему помнится ответ). */
+  id: string;
+  /** Что панда скажет в ответ. */
+  reaction?: PhraseLine;
+}
+
+export interface PandaPhrase extends PhraseLine {
+  id: string;
   note?: { ru: string; en: string };
+  replies?: PhraseReply[];
+  requires?: { phraseId: string; replyId: string };
 }
 
 // Тестовые фразы — замени своими
@@ -41,6 +58,30 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Ты сегодня пил воду?",
     en: "Have you had water today?",
     pinyin: { 吗: "ma" },
+    replies: [
+      {
+        id: "yes",
+        words: ["喝", "了", "。"],
+        ru: "Да, уже.",
+        en: "Yes, I have.",
+        reaction: {
+          words: ["太", "好", "了", "！"],
+          ru: "Отлично!",
+          en: "Great!",
+        },
+      },
+      {
+        id: "no",
+        words: ["还", "没有", "。"],
+        ru: "Ещё нет.",
+        en: "Not yet.",
+        reaction: {
+          words: ["快", "去", "喝", "水", "吧", "！"],
+          ru: "Скорее иди попей воды!",
+          en: "Go drink some water!",
+        },
+      },
+    ],
   },
   {
     id: "like-rice",
@@ -129,6 +170,52 @@ export const pandaPhrases: PandaPhrase[] = [
     words: ["你", "喜欢", "什么", "颜色", "？"],
     ru: "Какой цвет тебе нравится?",
     en: "What color do you like?",
+    replies: [
+      {
+        id: "green",
+        words: ["我", "喜欢", "绿色", "。"],
+        ru: "Мне нравится зелёный.",
+        en: "I like green.",
+        reaction: {
+          words: ["我", "也", "喜欢", "绿色", "！"],
+          ru: "Я тоже люблю зелёный!",
+          en: "I like green too!",
+        },
+      },
+      {
+        id: "red",
+        words: ["我", "喜欢", "红色", "。"],
+        ru: "Мне нравится красный.",
+        en: "I like red.",
+        reaction: {
+          words: ["红色", "很", "漂亮", "！"],
+          ru: "Красный — очень красивый!",
+          en: "Red is very pretty!",
+        },
+      },
+      {
+        id: "blue",
+        words: ["我", "喜欢", "蓝色", "。"],
+        ru: "Мне нравится синий.",
+        en: "I like blue.",
+        reaction: {
+          words: ["蓝色", "很", "好看", "！"],
+          ru: "Синий очень красивый!",
+          en: "Blue looks great!",
+        },
+      },
+      {
+        id: "yellow",
+        words: ["我", "喜欢", "黄色", "。"],
+        ru: "Мне нравится жёлтый.",
+        en: "I like yellow.",
+        reaction: {
+          words: ["黄色", "很", "好看", "！"],
+          ru: "Жёлтый очень красивый!",
+          en: "Yellow looks great!",
+        },
+      },
+    ],
   },
   {
     id: "green",
@@ -165,6 +252,53 @@ export const pandaPhrases: PandaPhrase[] = [
     words: ["你", "今天", "想", "做", "什么", "？"],
     ru: "Что ты хочешь сегодня делать?",
     en: "What do you want to do today?",
+    replies: [
+      {
+        id: "study",
+        words: ["我", "想", "学习", "汉语", "。"],
+        ru: "Хочу учить китайский.",
+        en: "I want to study Chinese.",
+        reaction: {
+          words: ["太", "好", "了", "！", "加油", "！"],
+          ru: "Здорово! Вперёд!",
+          en: "Great! Go for it!",
+        },
+      },
+      {
+        id: "rest",
+        words: ["我", "想", "休息", "。"],
+        ru: "Хочу отдохнуть.",
+        en: "I want to rest.",
+        reaction: {
+          words: ["好", "，", "我们", "一起", "休息", "吧", "。"],
+          ru: "Хорошо, давай отдохнём вместе.",
+          en: "Okay, let's rest together.",
+          pinyin: { 一起: "yì qǐ" },
+        },
+      },
+      {
+        id: "read",
+        words: ["我", "想", "看书", "。"],
+        ru: "Хочу почитать.",
+        en: "I want to read.",
+        reaction: {
+          words: ["我", "也", "喜欢", "看书", "！"],
+          ru: "Я тоже люблю читать!",
+          en: "I like reading too!",
+        },
+      },
+      {
+        id: "sport",
+        words: ["我", "想", "运动", "。"],
+        ru: "Хочу позаниматься спортом.",
+        en: "I want to exercise.",
+        reaction: {
+          words: ["真", "棒", "！"],
+          ru: "Вот это да!",
+          en: "Awesome!",
+        },
+      },
+    ],
   },
   {
     id: "write-name",
@@ -215,6 +349,30 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Я милая, когда сплю?",
     en: "Am I cute when I sleep?",
     pinyin: { 吗: "ma" },
+    replies: [
+      {
+        id: "very",
+        words: ["很", "可爱", "！"],
+        ru: "Очень милая!",
+        en: "Very cute!",
+        reaction: {
+          words: ["谢谢", "你", "！"],
+          ru: "Спасибо!",
+          en: "Thank you!",
+        },
+      },
+      {
+        id: "of-course",
+        words: ["当然", "！"],
+        ru: "Конечно!",
+        en: "Of course!",
+        reaction: {
+          words: ["我", "很", "高兴", "！"],
+          ru: "Как приятно!",
+          en: "That makes me happy!",
+        },
+      },
+    ],
   },
   {
     id: "good-friend",
@@ -245,6 +403,31 @@ export const pandaPhrases: PandaPhrase[] = [
       ru: "Это приветствие, а не вопрос про еду. Так показывают заботу: «у тебя всё хорошо?». Обычай связывают со старой сельской книгой правил вежливости эпохи Сун: гость спрашивал, поел ли хозяин, и если нет — ждал за дверью, чтобы не мешать обеду. Отвечают коротко: 吃了 (поел) или 还没 (ещё нет). Сейчас так говорят реже, чаще старшие.",
       en: "It's a greeting, not a question about food — a way to show you care. The custom is traced to an old Song-dynasty village etiquette book: a visitor asked if the host had eaten, and if not, waited outside so as not to interrupt the meal. Short answers: 吃了 (I have) or 还没 (not yet). Today it's less common, more often said by older people.",
     },
+    replies: [
+      {
+        id: "ate",
+        words: ["吃", "了", "。"],
+        ru: "Ага, уже.",
+        en: "Yes, I have.",
+        reaction: {
+          words: ["我", "也", "吃", "了", "！"],
+          ru: "Я тоже!",
+          en: "Me too!",
+        },
+      },
+      {
+        id: "not-yet",
+        words: ["还", "没有", "。"],
+        ru: "Ещё нет.",
+        en: "Not yet.",
+        reaction: {
+          words: ["我们", "一起", "吃", "饭", "吧", "！"],
+          ru: "Давай поедим вместе!",
+          en: "Let's eat together!",
+          pinyin: { 一起: "yì qǐ" },
+        },
+      },
+    ],
   },
   {
     id: "bai-bai",
@@ -408,6 +591,28 @@ export const pandaPhrases: PandaPhrase[] = [
       ru: "Хозяева в Китае подкладывают гостю еду, пока тарелка не опустеет. 我吃饱了 — вежливый способ сказать «спасибо, больше не нужно».",
       en: "Chinese hosts keep adding food to a guest's plate while it's empty. 我吃饱了 is the polite way to say “thank you, I'm done”.",
     },
+  },
+  // Панда помнит ответы: фразы появляются только после нужного ответа (requires)
+  {
+    id: "remember-green",
+    requires: { phraseId: "what-color", replyId: "green" },
+    words: ["你", "喜欢", "绿色", "，", "我", "的", "花", "也", "是", "绿色", "的", "！"],
+    ru: "Ты любишь зелёный — а мой цветок тоже зелёный!",
+    en: "You like green — and my flower is green too!",
+  },
+  {
+    id: "remember-red",
+    requires: { phraseId: "what-color", replyId: "red" },
+    words: ["你", "喜欢", "红色", "，", "我", "也", "喜欢", "红色", "的", "花", "！"],
+    ru: "Ты любишь красный — я тоже люблю красные цветы!",
+    en: "You like red — I like red flowers too!",
+  },
+  {
+    id: "remember-study",
+    requires: { phraseId: "what-today", replyId: "study" },
+    words: ["你", "学习", "汉语", "，", "我", "很", "高兴", "！"],
+    ru: "Ты учишь китайский — я так рада!",
+    en: "You're learning Chinese — I'm so happy!",
   },
 ];
 

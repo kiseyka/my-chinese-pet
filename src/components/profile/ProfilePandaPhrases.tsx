@@ -2,7 +2,7 @@
 //
 // «Фразы панды» в профиле: фразы, которые панда уже рассказала (мысль phrase),
 // новые сверху. Это не журнал реплик, а маленькая коллекция для чтения: слова
-// разбираются тапом, у каждой фразы свои значки перевода и «Почему так говорят?».
+// разбираются тапом, перевод — под плашкой, у вопросов виден ответ и реакция панды.
 
 import { PandaPhraseView } from "@/components/panda/PandaPhraseView";
 import { PinyinToggle } from "@/components/ui/PinyinToggle";
@@ -53,5 +53,14 @@ export function ProfilePandaPhrases() {
 }
 
 function PhraseRow({ phrase }: { phrase: PandaPhrase }) {
-  return <PandaPhraseView phrase={phrase} size={24} compact />;
+  const answer = usePandaStore((s) => s.answers[phrase.id]);
+  return (
+    <PandaPhraseView
+      phrase={phrase}
+      size={24}
+      compact
+      answer={answer}
+      from="profile"
+    />
+  );
 }

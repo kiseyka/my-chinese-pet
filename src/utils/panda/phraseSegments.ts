@@ -39,7 +39,13 @@ export function isHanText(text: string): boolean {
   return HAN.test(text);
 }
 
-export function segmentPhrase(phrase: PandaPhrase): PhraseSegment[] {
+/** Строка панды или ответа: слова и (необязательно) пиньинь вместо словарного. */
+export interface PhraseLineLike {
+  words: string[];
+  pinyin?: Record<string, string>;
+}
+
+export function segmentPhrase(phrase: PhraseLineLike): PhraseSegment[] {
   return phrase.words.map((text) => {
     if (!HAN.test(text)) return { text, pinyin: "", isHan: false };
 
@@ -68,7 +74,7 @@ export function getPhraseWords(phrase: PandaPhrase): Word[] | undefined {
   return words;
 }
 
-export function phraseText(phrase: PandaPhrase): string {
+export function phraseText(phrase: PhraseLineLike): string {
   return phrase.words.join("");
 }
 

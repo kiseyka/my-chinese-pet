@@ -85,6 +85,11 @@ interface PandaState {
   collectedPhrases: CollectedPhrase[];
   /** Последние слова загадок. */
   recentRiddleWordIds: string[];
+  /**
+   * Ответы на вопросы панды: id фразы → id ответа («what-color» → «green»).
+   * По ним открываются фразы с requires — панда помнит, что ей сказали.
+   */
+  answers: Record<string, string>;
 
   /** Результат последней тренировки, который панда ещё не прокомментировала. Не сохраняется. */
   pendingTrainingResult: PandaTrainingResult | null;
@@ -104,8 +109,11 @@ interface PandaActions {
   showThought: (thought: PandaThought, day: string) => void;
   /** Мысль закрыта: done — ответил, later — «Не сейчас» (этот вид до завтра не предлагать). */
   resolveThought: (result: "done" | "later", day: string) => void;
-  /** Фраза рассказана: больше не предлагать и положить в коллекцию профиля. */
-  collectPhrase: (phraseId: string) => void;
+  /**
+   * Фраза рассказана: больше не предлагать и положить в коллекцию профиля.
+   * replyId — что пользователь ответил, если это был вопрос.
+   */
+  collectPhrase: (phraseId: string, replyId?: string) => void;
 }
 
 type PandaStore = PandaState & PandaActions;
@@ -126,6 +134,7 @@ export const usePandaStore = create<PandaStore>()(
       seenPhraseIds: [],
       collectedPhrases: [],
       recentRiddleWordIds: [],
+      answers: {},
 
       increaseBond: (amount) =>
         set((state) => ({
@@ -194,8 +203,11 @@ export const usePandaStore = create<PandaStore>()(
           };
         }),
 
-      collectPhrase: (phraseId) =>
+      collectPhrase: (phraseId, replyId) =>
         set((state) => ({
+          answers: replyId
+            ? { ...state.answers, [phraseId]: replyId }
+            : state.answers,
           seenPhraseIds: state.seenPhraseIds.includes(phraseId)
             ? state.seenPhraseIds
             : [...state.seenPhraseIds, phraseId],
@@ -222,6 +234,7 @@ export const usePandaStore = create<PandaStore>()(
         seenPhraseIds: state.seenPhraseIds,
         collectedPhrases: state.collectedPhrases,
         recentRiddleWordIds: state.recentRiddleWordIds,
+        answers: state.answers,
       }),
     },
   ),

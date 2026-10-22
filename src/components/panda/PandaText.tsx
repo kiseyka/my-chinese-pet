@@ -12,14 +12,17 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { colors } from "@/theme/colors";
 import type { PhraseSegment } from "@/utils/panda/phraseSegments";
 import { useMemo } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, View, type GestureResponderEvent } from "react-native";
 
 interface PandaTextProps {
   segments: PhraseSegment[];
   size?: number;
   /** Выбранное слово (подсвечено). */
   selected?: PhraseSegment | null;
-  onWordPress?: (segment: PhraseSegment) => void;
+  /** Тап по слову; событие — чтобы показать тултип у места касания. */
+  onWordPress?: (segment: PhraseSegment, e: GestureResponderEvent) => void;
+  /** Белый текст — на зелёном фоне (ответ пользователя). */
+  light?: boolean;
 }
 
 /** Слово и знаки после него — один неразрывный блок. */
@@ -47,7 +50,10 @@ export function PandaText({
   size = 30,
   selected,
   onWordPress,
+  light = false,
 }: PandaTextProps) {
+  const hanziClass = light ? "text-white" : undefined;
+  const pinyinClass = light ? "text-white" : "";
   const showPinyin = useSettingsStore((s) => s.showPinyin);
   const groups = useMemo(() => groupSegments(segments), [segments]);
 
@@ -57,7 +63,7 @@ export function PandaText({
         <View key={i} className="flex-row items-end">
           {word && (
             <Pressable
-              onPress={onWordPress ? () => onWordPress(word) : undefined}
+              onPress={onWordPress ? (e) => onWordPress(word, e) : undefined}
               disabled={!onWordPress}
               className={`items-center rounded-lg px-1 active:opacity-50 ${
                 word === selected ? "bg-primary/15" : ""
@@ -65,7 +71,11 @@ export function PandaText({
               accessibilityRole={onWordPress ? "button" : undefined}
               accessibilityLabel={word.text}
             >
-              <Pinyin size="sm" style={{ opacity: showPinyin ? 1 : 0 }}>
+              <Pinyin
+                size="sm"
+                className={pinyinClass}
+                style={{ opacity: showPinyin ? (light ? 0.85 : 1) : 0 }}
+              >
                 {word.pinyin || " "}
               </Pinyin>
               {/* Линия под словом — рамкой, а не подчёркиванием текста:
@@ -80,14 +90,18 @@ export function PandaText({
                     : undefined
                 }
               >
-                <Hanzi size={size}>{word.text}</Hanzi>
+                <Hanzi size={size} className={hanziClass}>
+                  {word.text}
+                </Hanzi>
               </View>
             </Pressable>
           )}
           {!!tail && (
             <View className="items-center">
               <Pinyin size="sm"> </Pinyin>
-              <Hanzi size={size}>{tail}</Hanzi>
+              <Hanzi size={size} className={hanziClass}>
+                {tail}
+              </Hanzi>
             </View>
           )}
         </View>

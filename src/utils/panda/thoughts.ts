@@ -8,7 +8,9 @@
 //
 // Виды мыслей:
 //   phrase — короткая фраза на китайском из слов, которые пользователь уже изучает
-//            (content/panda/thoughtPhrases.ts). Разобрал — фраза в коллекции профиля;
+//            (content/panda/thoughtPhrases.ts). Разобрал — фраза в коллекции профиля.
+//            У вопросов — варианты ответа; ответ запоминается и открывает фразы
+//            с requires («ты любишь зелёный — мой цветок тоже»);
 //   riddle — загадка по слову из «Повторения», если сегодня ещё не было тренировки:
 //            pick  — по переводу выбрать иероглиф из трёх;
 //            write — написать слово по памяти (если его уже писали).
@@ -68,10 +70,18 @@ function isStarted(progress: ProgressMap, wordId: string): boolean {
 /** Фразы, все слова которых пользователь уже изучает и которые ещё не рассказаны. */
 export function getAvailablePhrases(): PandaPhrase[] {
   const progress = useWordProgressStore.getState().flashcardWords;
-  const seen = new Set(usePandaStore.getState().seenPhraseIds);
+  const { seenPhraseIds, answers } = usePandaStore.getState();
+  const seen = new Set(seenPhraseIds);
 
   return pandaPhrases.filter((phrase) => {
     if (seen.has(phrase.id)) return false;
+    // «Панда помнит»: фраза только после нужного ответа на её вопрос
+    if (
+      phrase.requires &&
+      answers[phrase.requires.phraseId] !== phrase.requires.replyId
+    ) {
+      return false;
+    }
     const words = getPhraseWords(phrase);
     return !!words && words.every((w) => isStarted(progress, w.vocabularyId));
   });
@@ -162,16 +172,19 @@ export function resolveThought(result: "done") {
 
 // ── Проверка на телефоне ─────────────────────────────────────────────────────
 
-export type TestThought = "phrase" | "pick" | "write";
+export type TestThought = "phrase" | "question" | "pick" | "write";
 
 /** Пауза между «убрать старое облачко» и «показать новое», чтобы Rive доиграл. */
 const TEST_SWAP_DELAY_MS = 500;
 
 function pickTestThought(type: TestThought, now: number): PandaThought | null {
-  if (type === "phrase") {
-    // Сначала фразы, которые прошли бы по правилам, иначе любая
+  if (type === "phrase" || type === "question") {
+    // Сначала фразы, которые прошли бы по правилам, иначе любая.
+    // «Вопрос» — только фразы с вариантами ответа
+    const fits = (p: PandaPhrase) => type === "phrase" || !!p.replies;
+    const available = getAvailablePhrases().filter(fits);
     const [phrase] = shuffle(
-      getAvailablePhrases().length > 0 ? getAvailablePhrases() : pandaPhrases,
+      available.length > 0 ? available : pandaPhrases.filter(fits),
     );
     return phrase ? { kind: "phrase", phraseId: phrase.id, createdAt: now } : null;
   }

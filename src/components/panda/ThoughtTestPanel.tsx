@@ -4,7 +4,7 @@
 // Видны только в режиме разработки (__DEV__ — dev-клиент, `npx expo start`);
 // в preview- и релизной сборке их нет. Выключить совсем — SHOW_THOUGHT_TEST_PANEL.
 //
-//   Фраза / Выбрать / Написать — сразу облачко с мыслью этого вида (без правил и лимитов);
+//   Фраза / Вопрос / Выбрать / Написать — сразу облачко с мыслью этого вида (без правил и лимитов);
 //   Сброс — убрать облачко, сбросить паузу, дневной лимит и «Не сейчас».
 
 import {
@@ -18,6 +18,7 @@ const SHOW_THOUGHT_TEST_PANEL = true;
 
 const BUTTONS: Array<{ label: string; type: TestThought }> = [
   { label: "Фраза", type: "phrase" },
+  { label: "Вопрос", type: "question" },
   { label: "Выбрать", type: "pick" },
   { label: "Написать", type: "write" },
 ];

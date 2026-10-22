@@ -1,64 +1,90 @@
 // scripts/check-panda-phrases.mjs
 //
 // Проверяет фразы панды (src/content/panda/thoughtPhrases.ts):
-//   - повторяющиеся id;
+//   - повторяющиеся id фраз и ответов;
 //   - слова фразы, которых нет в словаре (src/content/words/data/words.ts) — с такими
 //     словами фраза никогда не покажется: панда ждёт точку у каждого слова;
+//   - слова ответов и реакций, которых нет в словаре (фраза покажется, но тап по слову
+//     ничего не переведёт);
+//   - склейку: words должны быть разбиты по словам, а не по одному иероглифу без нужды;
+//   - requires, который ссылается на несуществующий вопрос или ответ;
 //   - пустой перевод.
-// Печатает каждую фразу с пиньинем из словаря — удобно сверить тоны.
+// Печатает каждую фразу с пиньинем — удобно сверить тоны.
 //
-// Запуск: node scripts/check-panda-phrases.mjs
+// Запуск: node --no-warnings --experimental-strip-types scripts/check-panda-phrases.mjs
+// (на Node 22.18+ флаг --experimental-strip-types можно не писать)
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const read = (path) => readFileSync(join(root, path), "utf8");
-
 const HAN = /\p{Script=Han}/u;
 
-const wordsSource = read("src/content/words/data/words.ts");
+const wordsSource = readFileSync(join(root, "src/content/words/data/words.ts"), "utf8");
 const pinyinByHanzi = new Map();
 for (const m of wordsSource.matchAll(/hanzi: "([^"]+)",\s*pinyin: "([^"]*)"/g)) {
   if (!pinyinByHanzi.has(m[1])) pinyinByHanzi.set(m[1], m[2]);
 }
 
-const source = read("src/content/panda/thoughtPhrases.ts");
-const phrases = [
-  ...source.matchAll(
-    /id: "([^"]+)",\s*words: \[([^\]]*)\],\s*ru: "([^"]*)",\s*en: "([^"]*)",?(?:\s*pinyin: \{([^}]*)\})?/g,
-  ),
-].map((m) => ({
-  id: m[1],
-  words: [...m[2].matchAll(/"([^"]*)"/g)].map((w) => w[1]),
-  ru: m[3],
-  en: m[4],
-  pinyin: new Map(
-    [...(m[5] ?? "").matchAll(/"?([^"\s:,]+)"?\s*:\s*"([^"]*)"/g)].map((p) => [p[1], p[2]]),
-  ),
-}));
+const { pandaPhrases } = await import(
+  pathToFileURL(join(root, "src/content/panda/thoughtPhrases.ts")).href
+);
 
+const lineIssues = (line, label) => {
+  const issues = [];
+  const missing = line.words.filter((w) => HAN.test(w) && !pinyinByHanzi.has(w));
+  if (missing.length) issues.push(`${label}: нет в словаре: ${missing.join(" ")}`);
+  if (!line.ru) issues.push(`${label}: нет русского перевода`);
+  return issues;
+};
+
+const pinyinOf = (line) =>
+  line.words
+    .map((w) =>
+      HAN.test(w) ? (line.pinyin?.[w] ?? pinyinByHanzi.get(w) ?? "?") : w,
+    )
+    .join(" ");
+
+const byId = new Map(pandaPhrases.map((p) => [p.id, p]));
 let problems = 0;
 const seen = new Set();
 
-for (const phrase of phrases) {
-  const issues = [];
+for (const phrase of pandaPhrases) {
+  const issues = lineIssues(phrase, "фраза");
   if (seen.has(phrase.id)) issues.push("повторяется id");
   seen.add(phrase.id);
 
-  const missing = phrase.words.filter((w) => HAN.test(w) && !pinyinByHanzi.has(w));
-  if (missing.length) issues.push(`нет в словаре: ${missing.join(" ")}`);
-  if (!phrase.ru) issues.push("нет русского перевода");
+  if (phrase.requires) {
+    const question = byId.get(phrase.requires.phraseId);
+    if (!question) issues.push(`requires: нет фразы ${phrase.requires.phraseId}`);
+    else if (!question.replies?.some((r) => r.id === phrase.requires.replyId)) {
+      issues.push(`requires: у ${question.id} нет ответа ${phrase.requires.replyId}`);
+    }
+  }
 
-  const pinyin = phrase.words
-    .map((w) => (HAN.test(w) ? (phrase.pinyin.get(w) ?? pinyinByHanzi.get(w) ?? "?") : w))
-    .join(" ");
+  const replyIds = new Set();
+  for (const reply of phrase.replies ?? []) {
+    if (replyIds.has(reply.id)) issues.push(`ответ ${reply.id}: повторяется id`);
+    replyIds.add(reply.id);
+    issues.push(...lineIssues(reply, `ответ ${reply.id}`));
+    if (reply.reaction) {
+      issues.push(...lineIssues(reply.reaction, `реакция на ${reply.id}`));
+    }
+  }
 
-  console.log(`${issues.length ? "✗" : "✓"} ${phrase.id}: ${phrase.words.join("")}  ${pinyin}`);
-  for (const issue of issues) console.log(`    ${issue}`);
+  const mark = issues.length ? "✗" : "✓";
+  const extra = phrase.requires
+    ? `  [после ${phrase.requires.phraseId}=${phrase.requires.replyId}]`
+    : "";
+  console.log(`${mark} ${phrase.id}: ${phrase.words.join("")}  ${pinyinOf(phrase)}${extra}`);
+  for (const reply of phrase.replies ?? []) {
+    const reaction = reply.reaction ? `  → ${reply.reaction.words.join("")}` : "";
+    console.log(`    · ${reply.words.join("")}  ${pinyinOf(reply)}${reaction}`);
+  }
+  for (const issue of issues) console.log(`    ! ${issue}`);
   problems += issues.length;
 }
 
-console.log(`\nФраз: ${phrases.length}, проблем: ${problems}`);
+console.log(`\nФраз: ${pandaPhrases.length}, проблем: ${problems}`);
 process.exit(problems > 0 ? 1 : 0);

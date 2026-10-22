@@ -2,7 +2,6 @@
   "gotIt": "Got it",
   "showTranslation": "Show translation",
   "write": "Write",
-  "phraseHint": "Tap a word and I'll show you what it means.",
   "riddle": {
     "pick": [
       "How do you say “{{word}}” in Chinese?",
@@ -34,6 +33,9 @@
     "empty": "Phrases the panda tells you will gather here."
   },
   "whyNote": "Why do people say this?",
-  "inlineHint": "Tap a character in the text",
-  "listen": "Listen to the phrase"
+  "listen": "Listen to the phrase",
+  "pandaName": "Panda",
+  "review": "Review",
+  "toStage": "Stage",
+  "notInDictionary": "This word isn't in the dictionary yet"
 }

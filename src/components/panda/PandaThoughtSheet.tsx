@@ -1,9 +1,9 @@
 // src/components/panda/PandaThoughtSheet.tsx
 //
 // Реплика панды по тапу на облачко (см. utils/panda/thoughts):
-//   phrase        — фраза на китайском: слова разбираются тапом, значки — пиньинь,
-//                   перевод, «Почему так говорят?»; «Понятно» — фраза уходит в коллекцию
-//                   профиля;
+//   phrase        — фраза на китайском (PandaPhraseView): слова — тултипом, перевод,
+//                   пояснение; у вопросов — варианты ответа и реакция панды.
+//                   «Понятно» — фраза (и ответ) уходят в коллекцию профиля;
 //   riddle/pick   — «Как по-китайски …?» и три иероглифа; после ответа — правильный
 //                   с пиньинем, «Понятно»;
 //   riddle/write  — «Покажешь, как пишется …?» → «Написать» открывает экран письма.
@@ -67,7 +67,7 @@ function ThoughtContent({
   onClose: () => void;
 }) {
   if (thought.kind === "phrase") {
-    return <PhraseThought thought={thought} onDone={onDone} />;
+    return <PhraseThought thought={thought} onDone={onDone} onClose={onClose} />;
   }
 
   const word = findWord(thought.wordId);
@@ -86,24 +86,40 @@ function ThoughtContent({
 function PhraseThought({
   thought,
   onDone,
+  onClose,
 }: {
   thought: Extract<PandaThought, { kind: "phrase" }>;
   onDone: () => void;
+  onClose: () => void;
 }) {
   const { t } = useTranslation("pandaThoughts");
   const phrase = findPandaPhrase(thought.phraseId);
+  const [answer, setAnswer] = useState<string | undefined>();
 
   if (!phrase) return <MainButton label="OK" onPress={onDone} />;
 
+  // У вопроса «Понятно» — после ответа
+  const waitsForAnswer = !!phrase.replies && !answer;
+
   const finish = () => {
-    usePandaStore.getState().collectPhrase(phrase.id);
+    usePandaStore.getState().collectPhrase(phrase.id, answer);
     onDone();
   };
 
   return (
     <View className="gap-5">
-      <PandaPhraseView phrase={phrase} />
-      <MainButton label={t("gotIt")} onPress={finish} />
+      <PandaPhraseView
+        phrase={phrase}
+        answer={answer}
+        onAnswer={setAnswer}
+        from="pet"
+        onLeave={onClose}
+      />
+      <MainButton
+        label={t("gotIt")}
+        onPress={finish}
+        disabled={waitsForAnswer}
+      />
     </View>
   );
 }

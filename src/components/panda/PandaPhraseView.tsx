@@ -1,26 +1,33 @@
 // src/components/panda/PandaPhraseView.tsx
 //
-// Фраза панды, которую можно разобрать. Сверху справа — значки:
-//   👁 пиньинь над словами (общая настройка, как в тренировках);
-//   文A перевод фразы;
-//   ⓘ «Почему так говорят?» — только у фраз с пояснением.
-// Под фразой — одна панель, в ней по очереди: подсказка «тапни по слову», слово
-// (иероглиф, пиньинь, перевод; тап — озвучка), перевод или пояснение. Иероглифы
-// в переводе и пояснении тоже нажимаются: слово показывается строкой внизу панели.
+// Фраза панды как маленький диалог, сверху вниз:
+//   - шапка: значок панды и имя слева, справа озвучка и глазик пиньиня;
+//   - фраза по словам (пиньинь при скрытии только прозрачный — фраза не прыгает);
+//   - «Показать перевод» — плашка, которая на месте превращается в перевод;
+//   - пояснение «Почему так говорят?» — сразу карточкой, если оно есть;
+//   - у вопросов — варианты ответа; выбранный ответ встаёт справа, как сообщение
+//     пользователя, а под ним — реакция панды.
+// Тап по слову (во фразе, в ответе панды, по иероглифу в пояснении) — тултип рядом:
+// пиньинь, перевод, «Повторение» и «Этап». Тап мимо тултипа его закрывает.
 //
-// Чтобы окно не прыгало:
-//   - скрытый пиньинь только прозрачный, место под ним остаётся (PandaText);
-//   - высота панели — по самому высокому её содержимому: все варианты лежат в ряд
-//     в одной полосе, видна только нужная, а высота полосы — по самой высокой.
+// compact — в списке профиля: без шапки и без выбора ответа (ответ, если был, показан).
 
-import InfoIcon from "@/assets/images/icons/info.svg";
-import LanguagesIcon from "@/assets/images/icons/languages.svg";
+import FlagIcon from "@/assets/images/icons/flag.svg";
+import PandaIcon from "@/assets/images/icons/panda.svg";
+import ReviewIcon from "@/assets/images/icons/bookmark.svg";
+import VolumeIcon from "@/assets/images/icons/volume.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
 import { PinyinToggle } from "@/components/ui/PinyinToggle";
-import type { PandaPhrase } from "@/content/panda/thoughtPhrases";
+import type {
+  PandaPhrase,
+  PhraseLine,
+  PhraseReply,
+} from "@/content/panda/thoughtPhrases";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
+import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
+import { findWordStage } from "@/utils/dictionary";
 import {
   findWordByHanzi,
   phraseText,
@@ -28,30 +35,45 @@ import {
   segmentPhrase,
   type PhraseSegment,
 } from "@/utils/panda/phraseSegments";
+import { useRouter } from "expo-router";
 import i18n from "i18next";
-import { useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+  type GestureResponderEvent,
+} from "react-native";
 import { PandaText } from "./PandaText";
 
 type IconProps = { width: number; height: number; color: string };
 
-type Panel = "hint" | "word" | "translation" | "note";
+/** Ширина тултипа слова. */
+const TIP_WIDTH = 260;
+/** Насколько ниже точки касания показывать тултип. */
+const TIP_OFFSET = 28;
+/** Примерная высота тултипа: если снизу места нет, он открывается над словом. */
+const TIP_HEIGHT = 140;
 
 interface PandaPhraseViewProps {
   phrase: PandaPhrase;
   size?: number;
-  /**
-   * В списке (профиль): без подсказки «тапни по слову», панель появляется
-   * только когда что-то открыто.
-   */
   compact?: boolean;
+  /** Выбранный ответ на вопрос (id). */
+  answer?: string;
+  /** Выбрали ответ (только не в compact). */
+  onAnswer?: (replyId: string) => void;
+  /** Откуда открыт этап по кнопке «Этап» — туда вернёт «назад». */
+  from: "pet" | "profile";
+  /** Перед переходом на другой экран (например, закрыть панель). */
+  onLeave?: () => void;
 }
 
 const isRussian = () => !!i18n.language?.startsWith("ru");
 
-export function phraseTranslation(phrase: PandaPhrase): string {
-  return isRussian() ? phrase.ru : phrase.en || phrase.ru;
+export function lineTranslation(line: PhraseLine): string {
+  return isRussian() ? line.ru : line.en || line.ru;
 }
 
 export function phraseNote(phrase: PandaPhrase): string | undefined {
@@ -59,230 +81,384 @@ export function phraseNote(phrase: PandaPhrase): string | undefined {
   return isRussian() ? phrase.note.ru : phrase.note.en || phrase.note.ru;
 }
 
+interface Tip {
+  segment: PhraseSegment;
+  x: number;
+  y: number;
+}
+
 export function PandaPhraseView({
   phrase,
   size,
   compact = false,
+  answer,
+  onAnswer,
+  from,
+  onLeave,
 }: PandaPhraseViewProps) {
   const { t } = useTranslation("pandaThoughts");
   const { speakForced } = useSpeakHanzi();
   const segments = useMemo(() => segmentPhrase(phrase), [phrase]);
 
-  const [panel, setPanel] = useState<Panel>("hint");
-  /** Слово из фразы (панель «word»). */
-  const [word, setWord] = useState<PhraseSegment | null>(null);
-  /** Иероглиф, нажатый в переводе или пояснении (строка внизу панели). */
-  const [inlineWord, setInlineWord] = useState<PhraseSegment | null>(null);
+  // Тултип слова: координаты внутри этого блока
+  const rootRef = useRef<View>(null);
+  const [width, setWidth] = useState(0);
+  const [height, setHeight] = useState(0);
+  const [tip, setTip] = useState<Tip | null>(null);
 
-  const selectWord = (segment: PhraseSegment) => {
-    setInlineWord(null);
-    if (panel === "word" && segment === word) {
-      setPanel("hint");
-      setWord(null);
+  const openTip = (segment: PhraseSegment, e: GestureResponderEvent) => {
+    speakForced(segment.text);
+    if (tip?.segment.text === segment.text) {
+      setTip(null);
       return;
     }
-    setWord(segment);
-    setPanel("word");
-    speakForced(segment.text);
-  };
-
-  const toggle = (next: "translation" | "note") => {
-    setInlineWord(null);
-    setWord(null);
-    setPanel((current) => (current === next ? "hint" : next));
-  };
-
-  const selectInline = (segment: PhraseSegment) => {
-    setInlineWord((current) => (current?.text === segment.text ? null : segment));
-    speakForced(segment.text);
+    const { pageX, pageY } = e.nativeEvent;
+    rootRef.current?.measureInWindow((x, y) => {
+      setTip({ segment, x: pageX - x, y: pageY - y });
+    });
   };
 
   const note = phraseNote(phrase);
-
-  const pages: Array<{ id: Panel; content: ReactNode }> = [
-    {
-      id: "hint",
-      content: compact ? null : (
-        <Text className="font-nunito text-small text-textSecondary">
-          {t("phraseHint")}
-        </Text>
-      ),
-    },
-    {
-      id: "word",
-      content: word && (
-        <WordLine segment={word} onSpeak={() => speakForced(word.text)} />
-      ),
-    },
-    {
-      id: "translation",
-      content: (
-        <MixedText
-          text={phraseTranslation(phrase)}
-          className="font-nunito text-lead text-text"
-          selected={inlineWord}
-          onHanziPress={selectInline}
-        />
-      ),
-    },
-    ...(note
-      ? [
-          {
-            id: "note" as const,
-            content: (
-              <MixedText
-                text={note}
-                className="font-nunito text-body text-text"
-                selected={inlineWord}
-                onHanziPress={selectInline}
-              />
-            ),
-          },
-        ]
-      : []),
-  ];
-
-  const hasInline = panel === "translation" || panel === "note";
-
-  return (
-    <View className="gap-3">
-      {/* Значки */}
-      <View className="flex-row items-center justify-end gap-4">
-        {/* В списке профиля глазик один, в шапке блока */}
-        {!compact && <PinyinToggle />}
-        <IconToggle
-          Icon={LanguagesIcon}
-          label={t("showTranslation")}
-          active={panel === "translation"}
-          onPress={() => toggle("translation")}
-        />
-        {note && (
-          <IconToggle
-            Icon={InfoIcon}
-            label={t("whyNote")}
-            active={panel === "note"}
-            onPress={() => toggle("note")}
-          />
-        )}
-      </View>
-
-      <Pressable
-        onPress={() => speakForced(phraseText(phrase))}
-        className="self-start active:opacity-70"
-        accessibilityRole="button"
-        accessibilityLabel={t("listen")}
-      >
-        <PandaText
-          segments={segments}
-          size={size}
-          selected={panel === "word" ? word : null}
-          onWordPress={selectWord}
-        />
-      </Pressable>
-
-      {(!compact || panel !== "hint") && (
-        <View className="rounded-2xl bg-background/70 px-4 py-3">
-          <StablePages pages={pages} active={panel} />
-          {/* Строка под переводом и пояснением: место есть всегда (на подсказке и
-              слове она просто прозрачная), чтобы панель не меняла высоту */}
-          {(hasInline || !compact) && (
-            <View
-              className="mt-2 min-h-11 justify-center border-t border-border pt-2"
-              style={{ opacity: hasInline ? 1 : 0 }}
-              pointerEvents={hasInline ? "auto" : "none"}
-            >
-              {inlineWord ? (
-                <WordLine
-                  segment={inlineWord}
-                  onSpeak={() => speakForced(inlineWord.text)}
-                />
-              ) : (
-                <Text className="font-nunito text-caption text-textSecondary">
-                  {t("inlineHint")}
-                </Text>
-              )}
-            </View>
-          )}
-        </View>
-      )}
-    </View>
-  );
-}
-
-/**
- * Все страницы лежат в ряд, полоса сдвигается к нужной. Высота ряда — по самой
- * высокой странице, поэтому при переключении высота не меняется.
- */
-function StablePages({
-  pages,
-  active,
-}: {
-  pages: Array<{ id: Panel; content: ReactNode }>;
-  active: Panel;
-}) {
-  const [width, setWidth] = useState(0);
-  const index = Math.max(
-    0,
-    pages.findIndex((page) => page.id === active),
-  );
-
-  return (
-    <View
-      className="overflow-hidden"
-      onLayout={(e) => setWidth(Math.round(e.nativeEvent.layout.width))}
-    >
-      {width === 0 ? (
-        // Первый кадр, ширина ещё неизвестна — только нужная страница
-        <View>{pages[index]?.content}</View>
-      ) : (
-        <View
-          className="flex-row"
-          style={{ width: width * pages.length, marginLeft: -width * index }}
-        >
-          {pages.map((page) => (
-            <View
-              key={page.id}
-              style={{ width, opacity: page.id === active ? 1 : 0 }}
-              pointerEvents={page.id === active ? "auto" : "none"}
-              className="justify-center"
-            >
-              {page.content}
-            </View>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
-
-/** Иероглиф, пиньинь и перевод одной строкой; тап — озвучка. */
-function WordLine({
-  segment,
-  onSpeak,
-}: {
-  segment: PhraseSegment;
-  onSpeak: () => void;
-}) {
-  const { t } = useTranslation();
+  const reply = phrase.replies?.find((r) => r.id === answer);
 
   return (
     <Pressable
-      onPress={onSpeak}
-      className="flex-row items-center gap-3 active:opacity-70"
+      ref={rootRef}
+      onPress={() => setTip(null)}
+      onLayout={(e) => {
+        setWidth(e.nativeEvent.layout.width);
+        setHeight(e.nativeEvent.layout.height);
+      }}
+      className="gap-4"
+      // Тап по пустому месту только закрывает тултип, без отклика
+      android_disableSound
     >
-      <Hanzi size="sm">{segment.text}</Hanzi>
-      <View className="flex-1">
-        <Pinyin size="sm">{segment.pinyin || " "}</Pinyin>
-        <Text
-          className="font-nunito text-small text-textSecondary"
-          numberOfLines={2}
-        >
-          {wordTranslation(segment, t)}
-        </Text>
-      </View>
+      {!compact && (
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-2">
+            <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
+              <PandaIcon width={18} height={18} />
+            </View>
+            <Text className="font-nunitoBold text-body text-text">
+              {t("pandaName")}
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-4">
+            <Pressable
+              onPress={() => speakForced(phraseText(phrase))}
+              hitSlop={8}
+              className="active:opacity-60"
+              accessibilityRole="button"
+              accessibilityLabel={t("listen")}
+            >
+              <VolumeIcon width={24} height={24} color={`${colors.text}99`} />
+            </Pressable>
+            <PinyinToggle />
+          </View>
+        </View>
+      )}
+
+      <PandaText
+        segments={segments}
+        size={size}
+        selected={tip?.segment ?? null}
+        onWordPress={openTip}
+      />
+
+      <TranslationReveal key={phrase.id} line={phrase} compact={compact} />
+
+      {note && (
+        <View className="rounded-2xl bg-primary/10 px-4 py-3">
+          <Text className="mb-1 font-nunitoBold text-small text-primary">
+            {t("whyNote")}
+          </Text>
+          <MixedText
+            text={note}
+            className="font-nunito text-body text-text"
+            selected={tip?.segment ?? null}
+            onHanziPress={openTip}
+          />
+        </View>
+      )}
+
+      {/* Вопрос: варианты ответа или выбранный ответ и реакция панды */}
+      {phrase.replies &&
+        (reply ? (
+          <Exchange
+            reply={reply}
+            selected={tip?.segment ?? null}
+            onWordPress={openTip}
+          />
+        ) : (
+          !compact &&
+          onAnswer && (
+            <View className="gap-2">
+              {phrase.replies.map((option) => (
+                <ReplyOption
+                  key={option.id}
+                  reply={option}
+                  onPress={() => {
+                    setTip(null);
+                    speakForced(phraseText(option));
+                    onAnswer(option.id);
+                  }}
+                />
+              ))}
+            </View>
+          )
+        ))}
+
+      {tip && width > 0 && (
+        <WordTip
+          tip={tip}
+          containerWidth={width}
+          containerHeight={height}
+          from={from}
+          onLeave={onLeave}
+          onClose={() => setTip(null)}
+        />
+      )}
     </Pressable>
   );
 }
+
+// ── Перевод ──────────────────────────────────────────────────────────────────
+
+/** Плашка «Показать перевод», которая на том же месте превращается в перевод. */
+function TranslationReveal({
+  line,
+  compact,
+}: {
+  line: PhraseLine;
+  compact: boolean;
+}) {
+  const { t } = useTranslation("pandaThoughts");
+  const [shown, setShown] = useState(false);
+
+  if (shown) {
+    return (
+      <Pressable
+        onPress={() => setShown(false)}
+        className="min-h-12 justify-center active:opacity-70"
+      >
+        <Text
+          className={`font-nunito text-text ${compact ? "text-body" : "text-lead"}`}
+        >
+          {lineTranslation(line)}
+        </Text>
+      </Pressable>
+    );
+  }
+
+  return (
+    <Pressable
+      onPress={() => setShown(true)}
+      className="min-h-12 justify-center rounded-2xl border border-dashed border-primary/40 px-4 active:opacity-70"
+      accessibilityRole="button"
+    >
+      <Text className="font-nunito text-body text-primary">
+        {t("showTranslation")}
+      </Text>
+    </Pressable>
+  );
+}
+
+// ── Ответы ───────────────────────────────────────────────────────────────────
+
+function ReplyOption({
+  reply,
+  onPress,
+}: {
+  reply: PhraseReply;
+  onPress: () => void;
+}) {
+  const segments = useMemo(() => segmentPhrase(reply), [reply]);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      className="self-end rounded-2xl rounded-br-md border border-primary/40 bg-surface px-4 py-2 active:bg-primary/10"
+      accessibilityRole="button"
+      accessibilityLabel={phraseText(reply)}
+    >
+      <PandaText segments={segments} size={22} />
+      <Text className="text-right font-nunito text-caption text-textSecondary">
+        {lineTranslation(reply)}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** Выбранный ответ (справа, как сообщение пользователя) и реакция панды (слева). */
+function Exchange({
+  reply,
+  selected,
+  onWordPress,
+}: {
+  reply: PhraseReply;
+  selected: PhraseSegment | null;
+  onWordPress: (segment: PhraseSegment, e: GestureResponderEvent) => void;
+}) {
+  const replySegments = useMemo(() => segmentPhrase(reply), [reply]);
+  const reactionSegments = useMemo(
+    () => (reply.reaction ? segmentPhrase(reply.reaction) : []),
+    [reply],
+  );
+
+  return (
+    <View className="gap-2">
+      <View className="self-end rounded-2xl rounded-br-md bg-primary px-4 py-2">
+        <PandaText segments={replySegments} size={22} light />
+      </View>
+      {reply.reaction && (
+        <View className="self-start rounded-2xl rounded-bl-md bg-background/80 px-4 py-2">
+          <PandaText
+            segments={reactionSegments}
+            size={24}
+            selected={selected}
+            onWordPress={onWordPress}
+          />
+          <Text className="font-nunito text-small text-textSecondary">
+            {lineTranslation(reply.reaction)}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── Тултип слова ─────────────────────────────────────────────────────────────
+
+function WordTip({
+  tip,
+  containerWidth,
+  containerHeight,
+  from,
+  onLeave,
+  onClose,
+}: {
+  tip: Tip;
+  containerWidth: number;
+  containerHeight: number;
+  from: "pet" | "profile";
+  onLeave?: () => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const { t: tp } = useTranslation("pandaThoughts");
+  const router = useRouter();
+  const { segment } = tip;
+  const word = segment.word;
+
+  const inReview = useWordProgressStore((s) =>
+    word ? !!s.review[word.vocabularyId] : false,
+  );
+  const toggleReview = useWordProgressStore((s) => s.toggleReview);
+  const stage = word ? findWordStage(word.vocabularyId) : undefined;
+
+  const tipWidth = Math.min(TIP_WIDTH, containerWidth);
+  const left = Math.max(
+    0,
+    Math.min(tip.x - tipWidth / 2, containerWidth - tipWidth),
+  );
+
+  // Внизу блока места нет (дальше край панели) — открываем над словом
+  const above =
+    tip.y + TIP_OFFSET + TIP_HEIGHT > containerHeight &&
+    tip.y - TIP_OFFSET - TIP_HEIGHT > 0;
+  const position = above
+    ? { bottom: containerHeight - tip.y + TIP_OFFSET / 2 }
+    : { top: tip.y + TIP_OFFSET };
+
+  const openStage = () => {
+    if (!stage) return;
+    onClose();
+    onLeave?.();
+    router.push({
+      pathname: "/games/path/stage" as any,
+      params: { id: stage.id, from },
+    });
+  };
+
+  return (
+    <Pressable
+      onPress={onClose}
+      className="absolute gap-2 rounded-2xl border border-border bg-surface p-3"
+      style={{
+        ...position,
+        left,
+        width: tipWidth,
+        elevation: 8,
+        shadowColor: "#000",
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+      }}
+    >
+      <View className="flex-row items-center gap-3">
+        <Hanzi size="sm">{segment.text}</Hanzi>
+        <Pinyin size="md">{segment.pinyin || word?.pinyin || ""}</Pinyin>
+      </View>
+      <Text className="font-nunito text-small text-text" numberOfLines={3}>
+        {wordTranslation(segment, t, tp("notInDictionary"))}
+      </Text>
+
+      {(word || stage) && (
+        <View className="flex-row gap-2">
+          {word && (
+            <TipButton
+              Icon={ReviewIcon}
+              label={tp("review")}
+              active={inReview}
+              onPress={() => toggleReview(word.vocabularyId)}
+            />
+          )}
+          {stage && (
+            <TipButton
+              Icon={FlagIcon}
+              label={tp("toStage")}
+              active={false}
+              onPress={openStage}
+            />
+          )}
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+function TipButton({
+  Icon,
+  label,
+  active,
+  onPress,
+}: {
+  Icon: ComponentType<IconProps>;
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`min-h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-full px-3 active:opacity-70 ${
+        active ? "bg-primary" : "border border-primary/30 bg-surface"
+      }`}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+    >
+      <Icon width={16} height={16} color={active ? "#FFFFFF" : colors.primary} />
+      <Text
+        numberOfLines={1}
+        className={`font-nunitoBold text-caption ${active ? "text-white" : "text-text"}`}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+// ── Текст с иероглифами ──────────────────────────────────────────────────────
 
 /** Обычный текст, в котором иероглифы подчёркнуты и нажимаются. */
 function MixedText({
@@ -294,7 +470,7 @@ function MixedText({
   text: string;
   className: string;
   selected: PhraseSegment | null;
-  onHanziPress: (segment: PhraseSegment) => void;
+  onHanziPress: (segment: PhraseSegment, e: GestureResponderEvent) => void;
 }) {
   const parts = useMemo(() => segmentMixedText(text), [text]);
 
@@ -304,7 +480,7 @@ function MixedText({
         part.isHan ? (
           <Text
             key={i}
-            onPress={() => onHanziPress(part)}
+            onPress={(e) => onHanziPress(part, e)}
             suppressHighlighting
             style={{
               color: colors.primary,
@@ -323,48 +499,18 @@ function MixedText({
   );
 }
 
-function IconToggle({
-  Icon,
-  label,
-  active,
-  onPress,
-}: {
-  Icon: ComponentType<IconProps>;
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={8}
-      className={`h-9 w-9 items-center justify-center rounded-full active:opacity-60 ${
-        active ? "bg-primary" : ""
-      }`}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={label}
-    >
-      <Icon
-        width={20}
-        height={20}
-        color={active ? "#FFFFFF" : `${colors.text}99`}
-      />
-    </Pressable>
-  );
-}
-
 function wordTranslation(
   segment: PhraseSegment,
   t: (key: string) => string,
+  missing: string,
 ): string {
   if (segment.word) return t(segment.word.translation);
 
   // Слова целиком в словаре нет — по иероглифам
-  return Array.from(segment.text)
-    .map((char) => {
-      const word = findWordByHanzi(char);
-      return word ? `${char} — ${t(word.translation)}` : char;
-    })
-    .join("; ");
+  const chars = Array.from(segment.text).map((char) => {
+    const word = findWordByHanzi(char);
+    return word ? `${char} — ${t(word.translation)}` : null;
+  });
+  const known = chars.filter(Boolean);
+  return known.length > 0 ? known.join("; ") : missing;
 }
