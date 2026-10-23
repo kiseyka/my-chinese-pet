@@ -410,8 +410,8 @@ export const pandaPhrases: PandaPhrase[] = [
     en: "Hi! (literally: “Have you eaten?”)",
     pinyin: { 吗: "ma" },
     note: {
-      ru: "Это приветствие, а не вопрос про еду. Так показывают заботу: «у тебя всё хорошо?». Обычай связывают со старой сельской книгой правил вежливости эпохи Сун: гость спрашивал, поел ли хозяин, и если нет — ждал за дверью, чтобы не мешать обеду. Отвечают коротко: 吃了 (поел) или 还没 (ещё нет). Сейчас так говорят реже, чаще старшие.",
-      en: "It's a greeting, not a question about food — a way to show you care. The custom is traced to an old Song-dynasty village etiquette book: a visitor asked if the host had eaten, and if not, waited outside so as not to interrupt the meal. Short answers: 吃了 (I have) or 还没 (not yet). Today it's less common, more often said by older people.",
+      ru: "Это приветствие, а не вопрос про еду. Так показывают заботу: «у тебя всё хорошо?». Обычно это объясняют тем, что сытость веками была главной заботой: если человек поел, значит, всё в порядке. Отвечают коротко: 吃了 (поел) или 还没 (ещё нет). Сейчас так говорят реже, чаще старшие.",
+      en: "It's a greeting, not a question about food — a way to show you care. It's usually explained by centuries when having enough to eat was the main worry: if you've eaten, all is well. Short answers: 吃了 (I have) or 还没 (not yet). Today it's less common, more often said by older people.",
       terms: {
         "吃了": { pinyin: "chī le", ru: "поел(а)", en: "I've eaten" },
         "还没": { pinyin: "hái méi", ru: "ещё нет", en: "not yet" },
@@ -421,8 +421,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "ate",
         words: ["吃", "了", "。"],
-        ru: "Ага, уже.",
-        en: "Yes, I have.",
+        ru: "Да, уже.",
+        en: "Yes, already.",
         reaction: {
           words: ["我", "也", "吃", "了", "！"],
           ru: "Я тоже!",
@@ -672,8 +672,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "yes",
         words: ["我", "很", "喜欢", "茶", "！"],
-        ru: "Очень люблю!",
-        en: "I love it!",
+        ru: "Я очень люблю чай!",
+        en: "I really like tea!",
         reaction: {
           words: ["我们", "一起", "喝", "茶", "吧", "！"],
           ru: "Давай вместе попьём!",
@@ -684,8 +684,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "no",
         words: ["我", "不", "喜欢", "。"],
-        ru: "Не очень.",
-        en: "Not really.",
+        ru: "Не люблю.",
+        en: "I don't like it.",
         reaction: {
           words: ["那", "我们", "喝", "水", "吧", "！"],
           ru: "Тогда попьём воды!",
@@ -707,8 +707,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "rice",
         words: ["我", "喜欢", "米饭", "。"],
-        ru: "Рис.",
-        en: "Rice.",
+        ru: "Я люблю рис.",
+        en: "I like rice.",
         reaction: {
           words: ["南方", "人", "也", "喜欢", "米饭", "！"],
           ru: "На юге тоже любят рис!",
@@ -718,8 +718,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "noodles",
         words: ["我", "喜欢", "面条", "。"],
-        ru: "Лапшу.",
-        en: "Noodles.",
+        ru: "Я люблю лапшу.",
+        en: "I like noodles.",
         reaction: {
           words: ["北方", "人", "也", "喜欢", "面条", "！"],
           ru: "На севере тоже любят лапшу!",
@@ -729,8 +729,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "dumplings",
         words: ["我", "喜欢", "饺子", "。"],
-        ru: "Пельмени.",
-        en: "Dumplings.",
+        ru: "Я люблю пельмени.",
+        en: "I like dumplings.",
         reaction: {
           words: ["我", "也", "想", "吃", "饺子", "！"],
           ru: "Я тоже хочу пельменей!",
@@ -748,8 +748,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "good",
         words: ["天气", "很", "好", "！"],
-        ru: "Отличная!",
-        en: "It's lovely!",
+        ru: "Погода хорошая!",
+        en: "The weather is nice!",
         reaction: {
           words: ["我们", "去", "公园", "吧", "！"],
           ru: "Пойдём в парк!",
@@ -790,8 +790,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "no",
         words: ["不", "累", "！"],
-        ru: "Нет!",
-        en: "Not at all!",
+        ru: "Не устаю!",
+        en: "I'm not tired!",
         pinyin: { 不: "bú" },
         reaction: {
           words: ["太", "好", "了", "！", "加油", "！"],
@@ -802,8 +802,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "a-bit",
         words: ["有点儿", "累", "。"],
-        ru: "Немного.",
-        en: "A little.",
+        ru: "Немного устаю.",
+        en: "A little tired.",
         pinyin: { 有点儿: "yǒu diǎnr" },
         reaction: {
           words: ["我们", "休息", "一会儿", "吧", "。"],
@@ -830,8 +830,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "eight",
         words: ["我", "喜欢", "八", "。"],
-        ru: "Восемь.",
-        en: "Eight.",
+        ru: "Мне нравится восемь.",
+        en: "I like eight.",
         reaction: {
           words: ["八", "是", "好", "数字", "！"],
           ru: "Восьмёрка — счастливое число!",
@@ -841,8 +841,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "six",
         words: ["我", "喜欢", "六", "。"],
-        ru: "Шесть.",
-        en: "Six.",
+        ru: "Мне нравится шесть.",
+        en: "I like six.",
         reaction: {
           words: ["六", "也", "很", "好", "！"],
           ru: "Шестёрка тоже хорошая!",
@@ -852,8 +852,8 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "four",
         words: ["我", "喜欢", "四", "。"],
-        ru: "Четыре.",
-        en: "Four.",
+        ru: "Мне нравится четыре.",
+        en: "I like four.",
         reaction: {
           words: ["四", "？", "真", "的", "吗", "？"],
           ru: "Четыре? Правда?",

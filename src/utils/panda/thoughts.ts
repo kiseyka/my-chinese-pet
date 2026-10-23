@@ -23,12 +23,14 @@
 //   - не больше одной мысли каждого вида в день (то есть не больше MAX_PER_DAY);
 //   - между мыслями пауза MIN_GAP_MS — облачко не встречает после каждой тренировки;
 //   - мысль вчерашнего дня, которую так и не открыли, пропадает;
-//   - фразы не повторяются: рассказанная фраза больше не предлагается;
+//   - фразы не повторяются: рассказанная фраза больше не предлагается, а показанная,
+//     но не дочитанная (панель смахнули) — не раньше чем через RECENT_PHRASES_LIMIT
+//     других фраз (если есть из чего выбрать);
 //   - слово загадки не повторяется среди последних нескольких.
 
 import { pandaPhrases, type PandaPhrase } from "@/content/panda/thoughtPhrases";
 import { useActivityStore } from "@/store/activityStore";
-import { usePandaStore } from "@/store/pandaStore";
+import { rememberPhrase, usePandaStore } from "@/store/pandaStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { dayKey } from "@/utils/activity";
 import { shuffle } from "@/utils/shuffle";
@@ -86,8 +88,15 @@ export function getAvailablePhrases(): PandaPhrase[] {
   });
 }
 
+/** Случайная фраза; недавно показанные — только если других нет. */
+function pickPhrase(phrases: PandaPhrase[]): PandaPhrase | undefined {
+  const recent = new Set(usePandaStore.getState().recentPhraseIds);
+  const fresh = phrases.filter((phrase) => !recent.has(phrase.id));
+  return shuffle(fresh.length > 0 ? fresh : phrases)[0];
+}
+
 function buildPhraseThought(now: number): PandaThought | null {
-  const [phrase] = shuffle(getAvailablePhrases());
+  const phrase = pickPhrase(getAvailablePhrases());
   return phrase ? { kind: "phrase", phraseId: phrase.id, createdAt: now } : null;
 }
 
@@ -162,9 +171,14 @@ function pickTestThought(type: TestThought, now: number): PandaThought | null {
     // «Вопрос» — только фразы с вариантами ответа
     const fits = (p: PandaPhrase) => type === "phrase" || !!p.replies;
     const available = getAvailablePhrases().filter(fits);
-    const [phrase] = shuffle(
+    const phrase = pickPhrase(
       available.length > 0 ? available : pandaPhrases.filter(fits),
     );
+    if (phrase) {
+      usePandaStore.setState((state) => ({
+        recentPhraseIds: rememberPhrase(state.recentPhraseIds, phrase.id),
+      }));
+    }
     return phrase ? { kind: "phrase", phraseId: phrase.id, createdAt: now } : null;
   }
 
@@ -204,5 +218,6 @@ export function resetTestThoughts() {
     snoozed: {},
     playTimes: [],
     recentRiddleWordIds: [],
+    recentPhraseIds: [],
   });
 }

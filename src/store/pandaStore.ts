@@ -87,6 +87,8 @@ interface PandaState {
   collectedPhrases: CollectedPhrase[];
   /** Последние слова загадок. */
   recentRiddleWordIds: string[];
+  /** Последние показанные фразы (даже если их не дочитали) — не повторять подряд. */
+  recentPhraseIds: string[];
   /**
    * Ответы на вопросы панды: id фразы → id ответа («what-color» → «green»).
    * По ним открываются фразы с requires — панда помнит, что ей сказали.
@@ -127,6 +129,16 @@ interface PandaActions {
 
 type PandaStore = PandaState & PandaActions;
 
+/** Сколько последних фраз не предлагать снова. */
+export const RECENT_PHRASES_LIMIT = 5;
+
+export function rememberPhrase(recent: string[], phraseId: string): string[] {
+  return [phraseId, ...recent.filter((id) => id !== phraseId)].slice(
+    0,
+    RECENT_PHRASES_LIMIT,
+  );
+}
+
 export const usePandaStore = create<PandaStore>()(
   persist(
     (set) => ({
@@ -143,6 +155,7 @@ export const usePandaStore = create<PandaStore>()(
       seenPhraseIds: [],
       collectedPhrases: [],
       recentRiddleWordIds: [],
+      recentPhraseIds: [],
       answers: {},
       playTimes: [],
 
@@ -195,6 +208,10 @@ export const usePandaStore = create<PandaStore>()(
                     ),
                   ].slice(0, RECENT_RIDDLES_LIMIT)
                 : state.recentRiddleWordIds,
+            recentPhraseIds:
+              thought.kind === "phrase"
+                ? rememberPhrase(state.recentPhraseIds, thought.phraseId)
+                : state.recentPhraseIds,
           };
         }),
 
@@ -257,6 +274,7 @@ export const usePandaStore = create<PandaStore>()(
         seenPhraseIds: state.seenPhraseIds,
         collectedPhrases: state.collectedPhrases,
         recentRiddleWordIds: state.recentRiddleWordIds,
+        recentPhraseIds: state.recentPhraseIds,
         answers: state.answers,
         playTimes: state.playTimes,
       }),

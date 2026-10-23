@@ -13,8 +13,8 @@
 // из note.terms, из самой фразы или из словаря.
 // Тап мимо тултипа его закрывает.
 // Варианты ответа — короткие (до 3 иероглифов) сеткой 2×2, длинные — списком на всю
-// ширину. Пиньинь над иероглифами — по глазику, перевод под ними — по значку 文A;
-// скрытые строки места не занимают.
+// ширину. Пиньинь над иероглифами — по глазику (скрытый места не занимает), перевод
+// под ними — по значку 文A (место под него оставлено всегда, ничего не прыгает).
 // После ответа: свой ответ и реакция панды озвучиваются подряд, у обоих есть озвучка,
 // перевод реакции — по ссылке «Перевод».
 //
@@ -328,8 +328,8 @@ const hanCount = (reply: PhraseReply) => hanOnly(phraseText(reply)).length;
 
 /**
  * Варианты ответа: короткие — сеткой 2×2 (по центру), длинные — списком на всю ширину.
- * Над иероглифами — пиньинь (глазик в шапке), под ними — перевод (значок 文A).
- * Скрытые строки места не занимают: карточки плотные, без пустоты.
+ * Над иероглифами — пиньинь (глазик в шапке; скрытый места не занимает), под ними —
+ * перевод (значок 文A; место под него есть всегда, чтобы карточки не прыгали).
  */
 function ReplyOptions({
   replies,
@@ -395,15 +395,18 @@ function ReplyOption({
       accessibilityLabel={phraseText(reply)}
     >
       <PandaText segments={segments} size={grid ? 26 : 24} collapsePinyin />
-      {showTranslation && (
-        <Text
-          className={`px-1 font-nunito text-small text-textSecondary ${
-            grid ? "text-center" : ""
-          }`}
-        >
-          {lineTranslation(reply)}
-        </Text>
-      )}
+      {/* Перевод занимает своё место всегда, 文A только проявляет его:
+          карточки не прыгают */}
+      <Text
+        className={`px-1 font-nunito text-small text-textSecondary ${
+          grid ? "text-center" : ""
+        }`}
+        style={{ opacity: showTranslation ? 1 : 0 }}
+        accessibilityElementsHidden={!showTranslation}
+        importantForAccessibility={showTranslation ? "auto" : "no-hide-descendants"}
+      >
+        {lineTranslation(reply)}
+      </Text>
     </Pressable>
   );
 }
