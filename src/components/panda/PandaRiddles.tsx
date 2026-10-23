@@ -23,7 +23,7 @@ import VolumeIcon from "@/assets/images/icons/volume.svg";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
-import { usePandaListening, usePandaMood } from "./PandaMood";
+import { usePandaMood, usePandaWaiting } from "./PandaMood";
 
 /** Сколько вариантов в загадке (правильный + неправильные). */
 const RIDDLE_OPTIONS = 3;
@@ -86,8 +86,8 @@ export function PickRiddle({
   const answered = picked !== null;
   const correct = picked?.vocabularyId === word.vocabularyId;
 
-  // Сцена разговора: панда ждёт ответа, потом радуется или удивляется
-  usePandaListening(!answered);
+  // Сцена разговора: панда думает над загадкой, потом радуется или удивляется
+  usePandaWaiting(!answered, "thinking");
   const { react } = usePandaMood();
 
   const pick = (option: Word) => {

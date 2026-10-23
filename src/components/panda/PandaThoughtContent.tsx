@@ -24,7 +24,7 @@ import * as Speech from "expo-speech";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
-import { usePandaListening, usePandaMood } from "./PandaMood";
+import { usePandaMood, usePandaWaiting } from "./PandaMood";
 import { PandaPhraseView } from "./PandaPhraseView";
 import { MainButton, PickRiddle, WriteRiddle } from "./PandaRiddles";
 
@@ -82,7 +82,7 @@ function PhraseThought({
 
   // У вопроса панда ждёт ответа
   const waitsForAnswer = !!phrase?.replies && !answer;
-  usePandaListening(waitsForAnswer);
+  usePandaWaiting(waitsForAnswer, "listening");
 
   // Панда сразу говорит фразу; ушли со сцены — замолкает
   useEffect(() => {

@@ -15,6 +15,7 @@ import {
   PandaMoodContext,
   type PandaMood,
   type PandaReaction,
+  type PandaWaiting,
 } from "@/components/panda/PandaMood";
 import { PlayContent } from "@/components/panda/PandaPlayContent";
 import { PandaTalkStage } from "@/components/panda/PandaTalkStage";
@@ -57,13 +58,13 @@ function PandaTalk({ kind }: { kind: "thought" | "play" }) {
   // а на экране должна остаться до «Понятно»
   const [thought] = useState(() => usePandaStore.getState().thought);
 
-  const [listening, setListening] = useState(false);
+  const [waiting, setWaiting] = useState<PandaWaiting | null>(null);
   const [reaction, setReaction] = useState<{ kind: PandaReaction; id: number } | null>(
     null,
   );
   const mood = useMemo<PandaMood>(
     () => ({
-      setListening,
+      setWaiting,
       react: (next) => setReaction((prev) => ({ kind: next, id: (prev?.id ?? 0) + 1 })),
     }),
     [],
@@ -76,7 +77,7 @@ function PandaTalk({ kind }: { kind: "thought" | "play" }) {
       <View className="flex-1 bg-[#EDE0CE]" style={{ paddingTop: insets.top }}>
         {/* Снизу запас на заход панели: панель ложится на него, а не на лапки */}
         <View style={{ paddingBottom: PANEL_OVERLAP }}>
-          <PandaTalkStage listening={listening} reaction={reaction} />
+          <PandaTalkStage waiting={waiting} reaction={reaction} />
           <Pressable
             onPress={goPet}
             hitSlop={12}

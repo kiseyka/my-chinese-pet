@@ -4,7 +4,8 @@
 // assets/motion/panda_talk.riv (артборд 400×320, прозрачный фон — за ним цвет сцены).
 // State Machine 1, входы:
 //   talking   (bool)    — говорит: пока звучит озвучка (store/speechStore);
-//   listening (bool)    — ждёт ответа (PandaMood.setListening);
+//   listening (bool)    — ждёт ответа на свой вопрос (PandaMood.setWaiting("listening"));
+//   thinking  (bool)    — думает над загадкой (PandaMood.setWaiting("thinking"));
 //   happy     (trigger) — обрадовалась (PandaMood.react("happy"));
 //   surprised (trigger) — удивилась / ошибка (PandaMood.react("surprised")).
 // Решает приложение, Rive только показывает. Пока у входов нет анимаций, ничего
@@ -14,19 +15,20 @@ import { useSpeechStore } from "@/store/speechStore";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import Rive, { Fit, type RiveRef } from "rive-react-native";
-import type { PandaReaction } from "./PandaMood";
+import type { PandaReaction, PandaWaiting } from "./PandaMood";
 
 const STATE_MACHINE = "State Machine 1";
 /** Пропорция артборда panda_talk (ширина / высота). */
 export const TALK_STAGE_RATIO = 400 / 320;
 
 interface PandaTalkStageProps {
-  listening: boolean;
+  /** Ждёт ответа: слушает (вопрос) или думает (загадка). */
+  waiting: PandaWaiting | null;
   /** Последняя реакция; id меняется на каждую новую, даже такую же. */
   reaction: { kind: PandaReaction; id: number } | null;
 }
 
-export function PandaTalkStage({ listening, reaction }: PandaTalkStageProps) {
+export function PandaTalkStage({ waiting, reaction }: PandaTalkStageProps) {
   const ref = useRef<RiveRef>(null);
   const [ready, setReady] = useState(false);
   const talking = useSpeechStore((s) => s.speakingId !== 0);
@@ -44,8 +46,10 @@ export function PandaTalkStage({ listening, reaction }: PandaTalkStageProps) {
   }, [ready, talking]);
 
   useEffect(() => {
-    if (ready) setBool("listening", listening);
-  }, [ready, listening]);
+    if (!ready) return;
+    setBool("listening", waiting === "listening");
+    setBool("thinking", waiting === "thinking");
+  }, [ready, waiting]);
 
   useEffect(() => {
     if (!ready || !reaction) return;
