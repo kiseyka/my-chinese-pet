@@ -22,6 +22,11 @@
 //            terms: { "送钟": { pinyin: "sòng zhōng", ru: "дарить часы", en: "give a clock" } };
 //   replies — необязательно, у вопросов: варианты ответа (тоже по-китайски, с переводом)
 //            и реакция панды на каждый (reaction). Ответ запоминается (pandaStore.answers);
+//   when   — необязательно: когда фраза к месту. time — время суток (morning 5–11,
+//            day 11–17, evening 17–22, night 22–5), season — время года (winter —
+//            декабрь–февраль и т.д.). Задано несколько — подходит любое из них;
+//            заданы оба поля — должны подойти оба. Без when фраза подходит всегда.
+//            «Доброе утро» — { time: ["morning"] }, «пошёл снег» — { season: ["winter"] };
 //   requires — необязательно: фраза появится, только если на вопрос phraseId ответили
 //            replyId. Так панда «помнит» ответы: «ты любишь зелёный — мой цветок тоже».
 //
@@ -44,8 +49,13 @@ export interface PhraseReply extends PhraseLine {
   reaction?: PhraseLine;
 }
 
+export type TimeOfDay = "morning" | "day" | "evening" | "night";
+export type Season = "winter" | "spring" | "summer" | "autumn";
+
 export interface PandaPhrase extends PhraseLine {
   id: string;
+  /** Когда фраза к месту (см. шапку файла). */
+  when?: { time?: TimeOfDay[]; season?: Season[] };
   note?: {
     ru: string;
     en: string;
@@ -103,6 +113,7 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "weather-good",
+    when: { time: ["morning", "day"] },
     words: ["今天", "天气", "很", "好", "。"],
     ru: "Сегодня хорошая погода.",
     en: "The weather is nice today.",
@@ -123,12 +134,14 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "rain-outside",
+    when: { season: ["spring", "summer", "autumn"] },
     words: ["外面", "下雨", "了", "。"],
     ru: "На улице пошёл дождь.",
     en: "It started raining outside.",
   },
   {
     id: "dress-warm",
+    when: { season: ["autumn", "winter"] },
     words: ["今天", "很", "冷", "，", "多", "穿", "衣服", "！"],
     ru: "Сегодня холодно, оденься потеплее!",
     en: "It's cold today, dress warmly!",
@@ -237,6 +250,7 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "stars",
+    when: { time: ["day", "evening"] },
     words: ["晚上", "我们", "看", "星星", "吧", "。"],
     ru: "Вечером давай посмотрим на звёзды.",
     en: "Let's look at the stars tonight.",
@@ -261,6 +275,7 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "what-today",
+    when: { time: ["morning", "day"] },
     words: ["你", "今天", "想", "做", "什么", "？"],
     ru: "Что ты хочешь сегодня делать?",
     en: "What do you want to do today?",
@@ -333,6 +348,7 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "park-walk",
+    when: { time: ["morning", "day", "evening"] },
     words: ["我", "想", "去", "公园", "散步", "。"],
     ru: "Хочу погулять в парке.",
     en: "I want to go for a walk in the park.",
@@ -345,6 +361,7 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "sunny",
+    when: { time: ["morning", "day"] },
     words: ["今天", "的", "太阳", "真", "好", "。"],
     ru: "Сегодня такое хорошее солнышко.",
     en: "The sun is so nice today.",
@@ -394,12 +411,14 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "see-tomorrow",
+    when: { time: ["evening", "night"] },
     words: ["明天见", "！"],
     ru: "До завтра!",
     en: "See you tomorrow!",
   },
   {
     id: "snow-outside",
+    when: { season: ["winter"] },
     words: ["下雪", "了", "！", "我们", "出去", "吧", "！"],
     ru: "Пошёл снег! Пойдём на улицу!",
     en: "It's snowing! Let's go outside!",
@@ -487,6 +506,7 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "xin-ku-le",
+    when: { time: ["evening"] },
     words: ["今天", "辛苦了", "！"],
     ru: "Спасибо за сегодняшние труды!",
     en: "Thanks for your hard work today!",
@@ -652,6 +672,7 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "zao",
+    when: { time: ["morning"] },
     words: ["早", "！"],
     ru: "Доброе утро!",
     en: "Morning!",
@@ -975,6 +996,7 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "good-night",
+    when: { time: ["night"] },
     words: ["晚安", "，", "做", "个", "好", "梦", "！"],
     ru: "Спокойной ночи, сладких снов!",
     en: "Good night, sweet dreams!",

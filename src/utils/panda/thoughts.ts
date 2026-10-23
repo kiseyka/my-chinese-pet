@@ -23,6 +23,9 @@
 //   - не больше одной мысли каждого вида в день (то есть не больше MAX_PER_DAY);
 //   - между мыслями пауза MIN_GAP_MS — облачко не встречает после каждой тренировки;
 //   - мысль вчерашнего дня, которую так и не открыли, пропадает;
+//   - фраза только к месту (when: время суток, время года — utils/panda/phraseTime);
+//     если облачко с фразой ждало, а её время прошло («доброе утро» днём), мысль
+//     тихо пропадает;
 //   - фразы не повторяются: рассказанная фраза больше не предлагается, а показанная,
 //     но не дочитанная (панель смахнули) — не раньше чем через RECENT_PHRASES_LIMIT
 //     других фраз (если есть из чего выбрать);
@@ -35,6 +38,7 @@ import { useWordProgressStore } from "@/store/wordProgressStore";
 import { dayKey } from "@/utils/activity";
 import { shuffle } from "@/utils/shuffle";
 import { getPhraseWords } from "./phraseSegments";
+import { fitsNow } from "./phraseTime";
 import { pickPlayWord } from "./play";
 
 export type ThoughtKind = "phrase" | "riddle";
@@ -69,13 +73,14 @@ function isStarted(progress: ProgressMap, wordId: string): boolean {
 }
 
 /** Фразы, все слова которых пользователь уже изучает и которые ещё не рассказаны. */
-export function getAvailablePhrases(): PandaPhrase[] {
+export function getAvailablePhrases(now = Date.now()): PandaPhrase[] {
   const progress = useWordProgressStore.getState().flashcardWords;
   const { seenPhraseIds, answers } = usePandaStore.getState();
   const seen = new Set(seenPhraseIds);
 
   return pandaPhrases.filter((phrase) => {
     if (seen.has(phrase.id)) return false;
+    if (!fitsNow(phrase, now)) return false;
     // «Панда помнит»: фраза только после нужного ответа на её вопрос
     if (
       phrase.requires &&
@@ -96,8 +101,10 @@ function pickPhrase(phrases: PandaPhrase[]): PandaPhrase | undefined {
 }
 
 function buildPhraseThought(now: number): PandaThought | null {
-  const phrase = pickPhrase(getAvailablePhrases());
-  return phrase ? { kind: "phrase", phraseId: phrase.id, createdAt: now } : null;
+  const phrase = pickPhrase(getAvailablePhrases(now));
+  return phrase
+    ? { kind: "phrase", phraseId: phrase.id, createdAt: now }
+    : null;
 }
 
 function buildRiddleThought(now: number): PandaThought | null {
@@ -114,6 +121,12 @@ function buildRiddleThought(now: number): PandaThought | null {
   return { kind: "riddle", form, wordId: word.vocabularyId, createdAt: now };
 }
 
+function isStale(thought: PandaThought, now: number): boolean {
+  if (thought.kind !== "phrase") return false;
+  const phrase = pandaPhrases.find((p) => p.id === thought.phraseId);
+  return !!phrase && !fitsNow(phrase, now);
+}
+
 const BUILDERS: Record<ThoughtKind, (now: number) => PandaThought | null> = {
   phrase: buildPhraseThought,
   riddle: buildRiddleThought,
@@ -127,8 +140,12 @@ export function createThoughtIfDue(now = Date.now()) {
   const panda = usePandaStore.getState();
   const day = dayKey(now);
 
-  // Вчерашняя мысль, которую так и не открыли, тихо пропадает
-  if (panda.thought && dayKey(panda.thought.createdAt) !== day) {
+  // Вчерашняя мысль, которую так и не открыли, тихо пропадает. И фраза, время
+  // которой прошло: «доброе утро» вечером не к месту
+  if (
+    panda.thought &&
+    (dayKey(panda.thought.createdAt) !== day || isStale(panda.thought, now))
+  ) {
     usePandaStore.setState({ thought: null });
   } else if (panda.thought) {
     return;
@@ -179,12 +196,19 @@ function pickTestThought(type: TestThought, now: number): PandaThought | null {
         recentPhraseIds: rememberPhrase(state.recentPhraseIds, phrase.id),
       }));
     }
-    return phrase ? { kind: "phrase", phraseId: phrase.id, createdAt: now } : null;
+    return phrase
+      ? { kind: "phrase", phraseId: phrase.id, createdAt: now }
+      : null;
   }
 
   const word = pickPlayWord(type);
   if (word) {
-    return { kind: "riddle", form: type, wordId: word.vocabularyId, createdAt: now };
+    return {
+      kind: "riddle",
+      form: type,
+      wordId: word.vocabularyId,
+      createdAt: now,
+    };
   }
   return null;
 }

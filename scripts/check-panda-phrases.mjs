@@ -9,6 +9,7 @@
 //   - склейку: words должны быть разбиты по словам, а не по одному иероглифу без нужды;
 //   - requires, который ссылается на несуществующий вопрос или ответ;
 //   - пустой перевод;
+//   - when: неизвестное время суток или года;
 //   - выражения из иероглифов в пояснении (note), которым нечего показать по тапу:
 //     нет ни в note.terms, ни среди строк фразы, ни в словаре.
 // Печатает каждую фразу с пиньинем — удобно сверить тоны.
@@ -75,6 +76,15 @@ for (const phrase of pandaPhrases) {
     }
   }
 
+  const TIMES = ["morning", "day", "evening", "night"];
+  const SEASONS = ["winter", "spring", "summer", "autumn"];
+  for (const t of phrase.when?.time ?? []) {
+    if (!TIMES.includes(t)) issues.push(`when.time: нет такого времени суток «${t}»`);
+  }
+  for (const t of phrase.when?.season ?? []) {
+    if (!SEASONS.includes(t)) issues.push(`when.season: нет такого времени года «${t}»`);
+  }
+
   if (phrase.note) {
     const hanOnly = (line) => line.words.join("").replace(/[^\p{Script=Han}]/gu, "");
     const lines = [phrase];
@@ -90,9 +100,13 @@ for (const phrase of pandaPhrases) {
   }
 
   const mark = issues.length ? "✗" : "✓";
-  const extra = phrase.requires
-    ? `  [после ${phrase.requires.phraseId}=${phrase.requires.replyId}]`
+  const when = phrase.when
+    ? `  [${[...(phrase.when.time ?? []), ...(phrase.when.season ?? [])].join(", ")}]`
     : "";
+  const extra =
+    (phrase.requires
+      ? `  [после ${phrase.requires.phraseId}=${phrase.requires.replyId}]`
+      : "") + when;
   console.log(`${mark} ${phrase.id}: ${phrase.words.join("")}  ${pinyinOf(phrase)}${extra}`);
   for (const reply of phrase.replies ?? []) {
     const reaction = reply.reaction ? `  → ${reply.reaction.words.join("")}` : "";
