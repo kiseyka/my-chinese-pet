@@ -1,7 +1,7 @@
 // src/components/panda/PandaPhraseView.tsx
 //
 // Фраза панды как маленький диалог, сверху вниз:
-//   - шапка: значок панды и имя слева, справа озвучка и глазик пиньиня;
+//   - шапка: справа озвучка и глазик пиньиня (саму панду видно над диалогом);
 //   - фраза по словам (пиньинь при скрытии только прозрачный — фраза не прыгает);
 //   - «Показать перевод» — плашка, которая на месте превращается в перевод;
 //   - пояснение «Почему так говорят?» — сразу карточкой, если оно есть;
@@ -33,7 +33,7 @@ import type {
   PhraseLine,
   PhraseReply,
 } from "@/content/panda/thoughtPhrases";
-import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
+import { say, useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { useProfileStore } from "@/store/profileStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
@@ -47,7 +47,6 @@ import {
   type NoteTerm,
   type PhraseSegment,
 } from "@/utils/panda/phraseSegments";
-import * as Speech from "expo-speech";
 import { useRouter } from "expo-router";
 import i18n from "i18next";
 import { useMemo, useRef, useState, type ComponentType } from "react";
@@ -177,13 +176,10 @@ export function PandaPhraseView({
 
   /** Озвучить ответ пользователя, а следом — реакцию панды. */
   const speakExchange = (option: PhraseReply) => {
-    Speech.stop();
-    Speech.speak(phraseText(option), {
-      language: "zh-CN",
-      onDone: () => {
-        if (option.reaction) {
-          Speech.speak(phraseText(option.reaction), { language: "zh-CN" });
-        }
+    say(phraseText(option), {
+      byUser: true,
+      onEnd: () => {
+        if (option.reaction) say(phraseText(option.reaction));
       },
     });
   };
@@ -203,15 +199,8 @@ export function PandaPhraseView({
       android_disableSound
     >
       {!compact && (
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
-            <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
-              <PandaIcon width={18} height={18} />
-            </View>
-            <Text className="font-nunitoBold text-body text-text">
-              {t("pandaName")}
-            </Text>
-          </View>
+        // Панда видна над диалогом (сцена /panda-talk) — в шапке только озвучка и глазик
+        <View className="flex-row items-center justify-end">
           <View className="flex-row items-center gap-4">
             <Pressable
               onPress={() => speakForced(phraseText(phrase))}

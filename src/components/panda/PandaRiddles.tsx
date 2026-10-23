@@ -1,6 +1,7 @@
 // src/components/panda/PandaRiddles.tsx
 //
-// Загадки панды — общие для мысли с облачком и для игры по тапу (PandaPlaySheet):
+// Загадки панды — общие для мысли с облачком и для игры по тапу (PandaPlayContent);
+// показываются в сцене разговора /panda-talk, панда отзывается через PandaMood:
 //   PickRiddle  — «Как по-китайски …?» и три похожих иероглифа; после ответа —
 //                 правильный с пиньинем; если за верный ответ есть опыт — «+N».
 //                 listen — вместо перевода панда произносит слово (сразу и по кнопке),
@@ -22,6 +23,7 @@ import VolumeIcon from "@/assets/images/icons/volume.svg";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
+import { usePandaListening, usePandaMood } from "./PandaMood";
 
 /** Сколько вариантов в загадке (правильный + неправильные). */
 const RIDDLE_OPTIONS = 3;
@@ -84,9 +86,14 @@ export function PickRiddle({
   const answered = picked !== null;
   const correct = picked?.vocabularyId === word.vocabularyId;
 
+  // Сцена разговора: панда ждёт ответа, потом радуется или удивляется
+  usePandaListening(!answered);
+  const { react } = usePandaMood();
+
   const pick = (option: Word) => {
     if (answered) return;
     setPicked(option);
+    react(option.vocabularyId === word.vocabularyId ? "happy" : "surprised");
     speakForced(word.hanzi);
     onAnswer?.(option.vocabularyId === word.vocabularyId);
   };

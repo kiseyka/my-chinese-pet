@@ -1,6 +1,7 @@
-// src/components/panda/PandaPlaySheet.tsx
+// src/components/panda/PandaPlayContent.tsx
 //
-// Тап по панде без облачка — панда предлагает поиграть (utils/panda/play):
+// Тап по панде без облачка — панда предлагает поиграть (utils/panda/play). Нижняя
+// часть сцены разговора /panda-talk (сверху панда, PandaTalkStage):
 //   меню    — «Чем займёмся?»: «Угадай слово», «Послушай и угадай», «Допиши черту»
 //             (+1 опыт), «Напиши слово» (+1, без ошибок +2);
 //   pick, listen — загадка прямо в панели; после ответа «Ещё» (если игры остались)
@@ -10,8 +11,6 @@
 //   пусто   — слов ещё нет: «Сначала выучи пару слов на пути» и кнопка «К пути».
 // Позже сюда же: погладить, покормить (когда будут анимации).
 
-import PandaIcon from "@/assets/images/icons/panda.svg";
-import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { Word } from "@/content/flashcards/types";
 import { usePandaStore } from "@/store/pandaStore";
 import {
@@ -40,21 +39,8 @@ type Step =
   | { kind: "pick" | "listen"; word: Word; variant: number }
   | { kind: "write"; word: Word; variant: number };
 
-interface PandaPlaySheetProps {
-  /** Открыта ли панель (увеличивается при каждом открытии — новое меню). */
-  openId: number | null;
-  onClose: () => void;
-}
-
-export function PandaPlaySheet({ openId, onClose }: PandaPlaySheetProps) {
-  return (
-    <BottomSheet item={openId} onClose={onClose}>
-      {(id) => <PlayContent key={id} onClose={onClose} />}
-    </BottomSheet>
-  );
-}
-
-function PlayContent({ onClose }: { onClose: () => void }) {
+/** onClose — назад к панде (и перед переходом на другой экран). */
+export function PlayContent({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("pandaThoughts");
   const router = useRouter();
   const playTimes = usePandaStore((s) => s.playTimes);
@@ -81,7 +67,6 @@ function PlayContent({ onClose }: { onClose: () => void }) {
     const { word } = step;
     return (
       <View className="gap-5">
-        <Header />
         <PickRiddle
           key={step.variant}
           word={word}
@@ -115,7 +100,6 @@ function PlayContent({ onClose }: { onClose: () => void }) {
   if (step.kind === "write") {
     return (
       <View className="gap-5">
-        <Header />
         <WriteRiddle
           word={step.word}
           variant={step.variant}
@@ -134,7 +118,6 @@ function PlayContent({ onClose }: { onClose: () => void }) {
   if (!canPick) {
     return (
       <View className="gap-5">
-        <Header />
         <Text className="font-nunito text-lead text-text">{t("play.empty")}</Text>
         <View className="flex-row">
           <MainButton
@@ -152,7 +135,6 @@ function PlayContent({ onClose }: { onClose: () => void }) {
   if (playsLeft === 0) {
     return (
       <View className="gap-5">
-        <Header />
         <Text className="font-nunito text-lead text-text">
           {t("play.tired", {
             time: formatWait(getMinutesUntilPlay(playTimes), (key, o) =>
@@ -169,7 +151,6 @@ function PlayContent({ onClose }: { onClose: () => void }) {
 
   return (
     <View className="gap-5">
-      <Header />
       <Text className="font-nunito text-lead text-text">{t("play.question")}</Text>
 
       <View className="gap-3">
@@ -204,19 +185,6 @@ function PlayContent({ onClose }: { onClose: () => void }) {
       <Text className="text-center font-nunito text-caption text-textSecondary">
         {t("play.left", { count: playsLeft })}
       </Text>
-    </View>
-  );
-}
-
-/** Значок панды и имя — как в реплике с облачком. */
-function Header() {
-  const { t } = useTranslation("pandaThoughts");
-  return (
-    <View className="flex-row items-center gap-2">
-      <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
-        <PandaIcon width={18} height={18} />
-      </View>
-      <Text className="font-nunitoBold text-body text-text">{t("pandaName")}</Text>
     </View>
   );
 }

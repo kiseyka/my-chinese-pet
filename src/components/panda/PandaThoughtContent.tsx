@@ -1,18 +1,19 @@
-// src/components/panda/PandaThoughtSheet.tsx
+// src/components/panda/PandaThoughtContent.tsx
 //
-// Реплика панды по тапу на облачко (см. utils/panda/thoughts):
+// Реплика панды по тапу на облачко (см. utils/panda/thoughts) — нижняя часть сцены
+// разговора /panda-talk (сверху панда, PandaTalkStage):
 //   phrase        — фраза на китайском (PandaPhraseView): панда сразу её произносит
 //                   (если звук не выключен в настройках); слова — тултипом, перевод,
-//                   пояснение; у вопросов — варианты ответа и реакция панды.
+//                   пояснение; у вопросов — варианты ответа (панда ждёт), после
+//                   ответа — её реакция (радуется или удивляется, reaction.mood).
 //                   «Понятно» — фраза (и ответ) уходят в коллекцию профиля;
 //   riddle/pick   — «Как по-китайски …?» и три иероглифа; после ответа — правильный
 //                   с пиньинем, «Понятно»;
 //   riddle/write  — «Покажешь, как пишется …?» → «Написать» открывает экран письма.
 //
-// «Не сейчас» нет: тап по облачку и есть «да». Передумал — смахни панель или тапни
-// мимо: мысль остаётся, облачко ждёт до конца дня.
+// «Не сейчас» нет: тап по облачку и есть «да». Передумал — «назад»: мысль остаётся,
+// облачко ждёт до конца дня.
 
-import { BottomSheet } from "@/components/ui/BottomSheet";
 import { findPandaPhrase } from "@/content/panda/thoughtPhrases";
 import { findWord } from "@/content/words/vocabulary";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
@@ -23,46 +24,24 @@ import * as Speech from "expo-speech";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
+import { usePandaListening, usePandaMood } from "./PandaMood";
 import { PandaPhraseView } from "./PandaPhraseView";
 import { MainButton, PickRiddle, WriteRiddle } from "./PandaRiddles";
 
-interface PandaThoughtSheetProps {
-  thought: PandaThought | null;
-  onClose: () => void;
-  onDone: () => void;
-}
+/** Через сколько панда заговорит: сцена успевает появиться. */
+const SPEAK_DELAY_MS = 450;
 
-export function PandaThoughtSheet({
-  thought,
-  onClose,
-  onDone,
-}: PandaThoughtSheetProps) {
-  return (
-    <BottomSheet item={thought} onClose={onClose}>
-      {(shown) => (
-        // key: новая мысль — новое состояние внутри (ответ, перевод)
-        <ThoughtContent
-          key={shown.createdAt}
-          thought={shown}
-          onDone={onDone}
-          onClose={onClose}
-        />
-      )}
-    </BottomSheet>
-  );
-}
-
-function ThoughtContent({
-  thought,
-  onDone,
-  onClose,
-}: {
+interface ThoughtContentProps {
   thought: PandaThought;
+  /** Мысль закрыта ответом — назад к панде. */
   onDone: () => void;
-  onClose: () => void;
-}) {
+  /** Уходим на другой экран (письмо, этап) — мысль остаётся. */
+  onLeave: () => void;
+}
+
+export function ThoughtContent({ thought, onDone, onLeave }: ThoughtContentProps) {
   if (thought.kind === "phrase") {
-    return <PhraseThought thought={thought} onDone={onDone} onClose={onClose} />;
+    return <PhraseThought thought={thought} onDone={onDone} onLeave={onLeave} />;
   }
 
   const word = findWord(thought.wordId);
@@ -74,39 +53,38 @@ function ThoughtContent({
       word={word}
       variant={thought.createdAt}
       source="thought"
-      onClose={onClose}
+      onClose={onLeave}
     />
   ) : (
     <PickRiddle
       word={word}
       variant={thought.createdAt}
-      actions={(answered) => (
-        <GotIt onPress={onDone} disabled={!answered} />
-      )}
+      actions={(answered) => <GotIt onPress={onDone} disabled={!answered} />}
     />
   );
 }
 
 // ── Фраза ────────────────────────────────────────────────────────────────────
 
-/** Через сколько после тапа панда заговорит: панель успевает выехать. */
-const SPEAK_DELAY_MS = 350;
-
 function PhraseThought({
   thought,
   onDone,
-  onClose,
+  onLeave,
 }: {
   thought: Extract<PandaThought, { kind: "phrase" }>;
   onDone: () => void;
-  onClose: () => void;
+  onLeave: () => void;
 }) {
-  const { t } = useTranslation("pandaThoughts");
   const phrase = findPandaPhrase(thought.phraseId);
   const [answer, setAnswer] = useState<string | undefined>();
   const { speak } = useSpeakHanzi();
+  const { react } = usePandaMood();
 
-  // Панда сразу говорит фразу; панель закрыли — замолкает
+  // У вопроса панда ждёт ответа
+  const waitsForAnswer = !!phrase?.replies && !answer;
+  usePandaListening(waitsForAnswer);
+
+  // Панда сразу говорит фразу; ушли со сцены — замолкает
   useEffect(() => {
     if (!phrase) return;
     const timer = setTimeout(() => speak(phraseText(phrase)), SPEAK_DELAY_MS);
@@ -118,8 +96,11 @@ function PhraseThought({
 
   if (!phrase) return <GotIt onPress={onDone} disabled={false} />;
 
-  // У вопроса «Понятно» — после ответа
-  const waitsForAnswer = !!phrase.replies && !answer;
+  const pickAnswer = (replyId: string) => {
+    setAnswer(replyId);
+    const reply = phrase.replies?.find((r) => r.id === replyId);
+    react(reply?.reaction?.mood ?? "happy");
+  };
 
   const finish = () => {
     Speech.stop();
@@ -132,11 +113,11 @@ function PhraseThought({
       <PandaPhraseView
         phrase={phrase}
         answer={answer}
-        onAnswer={setAnswer}
+        onAnswer={pickAnswer}
         from="pet"
         onLeave={() => {
           Speech.stop();
-          onClose();
+          onLeave();
         }}
       />
       <GotIt onPress={finish} disabled={waitsForAnswer} />

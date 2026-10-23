@@ -1,6 +1,7 @@
 // hooks/useSpeakHanzi.ts
 
 import { useSettingsStore } from "@/store/settingsStore";
+import { speechEnded, speechStarted } from "@/store/speechStore";
 import * as Speech from "expo-speech";
 import { useCallback, useMemo } from "react";
 
@@ -20,11 +21,30 @@ export function warmUpSpeech() {
   Speech.getAvailableVoicesAsync().catch(() => {});
 }
 
-const say = (hanzi: string, options?: SpeakOptions) => {
+interface SayOptions extends SpeakOptions {
+  /** Фраза закончилась (договорили; не вызывается, если остановили). */
+  onEnd?: () => void;
+  /** Говорит пользователь (его ответ), а не панда: панда рот не открывает. */
+  byUser?: boolean;
+}
+
+/**
+ * Произнести по-китайски. Пока звучит — speechStore.speakingId не 0
+ * (панда в сцене разговора двигает ртом).
+ */
+export const say = (hanzi: string, options?: SayOptions) => {
   Speech.stop(); // не копим очередь, если слова листают быстро
+  const id = options?.byUser ? -1 : speechStarted();
+  const end = () => {
+    speechEnded(id);
+    options?.onEnd?.();
+  };
   Speech.speak(hanzi, {
     language: "zh-CN",
     rate: options?.rate ?? 1.0,
+    onDone: end,
+    onStopped: () => speechEnded(id),
+    onError: () => speechEnded(id),
   });
 };
 

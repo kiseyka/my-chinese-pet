@@ -21,7 +21,8 @@
 //            нет в словаре или в пояснении у него особый смысл — допиши в terms:
 //            terms: { "送钟": { pinyin: "sòng zhōng", ru: "дарить часы", en: "give a clock" } };
 //   replies — необязательно, у вопросов: варианты ответа (тоже по-китайски, с переводом)
-//            и реакция панды на каждый (reaction). Ответ запоминается (pandaStore.answers);
+//            и реакция панды на каждый (reaction; mood: "surprised" — панда удивится,
+//            иначе обрадуется). Ответ запоминается (pandaStore.answers);
 //   when   — необязательно: когда фраза к месту. time — время суток (morning 5–11,
 //            day 11–17, evening 17–22, night 22–5), season — время года (winter —
 //            декабрь–февраль и т.д.). Задано несколько — подходит любое из них;
@@ -45,8 +46,9 @@ export interface PhraseLine {
 export interface PhraseReply extends PhraseLine {
   /** Ключ ответа, после выхода НЕ МЕНЯТЬ (по нему помнится ответ). */
   id: string;
-  /** Что панда скажет в ответ. */
-  reaction?: PhraseLine;
+  /** Что панда скажет в ответ. mood — как отзовётся в сцене: обрадуется (по умолчанию)
+   *  или удивится. */
+  reaction?: PhraseLine & { mood?: "happy" | "surprised" };
 }
 
 export type TimeOfDay = "morning" | "day" | "evening" | "night";
@@ -878,6 +880,7 @@ export const pandaPhrases: PandaPhrase[] = [
         ru: "Мне нравится четыре.",
         en: "I like four.",
         reaction: {
+          mood: "surprised",
           words: ["四", "？", "真", "的", "吗", "？"],
           ru: "Четыре? Правда?",
           en: "Four? Really?",

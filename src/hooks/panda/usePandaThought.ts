@@ -2,24 +2,24 @@
 //
 // Мысль панды на её экране:
 //   - при входе на экран — придумать мысль, если пора (utils/panda/thoughts);
-//   - облачко видно, пока мысль есть и реплика не открыта;
-//   - тап по панде — анимация тапа в Rive, затем реплика;
-//   - реплику закрыли тапом мимо или смахнули — мысль остаётся, облачко возвращается
+//   - облачко видно, пока мысль есть и мы не ушли в сцену разговора;
+//   - тап по панде — анимация тапа в Rive, затем сцена разговора /panda-talk (onOpen);
+//   - вернулись без ответа — мысль остаётся, облачко возвращается
 //     (до конца дня, см. utils/panda/thoughts);
-//   - ответ — мысль закрывается (resolveThought).
+//   - ответ закрывает мысль в самой сцене (resolveThought).
 
 import { useActivityStore } from "@/store/activityStore";
 import { usePandaStore } from "@/store/pandaStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { whenHydrated } from "@/utils/hydration";
-import { createThoughtIfDue, resolveThought } from "@/utils/panda/thoughts";
+import { createThoughtIfDue } from "@/utils/panda/thoughts";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-/** Реплика открывается, когда доиграло сжатие облачка. */
+/** Сцена открывается, когда доиграло сжатие облачка. */
 const OPEN_DELAY_MS = 250;
 
-export function usePandaThought() {
+export function usePandaThought(onOpen: () => void) {
   const thought = usePandaStore((s) => s.thought);
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -27,6 +27,8 @@ export function usePandaThought() {
   // Мысль придумывается по прогрессу, поэтому ждём, пока сторы загрузятся с диска
   useFocusEffect(
     useCallback(() => {
+      // Вернулись из сцены разговора — облачко снова видно (если мысль осталась)
+      setOpen(false);
       let cancelled = false;
       const unsubscribers: Array<() => void> = [];
       const stores = [
@@ -57,29 +59,17 @@ export function usePandaThought() {
     [],
   );
 
-  // Мысль закрылась где-то ещё (например, загадка на письмо) — реплику тоже
-  useEffect(() => {
-    if (!thought) setOpen(false);
-  }, [thought]);
-
   return {
     thought,
     /** Облачко над головой. */
     hasCloud: !!thought && !open,
-    /** Открытая реплика (или null). */
-    openThought: open ? thought : null,
     tapPanda: () => {
       if (!thought || open || timer.current) return;
       timer.current = setTimeout(() => {
         timer.current = null;
         setOpen(true);
+        onOpen();
       }, OPEN_DELAY_MS);
-    },
-    /** Закрыли реплику тапом мимо — мысль остаётся. */
-    close: () => setOpen(false),
-    done: () => {
-      setOpen(false);
-      resolveThought("done");
     },
   };
 }
