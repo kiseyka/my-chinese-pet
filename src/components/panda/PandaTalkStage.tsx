@@ -10,6 +10,11 @@
 //   surprised (trigger) — удивилась / ошибка (PandaMood.react("surprised")).
 // Решает приложение, Rive только показывает. Пока у входов нет анимаций, ничего
 // не происходит — дорисуешь в Rive, код трогать не нужно.
+//
+// ВАЖНО: вход, которого нет в .riv, на Android роняет приложение (ошибка уходит из
+// нативного кода, try/catch в JS её не ловит). Поэтому код трогает только входы из
+// RIVE_INPUTS — добавила вход в Rive, допиши его сюда. Плюс onError: другие ошибки
+// Rive приходят в JS и пишутся в лог, а не роняют приложение.
 
 import { useSpeechStore } from "@/store/speechStore";
 import { useEffect, useRef, useState } from "react";
@@ -18,6 +23,9 @@ import Rive, { Fit, type RiveRef } from "rive-react-native";
 import type { PandaReaction, PandaWaiting } from "./PandaMood";
 
 const STATE_MACHINE = "State Machine 1";
+
+/** Входы, которые точно есть в panda_talk.riv. Добавишь thinking в Rive — допиши. */
+const RIVE_INPUTS = new Set<string>(["talking", "listening", "happy", "surprised"]);
 /** Пропорция артборда panda_talk (ширина / высота). */
 export const TALK_STAGE_RATIO = 400 / 320;
 
@@ -34,6 +42,7 @@ export function PandaTalkStage({ waiting, reaction }: PandaTalkStageProps) {
   const talking = useSpeechStore((s) => s.speakingId !== 0);
 
   const setBool = (name: string, value: boolean) => {
+    if (!RIVE_INPUTS.has(name)) return;
     try {
       ref.current?.setInputState(STATE_MACHINE, name, value);
     } catch {
@@ -52,7 +61,7 @@ export function PandaTalkStage({ waiting, reaction }: PandaTalkStageProps) {
   }, [ready, waiting]);
 
   useEffect(() => {
-    if (!ready || !reaction) return;
+    if (!ready || !reaction || !RIVE_INPUTS.has(reaction.kind)) return;
     try {
       ref.current?.fireState(STATE_MACHINE, reaction.kind);
     } catch {
@@ -69,6 +78,7 @@ export function PandaTalkStage({ waiting, reaction }: PandaTalkStageProps) {
         fit={Fit.Contain}
         style={{ width: "100%", height: "100%" }}
         onPlay={() => setReady(true)}
+        onError={(error) => console.warn("panda_talk.riv:", error.message)}
       />
     </View>
   );
