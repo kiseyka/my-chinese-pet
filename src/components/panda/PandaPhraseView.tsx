@@ -9,8 +9,12 @@
 //     пользователя, а под ним — реакция панды.
 // Тап по слову (во фразе, в ответе панды, по иероглифу в пояснении) — тултип над словом
 // (если сверху нет места — под ним): пиньинь, перевод, «Повторение» и «Этап».
+// В пояснении иероглифы подряд — одно выражение (送钟 целиком, а не 送 и 钟): перевод
+// из note.terms, из самой фразы или из словаря.
 // Тап мимо тултипа его закрывает.
-// Варианты ответа — сеткой 2×2 или столбцом, только иероглифы; перевод — по значку 文A.
+// Варианты ответа — короткие (до 3 иероглифов) сеткой 2×2, длинные — списком на всю
+// ширину. Пиньинь над иероглифами — по глазику, перевод под ними — по значку 文A;
+// скрытые строки места не занимают.
 // После ответа: свой ответ и реакция панды озвучиваются подряд, у обоих есть озвучка,
 // перевод реакции — по ссылке «Перевод».
 //
@@ -36,8 +40,9 @@ import { findWordStage } from "@/utils/dictionary";
 import {
   findWordByHanzi,
   phraseText,
-  segmentMixedText,
+  segmentNoteText,
   segmentPhrase,
+  type NoteTerm,
   type PhraseSegment,
 } from "@/utils/panda/phraseSegments";
 import * as Speech from "expo-speech";
@@ -87,6 +92,37 @@ export function phraseNote(phrase: PandaPhrase): string | undefined {
   return isRussian() ? phrase.note.ru : phrase.note.en || phrase.note.ru;
 }
 
+const hanOnly = (text: string) => text.replace(/[^\p{Script=Han}]/gu, "");
+
+/**
+ * Перевод выражения из пояснения: сначала note.terms, потом сама фраза, ответ или
+ * реакция (我吃饱了 в пояснении — это фраза целиком). Иначе — словарь.
+ */
+function noteTerms(phrase: PandaPhrase): (run: string) => NoteTerm | undefined {
+  const ru = isRussian();
+  const lines: PhraseLine[] = [phrase];
+  for (const reply of phrase.replies ?? []) {
+    lines.push(reply);
+    if (reply.reaction) lines.push(reply.reaction);
+  }
+
+  return (run) => {
+    const term = phrase.note?.terms?.[run];
+    if (term) {
+      return { pinyin: term.pinyin, gloss: ru ? term.ru : term.en || term.ru };
+    }
+    const line = lines.find((l) => hanOnly(phraseText(l)) === run);
+    if (line) {
+      const pinyin = segmentPhrase(line)
+        .filter((segment) => segment.isHan)
+        .map((segment) => segment.pinyin)
+        .join(" ");
+      return { pinyin, gloss: lineTranslation(line) };
+    }
+    return undefined;
+  };
+}
+
 interface Tip {
   segment: PhraseSegment;
   x: number;
@@ -125,6 +161,7 @@ export function PandaPhraseView({
   };
 
   const note = phraseNote(phrase);
+  const termFor = useMemo(() => noteTerms(phrase), [phrase]);
   const reply = phrase.replies?.find((r) => r.id === answer);
 
   /** Озвучить ответ пользователя, а следом — реакцию панды. */
@@ -195,6 +232,7 @@ export function PandaPhraseView({
           </Text>
           <MixedText
             text={note}
+            termFor={termFor}
             className="font-nunito text-body text-text"
             selected={tip?.segment ?? null}
             onHanziPress={openTip}
@@ -283,13 +321,15 @@ function TranslationReveal({
 
 // ── Ответы ───────────────────────────────────────────────────────────────────
 
-/** Длина ответа в иероглифах, с которой варианты идут в один столбец, а не 2×2. */
-const LONG_REPLY_CHARS = 5;
+/** До скольких иероглифов варианты идут сеткой 2×2; длиннее — списком. */
+const SHORT_REPLY_CHARS = 3;
+
+const hanCount = (reply: PhraseReply) => hanOnly(phraseText(reply)).length;
 
 /**
- * Варианты ответа: короткие — сеткой 2×2, длинные — столбцом на всю ширину.
- * Только иероглифы (пиньинь — по глазику); перевод — по значку 文A. Место под
- * пиньинь и перевод зарезервировано всегда, поэтому переключение ничего не двигает.
+ * Варианты ответа: короткие — сеткой 2×2 (по центру), длинные — списком на всю ширину.
+ * Над иероглифами — пиньинь (глазик в шапке), под ними — перевод (значок 文A).
+ * Скрытые строки места не занимают: карточки плотные, без пустоты.
  */
 function ReplyOptions({
   replies,
@@ -301,11 +341,7 @@ function ReplyOptions({
   const { t } = useTranslation("pandaThoughts");
   const [showTranslation, setShowTranslation] = useState(false);
 
-  const grid = replies.every(
-    (reply) =>
-      Array.from(phraseText(reply)).filter((ch) => /\p{Script=Han}/u.test(ch))
-        .length <= LONG_REPLY_CHARS,
-  );
+  const grid = replies.every((reply) => hanCount(reply) <= SHORT_REPLY_CHARS);
 
   return (
     <View className="gap-2">
@@ -351,27 +387,23 @@ function ReplyOption({
   return (
     <Pressable
       onPress={onPress}
-      className={`rounded-2xl border border-primary/40 bg-surface px-3 py-2 active:bg-primary/10 ${
+      className={`justify-center gap-1 rounded-2xl border border-primary/40 bg-surface px-4 py-2.5 active:bg-primary/10 ${
         grid ? "items-center" : "items-start"
       }`}
-      style={grid ? { width: "48.5%" } : undefined}
+      style={grid ? { width: "48.5%", minHeight: 64 } : { minHeight: 56 }}
       accessibilityRole="button"
       accessibilityLabel={phraseText(reply)}
     >
-      <PandaText segments={segments} size={22} />
-      {/* Место под перевод есть всегда (две строки в сетке, одна в столбце) */}
-      <Text
-        className={`font-nunito text-caption text-textSecondary ${
-          grid ? "text-center" : ""
-        }`}
-        numberOfLines={grid ? 2 : 1}
-        style={{
-          opacity: showTranslation ? 1 : 0,
-          minHeight: grid ? 32 : 16,
-        }}
-      >
-        {lineTranslation(reply)}
-      </Text>
+      <PandaText segments={segments} size={grid ? 26 : 24} collapsePinyin />
+      {showTranslation && (
+        <Text
+          className={`px-1 font-nunito text-small text-textSecondary ${
+            grid ? "text-center" : ""
+          }`}
+        >
+          {lineTranslation(reply)}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -623,19 +655,21 @@ function TipButton({
 
 // ── Текст с иероглифами ──────────────────────────────────────────────────────
 
-/** Обычный текст, в котором иероглифы подчёркнуты и нажимаются. */
+/** Обычный текст, в котором выражения из иероглифов подчёркнуты и нажимаются. */
 function MixedText({
   text,
+  termFor,
   className,
   selected,
   onHanziPress,
 }: {
   text: string;
+  termFor: (run: string) => NoteTerm | undefined;
   className: string;
   selected: PhraseSegment | null;
   onHanziPress: (segment: PhraseSegment, e: GestureResponderEvent) => void;
 }) {
-  const parts = useMemo(() => segmentMixedText(text), [text]);
+  const parts = useMemo(() => segmentNoteText(text, termFor), [text, termFor]);
 
   return (
     <Text className={className}>
@@ -667,6 +701,7 @@ function wordTranslation(
   t: (key: string) => string,
   missing: string,
 ): string {
+  if (segment.gloss) return segment.gloss;
   if (segment.word) return t(segment.word.translation);
 
   // Слова целиком в словаре нет — по иероглифам

@@ -8,7 +8,9 @@
 //     ничего не переведёт);
 //   - склейку: words должны быть разбиты по словам, а не по одному иероглифу без нужды;
 //   - requires, который ссылается на несуществующий вопрос или ответ;
-//   - пустой перевод.
+//   - пустой перевод;
+//   - выражения из иероглифов в пояснении (note), которым нечего показать по тапу:
+//     нет ни в note.terms, ни среди строк фразы, ни в словаре.
 // Печатает каждую фразу с пиньинем — удобно сверить тоны.
 //
 // Запуск: node --no-warnings --experimental-strip-types scripts/check-panda-phrases.mjs
@@ -70,6 +72,20 @@ for (const phrase of pandaPhrases) {
     issues.push(...lineIssues(reply, `ответ ${reply.id}`));
     if (reply.reaction) {
       issues.push(...lineIssues(reply.reaction, `реакция на ${reply.id}`));
+    }
+  }
+
+  if (phrase.note) {
+    const hanOnly = (line) => line.words.join("").replace(/[^\p{Script=Han}]/gu, "");
+    const lines = [phrase];
+    for (const reply of phrase.replies ?? []) {
+      lines.push(reply);
+      if (reply.reaction) lines.push(reply.reaction);
+    }
+    const known = new Set(lines.map(hanOnly));
+    for (const run of phrase.note.ru.match(/\p{Script=Han}+/gu) ?? []) {
+      if (phrase.note.terms?.[run] || known.has(run) || pinyinByHanzi.has(run)) continue;
+      issues.push(`пояснение: нет перевода для ${run} — допиши в note.terms`);
     }
   }
 

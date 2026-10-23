@@ -18,6 +18,9 @@ export interface PhraseSegment {
   isHan: boolean;
   /** Слово из словаря, если нашлось. */
   word?: Word;
+  /** Перевод именно в этом месте (выражение из пояснения, фраза целиком) —
+   *  важнее словарного. */
+  gloss?: string;
 }
 
 let byHanzi: Map<string, Word> | null = null;
@@ -78,44 +81,44 @@ export function phraseText(phrase: PhraseLineLike): string {
   return phrase.words.join("");
 }
 
-const MAX_WORD_CHARS = 4;
+/** Пиньинь по иероглифам из словаря: 送钟 → «sòng zhōng» (чего нет — пропускаем). */
+function pinyinByChars(text: string): string {
+  return Array.from(text)
+    .map((char) => findWordByHanzi(char)?.pinyin ?? "")
+    .filter(Boolean)
+    .join(" ");
+}
+
+/** Что известно о выражении из пояснения: пиньинь и перевод. */
+export interface NoteTerm {
+  pinyin?: string;
+  gloss: string;
+}
 
 /**
- * Иероглифы внутри обычного текста (перевод, пояснение) по словам словаря:
- * «Отвечают 吃了 или 还没» → «Отвечают », 吃, 了, « или », 还, 没.
- * Самое длинное совпадение со словарём, до 4 иероглифов; нет в словаре — по одному.
+ * Пояснение: иероглифы, стоящие подряд, — одно выражение, а не отдельные слова:
+ * «送钟 звучит как 送终» → «送钟», « звучит как », «送终».
+ * Перевод — из termFor (термины пояснения, сама фраза), иначе из словаря.
  */
-export function segmentMixedText(text: string): PhraseSegment[] {
-  const chars = Array.from(text);
+export function segmentNoteText(
+  text: string,
+  termFor: (run: string) => NoteTerm | undefined,
+): PhraseSegment[] {
   const segments: PhraseSegment[] = [];
-
-  let i = 0;
-  while (i < chars.length) {
-    if (!HAN.test(chars[i])) {
-      let j = i;
-      while (j < chars.length && !HAN.test(chars[j])) j++;
-      segments.push({ text: chars.slice(i, j).join(""), pinyin: "", isHan: false });
-      i = j;
+  for (const part of text.match(/\p{Script=Han}+|[^\p{Script=Han}]+/gu) ?? []) {
+    if (!HAN.test(part)) {
+      segments.push({ text: part, pinyin: "", isHan: false });
       continue;
     }
-
-    let length = 1;
-    let word: Word | undefined;
-    for (let n = Math.min(MAX_WORD_CHARS, chars.length - i); n >= 1; n--) {
-      const piece = chars.slice(i, i + n);
-      if (piece.some((ch) => !HAN.test(ch))) continue;
-      const found = findWordByHanzi(piece.join(""));
-      if (found) {
-        length = n;
-        word = found;
-        break;
-      }
-    }
-
-    const piece = chars.slice(i, i + length).join("");
-    segments.push({ text: piece, pinyin: word?.pinyin ?? "", isHan: true, word });
-    i += length;
+    const term = termFor(part);
+    const word = findWordByHanzi(part);
+    segments.push({
+      text: part,
+      pinyin: term?.pinyin ?? word?.pinyin ?? pinyinByChars(part),
+      isHan: true,
+      word,
+      gloss: term?.gloss,
+    });
   }
-
   return segments;
 }

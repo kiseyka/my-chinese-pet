@@ -12,7 +12,12 @@
 //   pinyin — только если пиньинь слова во фразе отличается от словаря
 //            (изменение тона: { "一个": "yí gè" }). Остальное берётся из словаря;
 //   note   — необязательно: «Почему так говорят?» — откуда фраза, когда её говорят,
-//            чем отличается от похожих (ru, en). Показывается сразу под фразой;
+//            чем отличается от похожих (ru, en). Показывается сразу под фразой.
+//            Иероглифы подряд в пояснении — одно выражение: тап переводит его целиком
+//            (送钟 «дарить часы», а не 送 и 钟 по отдельности). Перевод берётся из
+//            note.terms, затем из самой фразы/ответов, затем из словаря. Если выражения
+//            нет в словаре или в пояснении у него особый смысл — допиши в terms:
+//            terms: { "送钟": { pinyin: "sòng zhōng", ru: "дарить часы", en: "give a clock" } };
 //   replies — необязательно, у вопросов: варианты ответа (тоже по-китайски, с переводом)
 //            и реакция панды на каждый (reaction). Ответ запоминается (pandaStore.answers);
 //   requires — необязательно: фраза появится, только если на вопрос phraseId ответили
@@ -39,7 +44,12 @@ export interface PhraseReply extends PhraseLine {
 
 export interface PandaPhrase extends PhraseLine {
   id: string;
-  note?: { ru: string; en: string };
+  note?: {
+    ru: string;
+    en: string;
+    /** Выражения из пояснения, которых нет в словаре или у которых тут особый смысл. */
+    terms?: Record<string, { pinyin?: string; ru: string; en: string }>;
+  };
   replies?: PhraseReply[];
   requires?: { phraseId: string; replyId: string };
 }
@@ -402,6 +412,10 @@ export const pandaPhrases: PandaPhrase[] = [
     note: {
       ru: "Это приветствие, а не вопрос про еду. Так показывают заботу: «у тебя всё хорошо?». Обычай связывают со старой сельской книгой правил вежливости эпохи Сун: гость спрашивал, поел ли хозяин, и если нет — ждал за дверью, чтобы не мешать обеду. Отвечают коротко: 吃了 (поел) или 还没 (ещё нет). Сейчас так говорят реже, чаще старшие.",
       en: "It's a greeting, not a question about food — a way to show you care. The custom is traced to an old Song-dynasty village etiquette book: a visitor asked if the host had eaten, and if not, waited outside so as not to interrupt the meal. Short answers: 吃了 (I have) or 还没 (not yet). Today it's less common, more often said by older people.",
+      terms: {
+        "吃了": { pinyin: "chī le", ru: "поел(а)", en: "I've eaten" },
+        "还没": { pinyin: "hái méi", ru: "ещё нет", en: "not yet" },
+      },
     },
     replies: [
       {
@@ -498,6 +512,9 @@ export const pandaPhrases: PandaPhrase[] = [
     note: {
       ru: "哪里哪里 дословно «где? где?» — «где же тут хорошее?». Так скромно отвечают на похвалу. Сейчас это звучит немного официально: молодые чаще просто говорят 谢谢.",
       en: "哪里哪里 is literally “where? where?” — “where's the good part?”. It's a modest reply to a compliment. Today it sounds a bit formal; younger people often just say 谢谢.",
+      terms: {
+        "哪里哪里": { pinyin: "nǎ li nǎ li", ru: "что вы, что вы (скромно в ответ на похвалу)", en: "oh, not at all (modest reply to praise)" },
+      },
     },
   },
   {
@@ -529,6 +546,9 @@ export const pandaPhrases: PandaPhrase[] = [
     note: {
       ru: "Дословно «не будь гостем»: не церемонься, мы свои. Так отвечают на 谢谢. Ещё говорят 不用谢 — «не нужно благодарить».",
       en: "Literally “don't be a guest”: no need for ceremony, we're close. It's the reply to 谢谢. People also say 不用谢 — “no need to thank”.",
+      terms: {
+        "不用谢": { pinyin: "bú yòng xiè", ru: "не нужно благодарить", en: "no need to thank me" },
+      },
     },
   },
   {
@@ -623,6 +643,9 @@ export const pandaPhrases: PandaPhrase[] = [
     note: {
       ru: "熊猫 дословно «медведь-кошка»: 熊 — медведь, 猫 — кошка. А на Тайване говорят наоборот — 猫熊, «кошка-медведь». Животное одно, слова переставлены.",
       en: "熊猫 literally means “bear-cat”: 熊 is bear, 猫 is cat. In Taiwan it's the other way round — 猫熊, “cat-bear”. Same animal, swapped words.",
+      terms: {
+        "猫熊": { pinyin: "māo xióng", ru: "панда (так говорят на Тайване), дословно «кошка-медведь»", en: "panda (in Taiwan), lit. “cat-bear”" },
+      },
     },
   },
   {
@@ -799,6 +822,9 @@ export const pandaPhrases: PandaPhrase[] = [
     note: {
       ru: "У чисел в Китае есть «характер» — из-за похожих слов. 八 bā созвучно 发 «богатеть» — восьмёрка самая счастливая. 六 liù похоже на 流 «течь гладко». А 四 sì звучит почти как 死 «смерть» — в некоторых домах нет четвёртого этажа.",
       en: "Numbers in China have a “character” because of similar-sounding words. 八 bā sounds like 发 “to prosper” — eight is the luckiest. 六 liù is like 流 “to flow smoothly”. And 四 sì sounds almost like 死 “death” — some buildings skip the 4th floor.",
+      terms: {
+        "发": { pinyin: "fā", ru: "богатеть (как в 发财 fā cái)", en: "to get rich (as in 发财 fā cái)" },
+      },
     },
     replies: [
       {
@@ -895,6 +921,11 @@ export const pandaPhrases: PandaPhrase[] = [
     note: {
       ru: "Часы в подарок — плохая примета: 送钟 «дарить часы» звучит как 送终 «провожать в последний путь». Груши тоже не дарят и не делят на двоих: 梨 lí созвучно 离 «расставаться».",
       en: "A clock is a bad gift: 送钟 “give a clock” sounds like 送终 “see someone off to death”. Pears aren't given or shared either: 梨 lí sounds like 离 “to part”.",
+      terms: {
+        "送钟": { pinyin: "sòng zhōng", ru: "дарить часы", en: "to give a clock" },
+        "送终": { pinyin: "sòng zhōng", ru: "провожать в последний путь", en: "to see someone off to the grave" },
+        "梨": { pinyin: "lí", ru: "груша", en: "pear" },
+      },
     },
   },
   {
@@ -915,6 +946,9 @@ export const pandaPhrases: PandaPhrase[] = [
     note: {
       ru: "Каллиграфов раньше учили на одном иероглифе — 永 «вечность». В нём есть почти все основные черты: точка, горизонтальная, вертикальная, крюк, откидные. Это называют «восемь правил 永».",
       en: "Calligraphers used to practise on one character — 永 “eternity”. It contains almost all the basic strokes: dot, horizontal, vertical, hook and sweeps. It's called “the eight principles of 永”.",
+      terms: {
+        "永": { pinyin: "yǒng", ru: "вечный; вечность", en: "eternal; forever" },
+      },
     },
   },
   {

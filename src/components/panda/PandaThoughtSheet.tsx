@@ -1,7 +1,8 @@
 // src/components/panda/PandaThoughtSheet.tsx
 //
 // Реплика панды по тапу на облачко (см. utils/panda/thoughts):
-//   phrase        — фраза на китайском (PandaPhraseView): слова — тултипом, перевод,
+//   phrase        — фраза на китайском (PandaPhraseView): панда сразу её произносит
+//                   (если звук не выключен в настройках); слова — тултипом, перевод,
 //                   пояснение; у вопросов — варианты ответа и реакция панды.
 //                   «Понятно» — фраза (и ответ) уходят в коллекцию профиля;
 //   riddle/pick   — «Как по-китайски …?» и три иероглифа; после ответа — правильный
@@ -14,9 +15,12 @@
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { findPandaPhrase } from "@/content/panda/thoughtPhrases";
 import { findWord } from "@/content/words/vocabulary";
+import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { usePandaStore } from "@/store/pandaStore";
+import { phraseText } from "@/utils/panda/phraseSegments";
 import type { PandaThought } from "@/utils/panda/thoughts";
-import { useState } from "react";
+import * as Speech from "expo-speech";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { PandaPhraseView } from "./PandaPhraseView";
@@ -85,6 +89,9 @@ function ThoughtContent({
 
 // ── Фраза ────────────────────────────────────────────────────────────────────
 
+/** Через сколько после тапа панда заговорит: панель успевает выехать. */
+const SPEAK_DELAY_MS = 350;
+
 function PhraseThought({
   thought,
   onDone,
@@ -97,6 +104,17 @@ function PhraseThought({
   const { t } = useTranslation("pandaThoughts");
   const phrase = findPandaPhrase(thought.phraseId);
   const [answer, setAnswer] = useState<string | undefined>();
+  const { speak } = useSpeakHanzi();
+
+  // Панда сразу говорит фразу; панель закрыли — замолкает
+  useEffect(() => {
+    if (!phrase) return;
+    const timer = setTimeout(() => speak(phraseText(phrase)), SPEAK_DELAY_MS);
+    return () => {
+      clearTimeout(timer);
+      Speech.stop();
+    };
+  }, [phrase, speak]);
 
   if (!phrase) return <GotIt onPress={onDone} disabled={false} />;
 
@@ -104,6 +122,7 @@ function PhraseThought({
   const waitsForAnswer = !!phrase.replies && !answer;
 
   const finish = () => {
+    Speech.stop();
     usePandaStore.getState().collectPhrase(phrase.id, answer);
     onDone();
   };
@@ -115,7 +134,10 @@ function PhraseThought({
         answer={answer}
         onAnswer={setAnswer}
         from="pet"
-        onLeave={onClose}
+        onLeave={() => {
+          Speech.stop();
+          onClose();
+        }}
       />
       <GotIt onPress={finish} disabled={waitsForAnswer} />
     </View>
