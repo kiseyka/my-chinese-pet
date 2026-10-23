@@ -74,7 +74,8 @@ function PandaTalk({ kind }: { kind: "thought" | "play" }) {
   return (
     <PandaMoodContext.Provider value={mood}>
       <View className="flex-1 bg-[#EDE0CE]" style={{ paddingTop: insets.top }}>
-        <View>
+        {/* Снизу запас на заход панели: панель ложится на него, а не на лапки */}
+        <View style={{ paddingBottom: PANEL_OVERLAP }}>
           <PandaTalkStage listening={listening} reaction={reaction} />
           <Pressable
             onPress={goPet}
