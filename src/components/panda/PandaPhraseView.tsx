@@ -13,8 +13,8 @@
 // из note.terms, из самой фразы или из словаря.
 // Тап мимо тултипа его закрывает.
 // Варианты ответа — короткие (до 3 иероглифов) сеткой 2×2, длинные — списком на всю
-// ширину. Пиньинь над иероглифами — по глазику (скрытый места не занимает), перевод
-// под ними — по значку 文A (место под него оставлено всегда, ничего не прыгает).
+// ширину. Пиньинь над иероглифами — по глазику, перевод под ними — по значку 文A.
+// Место под оба оставлено всегда: переключение только проявляет текст, ничего не прыгает.
 // После ответа: свой ответ и реакция панды озвучиваются подряд, у обоих есть озвучка,
 // перевод реакции — по ссылке «Перевод».
 //
@@ -34,9 +34,11 @@ import type {
   PhraseReply,
 } from "@/content/panda/thoughtPhrases";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
+import { useProfileStore } from "@/store/profileStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { findWordStage } from "@/utils/dictionary";
+import { genderize } from "@/utils/gender";
 import {
   findWordByHanzi,
   phraseText,
@@ -83,13 +85,19 @@ interface PandaPhraseViewProps {
 
 const isRussian = () => !!i18n.language?.startsWith("ru");
 
+/** Русский текст с формами по роду пользователя: «{пил|пила}» → «пила». */
+const ruText = (text: string) =>
+  genderize(text, useProfileStore.getState().gender);
+
 export function lineTranslation(line: PhraseLine): string {
-  return isRussian() ? line.ru : line.en || line.ru;
+  return isRussian() ? ruText(line.ru) : line.en || ruText(line.ru);
 }
 
 export function phraseNote(phrase: PandaPhrase): string | undefined {
   if (!phrase.note) return undefined;
-  return isRussian() ? phrase.note.ru : phrase.note.en || phrase.note.ru;
+  return isRussian()
+    ? ruText(phrase.note.ru)
+    : phrase.note.en || ruText(phrase.note.ru);
 }
 
 const hanOnly = (text: string) => text.replace(/[^\p{Script=Han}]/gu, "");
@@ -109,7 +117,10 @@ function noteTerms(phrase: PandaPhrase): (run: string) => NoteTerm | undefined {
   return (run) => {
     const term = phrase.note?.terms?.[run];
     if (term) {
-      return { pinyin: term.pinyin, gloss: ru ? term.ru : term.en || term.ru };
+      return {
+        pinyin: term.pinyin,
+        gloss: ru ? ruText(term.ru) : term.en || ruText(term.ru),
+      };
     }
     const line = lines.find((l) => hanOnly(phraseText(l)) === run);
     if (line) {
@@ -328,8 +339,8 @@ const hanCount = (reply: PhraseReply) => hanOnly(phraseText(reply)).length;
 
 /**
  * Варианты ответа: короткие — сеткой 2×2 (по центру), длинные — списком на всю ширину.
- * Над иероглифами — пиньинь (глазик в шапке; скрытый места не занимает), под ними —
- * перевод (значок 文A; место под него есть всегда, чтобы карточки не прыгали).
+ * Над иероглифами — пиньинь (глазик в шапке), под ними — перевод (значок 文A).
+ * Место под оба есть всегда — переключатели только проявляют текст, карточки не прыгают.
  */
 function ReplyOptions({
   replies,
@@ -394,7 +405,7 @@ function ReplyOption({
       accessibilityRole="button"
       accessibilityLabel={phraseText(reply)}
     >
-      <PandaText segments={segments} size={grid ? 26 : 24} collapsePinyin />
+      <PandaText segments={segments} size={grid ? 26 : 24} />
       {/* Перевод занимает своё место всегда, 文A только проявляет его:
           карточки не прыгают */}
       <Text

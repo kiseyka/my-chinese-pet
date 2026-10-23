@@ -4,7 +4,6 @@
 // знаки препинания прилипают к предыдущему слову — точка не уезжает одна на новую строку.
 // Скрытый пиньинь только прозрачный, а место под ним остаётся: переключение глазиком
 // не двигает фразу.
-// collapsePinyin — скрытый пиньинь не занимает места (варианты ответа: без пустых строк).
 // Если передан onWordPress, слова подчёркнуты тонкой линией и нажимаются.
 
 import { Hanzi } from "@/components/ui/Hanzi";
@@ -24,8 +23,6 @@ interface PandaTextProps {
   onWordPress?: (segment: PhraseSegment, e: GestureResponderEvent) => void;
   /** Белый текст — на зелёном фоне (ответ пользователя). */
   light?: boolean;
-  /** Скрытый пиньинь убирать совсем, а не оставлять пустую строку. */
-  collapsePinyin?: boolean;
 }
 
 /** Слово и знаки после него — один неразрывный блок. */
@@ -54,13 +51,11 @@ export function PandaText({
   selected,
   onWordPress,
   light = false,
-  collapsePinyin = false,
 }: PandaTextProps) {
   const hanziClass = light ? "text-white" : undefined;
   const pinyinClass = light ? "text-white" : "";
   const showPinyin = useSettingsStore((s) => s.showPinyin);
   const groups = useMemo(() => groupSegments(segments), [segments]);
-  const pinyinRow = showPinyin || !collapsePinyin;
 
   return (
     <View className="flex-row flex-wrap items-end">
@@ -76,15 +71,13 @@ export function PandaText({
               accessibilityRole={onWordPress ? "button" : undefined}
               accessibilityLabel={word.text}
             >
-              {pinyinRow && (
-                <Pinyin
-                  size="sm"
-                  className={pinyinClass}
-                  style={{ opacity: showPinyin ? (light ? 0.85 : 1) : 0 }}
-                >
-                  {word.pinyin || " "}
-                </Pinyin>
-              )}
+              <Pinyin
+                size="sm"
+                className={pinyinClass}
+                style={{ opacity: showPinyin ? (light ? 0.85 : 1) : 0 }}
+              >
+                {word.pinyin || " "}
+              </Pinyin>
               {/* Линия под словом — рамкой, а не подчёркиванием текста:
                   цвет и толщина подчёркивания на Android не настраиваются */}
               <View
@@ -105,7 +98,7 @@ export function PandaText({
           )}
           {!!tail && (
             <View className="items-center">
-              {pinyinRow && <Pinyin size="sm"> </Pinyin>}
+              <Pinyin size="sm"> </Pinyin>
               <Hanzi size={size} className={hanziClass}>
                 {tail}
               </Hanzi>

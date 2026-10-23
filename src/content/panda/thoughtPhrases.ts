@@ -8,7 +8,9 @@
 //            уже были и какие лежат в коллекции профиля);
 //   words  — фраза по словам, как в словаре (好看, а не 好 + 看); знаки препинания —
 //            отдельными элементами. Склеенные words — это и есть фраза;
-//   ru, en — перевод (под плашкой «Показать перевод»);
+//   ru, en — перевод (под плашкой «Показать перевод»). Если в русском есть род
+//            пользователя, пиши обе формы: «Ты сегодня {пил|пила} воду?» — подставится
+//            по выбору в профиле, без выбора — «пил(а)» (utils/gender.ts);
 //   pinyin — только если пиньинь слова во фразе отличается от словаря
 //            (изменение тона: { "一个": "yí gè" }). Остальное берётся из словаря;
 //   note   — необязательно: «Почему так говорят?» — откуда фраза, когда её говорят,
@@ -65,7 +67,7 @@ export const pandaPhrases: PandaPhrase[] = [
   {
     id: "drank-water",
     words: ["你", "今天", "喝", "水", "了", "吗", "？"],
-    ru: "Ты сегодня пил воду?",
+    ru: "Ты сегодня {пил|пила} воду?",
     en: "Have you had water today?",
     pinyin: { 吗: "ma" },
     replies: [
@@ -406,14 +408,14 @@ export const pandaPhrases: PandaPhrase[] = [
   {
     id: "chi-le-ma",
     words: ["你", "吃", "了", "吗", "？"],
-    ru: "Привет! (дословно: «Ты поел?»)",
+    ru: "Привет! (дословно: «Ты {поел|поела}?»)",
     en: "Hi! (literally: “Have you eaten?”)",
     pinyin: { 吗: "ma" },
     note: {
       ru: "Это приветствие, а не вопрос про еду. Так показывают заботу: «у тебя всё хорошо?». Обычно это объясняют тем, что сытость веками была главной заботой: если человек поел, значит, всё в порядке. Отвечают коротко: 吃了 (поел) или 还没 (ещё нет). Сейчас так говорят реже, чаще старшие.",
       en: "It's a greeting, not a question about food — a way to show you care. It's usually explained by centuries when having enough to eat was the main worry: if you've eaten, all is well. Short answers: 吃了 (I have) or 还没 (not yet). Today it's less common, more often said by older people.",
       terms: {
-        "吃了": { pinyin: "chī le", ru: "поел(а)", en: "I've eaten" },
+        "吃了": { pinyin: "chī le", ru: "{поел|поела}", en: "I've eaten" },
         "还没": { pinyin: "hái méi", ru: "ещё нет", en: "not yet" },
       },
     },
@@ -783,14 +785,14 @@ export const pandaPhrases: PandaPhrase[] = [
   {
     id: "tired-question",
     words: ["你", "累", "吗", "？"],
-    ru: "Устаёшь?",
+    ru: "Ты {устал|устала}?",
     en: "Are you tired?",
     pinyin: { 吗: "ma" },
     replies: [
       {
         id: "no",
         words: ["不", "累", "！"],
-        ru: "Не устаю!",
+        ru: "Не {устал|устала}!",
         en: "I'm not tired!",
         pinyin: { 不: "bú" },
         reaction: {
@@ -802,7 +804,7 @@ export const pandaPhrases: PandaPhrase[] = [
       {
         id: "a-bit",
         words: ["有点儿", "累", "。"],
-        ru: "Немного устаю.",
+        ru: "Немного {устал|устала}.",
         en: "A little tired.",
         pinyin: { 有点儿: "yǒu diǎnr" },
         reaction: {

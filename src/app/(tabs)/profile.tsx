@@ -62,6 +62,8 @@ export default function ProfileScreen() {
   const { level } = getLevelInfo(xp);
   const name = useProfileStore((s) => s.name);
   const setName = useProfileStore((s) => s.setName);
+  const gender = useProfileStore((s) => s.gender);
+  const setGender = useProfileStore((s) => s.setGender);
 
   const [editingName, setEditingName] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -101,8 +103,10 @@ export default function ProfileScreen() {
       <NameModal
         visible={editingName}
         initialName={name}
-        onConfirm={(value) => {
+        initialGender={gender}
+        onConfirm={(value, nextGender) => {
           setName(value);
+          setGender(nextGender);
           setEditingName(false);
         }}
         onClose={() => setEditingName(false)}
