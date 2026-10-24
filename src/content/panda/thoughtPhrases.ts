@@ -1,7 +1,11 @@
 // src/content/panda/thoughtPhrases.ts
 //
-// ФРАЗЫ ПАНДЫ — короткие фразы на китайском, которые панда говорит, когда пользователь
-// тапает по облачку «…» (см. utils/panda/thoughts.ts).
+// ФРАЗЫ ДНЯ — короткие фразы на китайском, одна в день: панда говорит её, когда
+// пользователь тапает по облачку «…» (см. utils/panda/thoughts.ts). Прочитанные —
+// в «Фразах дня» в профиле, поэтому каждая фраза должна быть интересна и потом:
+// факт, разговорное выражение с пояснением, вопрос-знакомство (цвет, еда, число —
+// ответ панда запомнит). Вопросов про состояние «сегодня» (пил ли воду, устал ли,
+// какие планы) не пишем: без свободного ответа они пустые, а перечитывать их незачем.
 //
 // Как добавить фразу:
 //   id     — любой уникальный ключ, после выхода НЕ МЕНЯТЬ (по нему помнится, какие фразы
@@ -75,37 +79,6 @@ export const pandaPhrases: PandaPhrase[] = [
     words: ["我", "的", "花", "很", "好看", "。"],
     ru: "Мой цветок очень красивый.",
     en: "My flower is very pretty.",
-  },
-  {
-    id: "drank-water",
-    words: ["你", "今天", "喝", "水", "了", "吗", "？"],
-    ru: "Ты сегодня {пил|пила} воду?",
-    en: "Have you had water today?",
-    pinyin: { 吗: "ma" },
-    replies: [
-      {
-        id: "yes",
-        words: ["喝", "了", "。"],
-        ru: "Да, уже.",
-        en: "Yes, I have.",
-        reaction: {
-          words: ["太", "好", "了", "！"],
-          ru: "Отлично!",
-          en: "Great!",
-        },
-      },
-      {
-        id: "no",
-        words: ["还", "没有", "。"],
-        ru: "Ещё нет.",
-        en: "Not yet.",
-        reaction: {
-          words: ["快", "去", "喝", "水", "吧", "！"],
-          ru: "Скорее иди попей воды!",
-          en: "Go drink some water!",
-        },
-      },
-    ],
   },
   {
     id: "like-rice",
@@ -274,60 +247,6 @@ export const pandaPhrases: PandaPhrase[] = [
     words: ["我", "在", "房间", "里", "看", "书", "。"],
     ru: "Я читаю книжку в комнате.",
     en: "I'm reading a book in my room.",
-  },
-  {
-    id: "what-today",
-    when: { time: ["morning", "day"] },
-    words: ["你", "今天", "想", "做", "什么", "？"],
-    ru: "Что ты хочешь сегодня делать?",
-    en: "What do you want to do today?",
-    replies: [
-      {
-        id: "study",
-        words: ["我", "想", "学习", "汉语", "。"],
-        ru: "Хочу учить китайский.",
-        en: "I want to study Chinese.",
-        reaction: {
-          words: ["太", "好", "了", "！", "加油", "！"],
-          ru: "Здорово! Вперёд!",
-          en: "Great! Go for it!",
-        },
-      },
-      {
-        id: "rest",
-        words: ["我", "想", "休息", "。"],
-        ru: "Хочу отдохнуть.",
-        en: "I want to rest.",
-        reaction: {
-          words: ["好", "，", "我们", "一起", "休息", "吧", "。"],
-          ru: "Хорошо, давай отдохнём вместе.",
-          en: "Okay, let's rest together.",
-          pinyin: { 一起: "yì qǐ" },
-        },
-      },
-      {
-        id: "read",
-        words: ["我", "想", "看书", "。"],
-        ru: "Хочу почитать.",
-        en: "I want to read.",
-        reaction: {
-          words: ["我", "也", "喜欢", "看书", "！"],
-          ru: "Я тоже люблю читать!",
-          en: "I like reading too!",
-        },
-      },
-      {
-        id: "sport",
-        words: ["我", "想", "运动", "。"],
-        ru: "Хочу позаниматься спортом.",
-        en: "I want to exercise.",
-        reaction: {
-          words: ["真", "棒", "！"],
-          ru: "Вот это да!",
-          en: "Awesome!",
-        },
-      },
-    ],
   },
   {
     id: "write-name",
@@ -651,13 +570,6 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Ты любишь красный — я тоже люблю красные цветы!",
     en: "You like red — I like red flowers too!",
   },
-  {
-    id: "remember-study",
-    requires: { phraseId: "what-today", replyId: "study" },
-    words: ["你", "学习", "汉语", "，", "我", "很", "高兴", "！"],
-    ru: "Ты учишь китайский — я так рада!",
-    en: "You're learning Chinese — I'm so happy!",
-  },
   // Ещё фразы с фактами и вопросами — черновик от Claude (23 октября)
   {
     id: "i-am-panda",
@@ -760,81 +672,6 @@ export const pandaPhrases: PandaPhrase[] = [
           words: ["我", "也", "想", "吃", "饺子", "！"],
           ru: "Я тоже хочу пельменей!",
           en: "I want dumplings too!",
-        },
-      },
-    ],
-  },
-  {
-    id: "weather-today",
-    words: ["今天", "天气", "怎么样", "？"],
-    ru: "Какая сегодня погода?",
-    en: "How's the weather today?",
-    replies: [
-      {
-        id: "good",
-        words: ["天气", "很", "好", "！"],
-        ru: "Погода хорошая!",
-        en: "The weather is nice!",
-        reaction: {
-          words: ["我们", "去", "公园", "吧", "！"],
-          ru: "Пойдём в парк!",
-          en: "Let's go to the park!",
-        },
-      },
-      {
-        id: "cold",
-        words: ["很", "冷", "。"],
-        ru: "Холодно.",
-        en: "It's cold.",
-        reaction: {
-          words: ["多", "穿", "衣服", "！"],
-          ru: "Оденься потеплее!",
-          en: "Dress warmly!",
-        },
-      },
-      {
-        id: "rain",
-        words: ["下雨", "了", "。"],
-        ru: "Идёт дождь.",
-        en: "It's raining.",
-        reaction: {
-          words: ["我们", "在", "家", "喝", "茶", "吧", "。"],
-          ru: "Тогда посидим дома с чаем.",
-          en: "Then let's stay home with tea.",
-        },
-      },
-    ],
-  },
-  {
-    id: "tired-question",
-    words: ["你", "累", "吗", "？"],
-    ru: "Ты {устал|устала}?",
-    en: "Are you tired?",
-    pinyin: { 吗: "ma" },
-    replies: [
-      {
-        id: "no",
-        words: ["不", "累", "！"],
-        ru: "Не {устал|устала}!",
-        en: "I'm not tired!",
-        pinyin: { 不: "bú" },
-        reaction: {
-          words: ["太", "好", "了", "！", "加油", "！"],
-          ru: "Здорово! Вперёд!",
-          en: "Great! Keep going!",
-        },
-      },
-      {
-        id: "a-bit",
-        words: ["有点儿", "累", "。"],
-        ru: "Немного {устал|устала}.",
-        en: "A little tired.",
-        pinyin: { 有点儿: "yǒu diǎnr" },
-        reaction: {
-          words: ["我们", "休息", "一会儿", "吧", "。"],
-          ru: "Давай немного отдохнём.",
-          en: "Let's rest a bit.",
-          pinyin: { 一会儿: "yí huìr" },
         },
       },
     ],

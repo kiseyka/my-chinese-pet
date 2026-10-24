@@ -1,9 +1,12 @@
 // src/components/panda/PandaPlayContent.tsx
 //
-// Тап по панде без облачка — панда предлагает поиграть (utils/panda/play). Нижняя
-// часть сцены разговора /panda-talk (сверху панда, PandaTalkStage):
-//   меню    — «Чем займёмся?»: «Угадай слово», «Послушай и угадай», «Допиши черту»
-//             (+1 опыт), «Напиши слово» (+1, без ошибок +2);
+// Меню игр с пандой (utils/panda/play) — нижняя часть сцены разговора /panda-talk
+// (сверху панда, PandaTalkStage). Открывается любым тапом по панде (с облачком —
+// после фразы дня). Игры выбирает пользователь, панда сама их не навязывает:
+//   меню    — «Чем займёмся?»: сверху «Фраза дня» (если её сегодня уже читали —
+//             послушать ещё раз), затем «Угадай слово», «Послушай и угадай»,
+//             «Допиши черту» (+1 опыт), «Напиши слово» (+1, без ошибок +2; только
+//             слова с 3 точками письма или сданным экзаменом);
 //   pick, listen — раунд из ROUND_SIZE загадок прямо в сцене («Загадка 1 из 3»,
 //             «Дальше»); в конце монеты за раунд (все верно — 2, с ошибками — 1),
 //             «Ещё» (если игры остались) и «Готово»;
@@ -33,6 +36,7 @@ import {
   pickPlayWord,
   type PlayKind,
 } from "@/utils/panda/play";
+import { getTodayPhraseId } from "@/utils/panda/thoughts";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Image } from "react-native";
@@ -55,12 +59,31 @@ type Step =
     }
   | { kind: "write"; word: Word; variant: number };
 
-/** onClose — назад к панде (и перед переходом на другой экран). */
-export function PlayContent({ onClose }: { onClose: () => void }) {
+/**
+ * onClose — назад к панде (и перед переходом на другой экран);
+ * onOpenPhrase — открыть ещё раз фразу дня, прочитанную сегодня.
+ */
+export function PlayContent({
+  onClose,
+  onOpenPhrase,
+}: {
+  onClose: () => void;
+  onOpenPhrase: (phraseId: string) => void;
+}) {
   const { t } = useTranslation("pandaThoughts");
   const router = useRouter();
   const playTimes = usePandaStore((s) => s.playTimes);
+  // Подписка на коллекцию: только что дочитанная фраза сразу появляется в меню
+  usePandaStore((s) => s.collectedPhrases.length);
   const [step, setStep] = useState<Step>({ kind: "menu" });
+  const todayPhraseId = getTodayPhraseId();
+  const phraseCard = todayPhraseId ? (
+    <PlayCard
+      title={t("play.phraseOfDay")}
+      subtitle={t("play.phraseOfDayHint")}
+      onPress={() => onOpenPhrase(todayPhraseId)}
+    />
+  ) : null;
 
   const playsLeft = getPlaysLeft(playTimes);
 
@@ -193,6 +216,7 @@ export function PlayContent({ onClose }: { onClose: () => void }) {
   if (playsLeft === 0) {
     return (
       <View className="gap-5">
+        {phraseCard}
         <Text className="font-nunito text-lead text-text">
           {t("play.tired", {
             time: formatWait(getMinutesUntilPlay(playTimes), (key, o) =>
@@ -212,6 +236,7 @@ export function PlayContent({ onClose }: { onClose: () => void }) {
       <Text className="font-nunito text-lead text-text">{t("play.question")}</Text>
 
       <View className="gap-3">
+        {phraseCard}
         <PlayCard
           title={t("play.pick")}
           subtitle={t("play.pickHint")}
@@ -235,7 +260,7 @@ export function PlayContent({ onClose }: { onClose: () => void }) {
         />
         <PlayCard
           title={t("play.write")}
-          subtitle={canWrite ? t("play.writeHint") : t("play.writeLocked")}
+          subtitle={canWrite ? t("play.writeHint") : t("play.writeLockedMastered")}
           reward={rewardRange(WRITE_REWARD, WRITE_PERFECT_REWARD)}
           disabled={!canWrite}
           onPress={() => start("write")}
@@ -259,7 +284,8 @@ function PlayCard({
 }: {
   title: string;
   subtitle: string;
-  reward: string;
+  /** Без награды (фраза дня) — справа ничего. */
+  reward?: string;
   /** Награда — монеты (иначе опыт). */
   coin?: boolean;
   disabled?: boolean;
@@ -279,14 +305,16 @@ function PlayCard({
         <Text className="font-nunitoBold text-body text-text">{title}</Text>
         <Text className="font-nunito text-small text-textSecondary">{subtitle}</Text>
       </View>
-      <View className="flex-row items-center gap-1">
-        <Text className="font-nunitoBold text-body text-text">{reward}</Text>
-        {coin ? (
-          <Image source={COIN} style={{ width: 20, height: 20 }} />
-        ) : (
-          <ZapIcon width={18} height={18} color={colors.primary} />
-        )}
-      </View>
+      {reward && (
+        <View className="flex-row items-center gap-1">
+          <Text className="font-nunitoBold text-body text-text">{reward}</Text>
+          {coin ? (
+            <Image source={COIN} style={{ width: 20, height: 20 }} />
+          ) : (
+            <ZapIcon width={18} height={18} color={colors.primary} />
+          )}
+        </View>
+      )}
     </Pressable>
   );
 }

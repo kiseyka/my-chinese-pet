@@ -1,66 +1,42 @@
 // src/utils/panda/thoughts.ts
 //
-// МЫСЛИ ПАНДЫ. Панда сама не заговаривает: когда ей есть что сказать, над головой
-// появляется облачко «…» и висит, пока пользователь не тапнет по панде. Тап — реплика
-// (тап по облачку и есть «да, давай»). Смахнул реплику — облачко остаётся.
-// Непрочитанная мысль живёт до конца дня, потом тихо пропадает (фраза не считается
-// рассказанной и вернётся позже).
+// ФРАЗА ДНЯ (облачко «…»). Панда сама не заговаривает: раз в день, когда ей есть что
+// сказать, над головой появляется облачко и висит, пока пользователь не тапнет по
+// панде. Тап — сцена разговора /panda-talk: сначала фраза дня, после «Понятно» —
+// меню игр (utils/panda/play). Облачко — только фраза, загадок в нём нет: в загадки
+// играют по желанию, из меню.
 //
-// Виды мыслей:
-//   phrase — короткая фраза на китайском из слов, которые пользователь уже изучает
-//            (content/panda/thoughtPhrases.ts). Разобрал — фраза в коллекции профиля.
-//            У вопросов — варианты ответа; ответ запоминается и открывает фразы
-//            с requires («ты любишь зелёный — мой цветок тоже»);
-//   riddle — загадка по начатому слову (как в игре по тапу, utils/panda/play),
-//            если сегодня ещё не было тренировки:
-//            pick  — по переводу выбрать иероглиф из трёх;
-//            write — написать слово по памяти (если его уже писали).
-//            Точек не даёт, ошибка ничего не отнимает.
-//   (позже: коробка с подарком за вехи пути, праздники.)
+// Фраза дня — короткая фраза на китайском из слов, которые пользователь уже изучает
+// (content/panda/thoughtPhrases.ts): факт, разговорное выражение с пояснением или
+// вопрос-знакомство («какой цвет тебе нравится?»). Ответ на вопрос запоминается и
+// открывает фразы с requires («ты любишь зелёный — мой цветок тоже»). Прочитанная
+// фраза уходит в «Фразы дня» в профиле и до конца дня открывается из меню игр.
 //
-// Правила, чтобы не надоедало (createThoughtIfDue, на входе на экран панды):
-//   - одна мысль за раз, новая не появляется поверх старой;
-//   - не больше одной мысли каждого вида в день (то есть не больше MAX_PER_DAY);
-//   - между мыслями пауза MIN_GAP_MS — облачко не встречает после каждой тренировки;
-//   - мысль вчерашнего дня, которую так и не открыли, пропадает;
+// Правила:
+//   - одна фраза в день (появляется при первом заходе на экран панды за день,
+//     если есть подходящая фраза);
+//   - непрочитанная фраза живёт до конца дня, потом тихо пропадает (не считается
+//     рассказанной и вернётся позже);
 //   - фраза только к месту (when: время суток, время года — utils/panda/phraseTime);
-//     если облачко с фразой ждало, а её время прошло («доброе утро» днём), мысль
-//     тихо пропадает;
-//   - фразы не повторяются: рассказанная фраза больше не предлагается, а показанная,
-//     но не дочитанная (панель смахнули) — не раньше чем через RECENT_PHRASES_LIMIT
-//     других фраз (если есть из чего выбрать);
-//   - слово загадки не повторяется среди последних нескольких.
+//     если облачко ждало, а время фразы прошло («доброе утро» днём), оно пропадает;
+//   - рассказанная фраза больше не предлагается; показанная, но не дочитанная — не
+//     раньше чем через RECENT_PHRASES_LIMIT других (если есть из чего выбрать).
 
 import { pandaPhrases, type PandaPhrase } from "@/content/panda/thoughtPhrases";
-import { useActivityStore } from "@/store/activityStore";
 import { rememberPhrase, usePandaStore } from "@/store/pandaStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { dayKey } from "@/utils/activity";
 import { shuffle } from "@/utils/shuffle";
 import { getPhraseWords } from "./phraseSegments";
 import { fitsNow } from "./phraseTime";
-import { pickPlayWord } from "./play";
 
-export type ThoughtKind = "phrase" | "riddle";
-export type RiddleForm = "pick" | "write";
+export type PandaThought = { kind: "phrase"; phraseId: string; createdAt: number };
 
-export type PandaThought =
-  | { kind: "phrase"; phraseId: string; createdAt: number }
-  | { kind: "riddle"; form: RiddleForm; wordId: string; createdAt: number };
-
-/** Пауза между мыслями. */
-export const MIN_GAP_MS = 2 * 60 * 60 * 1000;
-/** Видов мыслей сейчас два, каждый не чаще раза в день. */
-export const MAX_PER_DAY = 2;
 /**
- * Для проверки на телефоне: true — без паузы, дневных лимитов, «Не сейчас» и условия
- * «сегодня не было тренировки». Новая мысль появляется при каждом входе на экран панды
- * (если старую закрыли). Перед слиянием — вернуть false.
+ * Для проверки на телефоне: true — фраза дня появляется при каждом входе на экран
+ * панды (если старую закрыли), без дневного лимита. Перед слиянием — false.
  */
-const TEST_MODE = true as boolean;
-
-/** С какой вероятностью загадка просит написать слово (если его уже писали). */
-const WRITE_RIDDLE_CHANCE = 0.5;
+const TEST_MODE = false as boolean;
 
 type ProgressMap = ReturnType<
   typeof useWordProgressStore.getState
@@ -77,7 +53,6 @@ export function getAvailablePhrases(now = Date.now()): PandaPhrase[] {
   const progress = useWordProgressStore.getState().flashcardWords;
   const { seenPhraseIds, answers } = usePandaStore.getState();
   const seen = new Set(seenPhraseIds);
-
   return pandaPhrases.filter((phrase) => {
     if (seen.has(phrase.id)) return false;
     if (!fitsNow(phrase, now)) return false;
@@ -100,127 +75,80 @@ function pickPhrase(phrases: PandaPhrase[]): PandaPhrase | undefined {
   return shuffle(fresh.length > 0 ? fresh : phrases)[0];
 }
 
-function buildPhraseThought(now: number): PandaThought | null {
-  const phrase = pickPhrase(getAvailablePhrases(now));
-  return phrase
-    ? { kind: "phrase", phraseId: phrase.id, createdAt: now }
-    : null;
-}
-
-function buildRiddleThought(now: number): PandaThought | null {
-  // Загадка — повод вспомнить слова, когда сегодня ещё не занимались
-  if (!TEST_MODE && useActivityStore.getState().days[dayKey(now)]) return null;
-
-  // Слова — те же, что в игре по тапу (utils/panda/play): начатые, короткие
-  const wantWrite = Math.random() < WRITE_RIDDLE_CHANCE;
-  const writeWord = wantWrite ? pickPlayWord("write") : undefined;
-  const word = writeWord ?? pickPlayWord("pick");
-  if (!word) return null;
-
-  const form: RiddleForm = writeWord ? "write" : "pick";
-  return { kind: "riddle", form, wordId: word.vocabularyId, createdAt: now };
-}
-
+/** Мысль, которую уже нельзя показать: старый вид (загадка), фразы нет или не к месту. */
 function isStale(thought: PandaThought, now: number): boolean {
-  if (thought.kind !== "phrase") return false;
+  if (thought.kind !== "phrase") return true;
   const phrase = pandaPhrases.find((p) => p.id === thought.phraseId);
-  return !!phrase && !fitsNow(phrase, now);
+  return !phrase || !fitsNow(phrase, now) || dayKey(thought.createdAt) !== dayKey(now);
 }
-
-const BUILDERS: Record<ThoughtKind, (now: number) => PandaThought | null> = {
-  phrase: buildPhraseThought,
-  riddle: buildRiddleThought,
-};
 
 /**
- * Если пора — придумывает мысль и показывает облачко. Вызывается при входе на экран
- * панды. Ничего не делает, если мысль уже есть или правила не разрешают.
+ * Если пора — выбирает фразу дня и показывает облачко. Вызывается при входе на экран
+ * панды. Ничего не делает, если фраза уже висит или сегодня уже была.
  */
 export function createThoughtIfDue(now = Date.now()) {
   const panda = usePandaStore.getState();
   const day = dayKey(now);
 
-  // Вчерашняя мысль, которую так и не открыли, тихо пропадает. И фраза, время
-  // которой прошло: «доброе утро» вечером не к месту
-  if (
-    panda.thought &&
-    (dayKey(panda.thought.createdAt) !== day || isStale(panda.thought, now))
-  ) {
+  if (panda.thought && isStale(panda.thought, now)) {
     usePandaStore.setState({ thought: null });
   } else if (panda.thought) {
     return;
   }
 
-  if (!TEST_MODE && now - panda.lastThoughtAt < MIN_GAP_MS) return;
+  const hadToday =
+    panda.thoughtsToday.day === day && panda.thoughtsToday.kinds.length > 0;
+  if (!TEST_MODE && hadToday) return;
 
-  const usedToday =
-    panda.thoughtsToday.day === day ? panda.thoughtsToday.kinds : [];
-  if (!TEST_MODE && usedToday.length >= MAX_PER_DAY) return;
-
-  const kinds = shuffle(Object.keys(BUILDERS) as ThoughtKind[]).filter(
-    (kind) =>
-      TEST_MODE || (!usedToday.includes(kind) && panda.snoozed[kind] !== day),
-  );
-
-  for (const kind of kinds) {
-    const thought = BUILDERS[kind](now);
-    if (thought) {
-      panda.showThought(thought, day);
-      return;
-    }
+  const phrase = pickPhrase(getAvailablePhrases(now));
+  if (phrase) {
+    panda.showThought({ kind: "phrase", phraseId: phrase.id, createdAt: now }, day);
   }
 }
 
-/** Мысль закрыта ответом. */
-export function resolveThought(result: "done") {
-  usePandaStore.getState().resolveThought(result, dayKey());
+/** Фраза дня прочитана. */
+export function resolveThought() {
+  usePandaStore.getState().resolveThought();
 }
+
+/** Фраза, прочитанная сегодня (её можно открыть ещё раз из меню игр). */
+export function getTodayPhraseId(now = Date.now()): string | undefined {
+  const day = dayKey(now);
+  const today = usePandaStore
+    .getState()
+    .collectedPhrases.filter((item) => dayKey(item.at) === day);
+  return today[today.length - 1]?.phraseId;
+}
+
 // ── Проверка на телефоне ─────────────────────────────────────────────────────
 
-export type TestThought = "phrase" | "question" | "pick" | "write";
+export type TestThought = "phrase" | "question";
 
 /** Пауза между «убрать старое облачко» и «показать новое», чтобы Rive доиграл. */
 const TEST_SWAP_DELAY_MS = 500;
 
-function pickTestThought(type: TestThought, now: number): PandaThought | null {
-  if (type === "phrase" || type === "question") {
-    // Сначала фразы, которые прошли бы по правилам, иначе любая.
-    // «Вопрос» — только фразы с вариантами ответа
-    const fits = (p: PandaPhrase) => type === "phrase" || !!p.replies;
-    const available = getAvailablePhrases().filter(fits);
-    const phrase = pickPhrase(
-      available.length > 0 ? available : pandaPhrases.filter(fits),
-    );
-    if (phrase) {
-      usePandaStore.setState((state) => ({
-        recentPhraseIds: rememberPhrase(state.recentPhraseIds, phrase.id),
-      }));
-    }
-    return phrase
-      ? { kind: "phrase", phraseId: phrase.id, createdAt: now }
-      : null;
-  }
-
-  const word = pickPlayWord(type);
-  if (word) {
-    return {
-      kind: "riddle",
-      form: type,
-      wordId: word.vocabularyId,
-      createdAt: now,
-    };
-  }
-  return null;
-}
-
 /**
  * Только для проверки (кнопки на экране панды в режиме разработки): сразу показывает
- * облачко с мыслью нужного вида, без правил и лимитов, и не трогает дневной счёт.
+ * облачко с фразой (или вопросом), без правил и лимитов, и не трогает дневной счёт.
+ * Сначала фразы, которые прошли бы по правилам, иначе любая.
  * Уже висящее облачко сначала убирается — чтобы Rive заново проиграл появление.
  */
 export function showTestThought(type: TestThought) {
-  const thought = pickTestThought(type, Date.now());
-  if (!thought) return;
+  const fits = (p: PandaPhrase) => type === "phrase" || !!p.replies;
+  const available = getAvailablePhrases().filter(fits);
+  const phrase = pickPhrase(
+    available.length > 0 ? available : pandaPhrases.filter(fits),
+  );
+  if (!phrase) return;
+
+  usePandaStore.setState((state) => ({
+    recentPhraseIds: rememberPhrase(state.recentPhraseIds, phrase.id),
+  }));
+  const thought: PandaThought = {
+    kind: "phrase",
+    phraseId: phrase.id,
+    createdAt: Date.now(),
+  };
 
   if (!usePandaStore.getState().thought) {
     usePandaStore.setState({ thought });
@@ -231,15 +159,14 @@ export function showTestThought(type: TestThought) {
 }
 
 /**
- * Только для проверки: убрать облачко, сбросить паузу и дневной лимит мыслей,
- * лимит игр по тапу (15 за 3 часа) и список недавно загаданных слов.
+ * Только для проверки: убрать облачко, сбросить дневной лимит фразы, лимит игр по
+ * тапу (15 за 3 часа) и список недавно загаданных слов.
  */
 export function resetTestThoughts() {
   usePandaStore.setState({
     thought: null,
     lastThoughtAt: 0,
     thoughtsToday: { day: "", kinds: [] },
-    snoozed: {},
     playTimes: [],
     recentRiddleWordIds: [],
     recentPhraseIds: [],

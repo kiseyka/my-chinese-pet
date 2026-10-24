@@ -1,6 +1,6 @@
 // src/components/panda/PandaRiddles.tsx
 //
-// Загадки панды — общие для мысли с облачком и для игры по тапу (PandaPlayContent);
+// Загадки панды — игры из меню панды (PandaPlayContent);
 // показываются в сцене разговора /panda-talk, панда отзывается через PandaMood:
 //   PickRiddle  — «Как по-китайски …?» и три похожих иероглифа; после ответа —
 //                 правильный с пиньинем; если за верный ответ есть опыт — «+N».
@@ -184,8 +184,8 @@ export function WriteRiddle({
 }: {
   word: Word;
   variant: number;
-  /** thought — мысль с облачком; play — игра по тапу (с наградой). */
-  source: "thought" | "play";
+  /** play — игра из меню панды (с наградой). */
+  source: "play";
   onClose: () => void;
 }) {
   const router = useRouter();

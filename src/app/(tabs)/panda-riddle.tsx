@@ -1,12 +1,11 @@
 // app/(tabs)/panda-riddle.tsx
 //
-// Загадка панды «напиши слово»: мысль с облачком (source=thought, utils/panda/thoughts)
-// или игра по тапу на панду (source=play, utils/panda/play — с опытом за слово):
+// Игра с пандой «Напиши слово» (utils/panda/play, source=play — с опытом за слово):
 // сверху пиньинь и перевод, слово пишется по памяти (логика — useRiddleWriting).
-// В конце — эталон и твоё написание (тап по своему — в галерею), «Готово» закрывает
-// мысль и возвращает к панде. Ушли раньше — мысль остаётся, облачко ждёт.
+// В конце — эталон и твоё написание (тап по своему — в галерею), «Готово» — к панде.
+// «Назад» — просто выйти, ничего не теряется.
 //
-// wordId — id слова из «Повторения».
+// wordId — id слова.
 // mode=stroke — «Допиши черту»: иероглиф без одной черты, дописать её (только игра).
 
 import { Screen } from "@/components/layout/Screen";
@@ -30,7 +29,6 @@ import { findWord } from "@/content/words/vocabulary";
 import { useRiddleWriting } from "@/hooks/panda/useRiddleWriting";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { useCanvasSize } from "@/hooks/writing/useCanvasSize";
-import { usePandaStore } from "@/store/pandaStore";
 import { RewardBadge } from "@/components/panda/PandaRiddles";
 import {
   STROKE_PERFECT_REWARD,
@@ -40,7 +38,6 @@ import {
   finishPlay,
 } from "@/utils/panda/play";
 import { useMissingStroke } from "@/hooks/panda/useMissingStroke";
-import { resolveThought } from "@/utils/panda/thoughts";
 import { syllableOf } from "@/utils/writing/words";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -127,14 +124,7 @@ function RiddleWriting({
 
   const hanziList = Array.from(word.hanzi);
 
-  const finish = () => {
-    // Мысль закрываем, только если это всё ещё она (не устарела)
-    const thought = usePandaStore.getState().thought;
-    if (thought?.kind === "riddle" && thought.wordId === word.vocabularyId) {
-      resolveThought("done");
-    }
-    router.replace("/pet");
-  };
+  const finish = () => router.replace("/pet");
 
   if (phase === "done") {
     return (

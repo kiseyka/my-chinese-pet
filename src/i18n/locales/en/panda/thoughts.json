@@ -57,8 +57,8 @@
     "hideOutline": "Hide outline"
   },
   "profile": {
-    "title": "Panda's phrases",
-    "empty": "Phrases the panda tells you will gather here.",
+    "title": "Phrases of the day",
+    "empty": "Phrases of the day will gather here — the panda tells one a day.",
     "more_one": "Show {{count}} more",
     "more_other": "Show {{count}} more",
     "collapse": "Collapse"
@@ -98,7 +98,10 @@
     "next": "Next",
     "roundPerfect": "All correct! Here are your coins",
     "roundGood": "Not bad! Here's a coin",
-    "roundNone": "You'll get it next time!"
+    "roundNone": "You'll get it next time!",
+    "phraseOfDay": "Phrase of the day",
+    "phraseOfDayHint": "Hear it again",
+    "writeLockedMastered": "Unlocks when a word has 3 writing dots"
   },
   "stroke": {
     "task": "Add the stroke",

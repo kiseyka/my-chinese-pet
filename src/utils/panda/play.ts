@@ -1,8 +1,7 @@
 // src/utils/panda/play.ts
 //
-// ИГРА С ПАНДОЙ ПО ТАПУ. Облачко (utils/panda/thoughts) — это когда панда начинает
-// сама, редко. А тап по панде без облачка — когда начинаешь ты: панда предлагает
-// поиграть. Лимит — PLAYS_PER_WINDOW игр за PLAY_WINDOW_MS (15 за 3 часа), потом
+// ИГРЫ С ПАНДОЙ. Облачко (utils/panda/thoughts) — фраза дня, раз в день. Игры —
+// когда хочешь ты: любой тап по панде открывает меню игр (с облачком — после фразы). Лимит — PLAYS_PER_WINDOW игр за PLAY_WINDOW_MS (15 за 3 часа), потом
 // панда отдыхает. Обе цифры можно менять здесь.
 //
 // Игры — загадки по твоим словам (их не может кончиться, в отличие от фраз):
@@ -10,7 +9,8 @@
 //   listen — панда произносит слово, выбрать иероглиф из трёх;
 //   stroke — у иероглифа не хватает одной черты, дописать её (любые слова, которые
 //            можно писать — это проще, чем писать целиком);
-//   write  — написать слово по памяти (только слова, которые уже писали).
+//   write  — написать слово по памяти: только слова с 3 точками письма или сданным
+//            экзаменом по письму (остальные по памяти написать слишком сложно).
 // Слова: начатые (хотя бы 1 точка), «Повторение» не используется; начатых нет —
 // первые этапы пути. Для «угадай» и «послушай» — слова до 2 иероглифов.
 // Последние загаданные не повторяются.
@@ -78,6 +78,8 @@ export function getMinutesUntilPlay(playTimes: number[], now = Date.now()): numb
   return Math.max(1, Math.ceil((oldest + PLAY_WINDOW_MS - now) / 60000));
 }
 
+/** Сколько точек письма нужно слову для «Напиши слово» (или сданный экзамен). */
+const WRITE_MIN_DOTS = 3;
 /** Самое длинное слово для «угадай» и «послушай»: длинным не хватает похожих вариантов. */
 const MAX_GUESS_CHARS = 2;
 /** Сколько первых этапов пути брать, если начатых слов ещё нет. */
@@ -93,8 +95,11 @@ function fitsKind(kind: PlayKind, word: Word): boolean {
   }
   if (getWritableWords([word]).length === 0) return false;
   if (kind === "stroke") return true;
-  const progress = useWordProgressStore.getState().flashcardWords;
-  return (progress[word.vocabularyId]?.writing.streak ?? 0) > 0;
+  const { flashcardWords, writingExams } = useWordProgressStore.getState();
+  return (
+    (flashcardWords[word.vocabularyId]?.writing.streak ?? 0) >= WRITE_MIN_DOTS ||
+    !!writingExams[word.vocabularyId]?.passedAt
+  );
 }
 
 /**

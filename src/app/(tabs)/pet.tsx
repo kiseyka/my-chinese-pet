@@ -20,14 +20,14 @@ const PandaScreen = () => {
   const xp = useProgressStore((s) => s.xp);
   const { level, xpIntoLevel, xpForNextLevel } = getLevelInfo(xp);
   const progressPercent = Math.min(100, (xpIntoLevel / xpForNextLevel) * 100);
-  // Мысли панды: облачко над головой, по тапу — сцена разговора (utils/panda/thoughts).
-  // Тап без облачка — игра с пандой там же (utils/panda/play)
-  const openTalk = (kind: "thought" | "play") =>
-    router.push({ pathname: "/panda-talk" as any, params: { kind } });
-  const thought = usePandaThought(() => openTalk("thought"));
+  // Любой тап по панде — сцена разговора: фраза дня (если над головой облачко,
+  // utils/panda/thoughts), затем меню игр (utils/panda/play). С облачком сначала
+  // доигрывает анимация тапа
+  const openTalk = () => router.push("/panda-talk" as any);
+  const thought = usePandaThought(openTalk);
   const tapPanda = () => {
     if (thought.thought) thought.tapPanda();
-    else openTalk("play");
+    else openTalk();
   };
 
   return (
@@ -106,7 +106,7 @@ const PandaScreen = () => {
       <View className="flex-1" />
 
       {/* Новости панды не показываются: копятся тихо (utils/panda/news).
-          Панда говорит только по тапу на облачко — см. app/(tabs)/panda-talk */}
+          Тап по панде — сцена разговора: фраза дня и игры, см. app/(tabs)/panda-talk */}
       <View className="flex-1" />
 
       {/* Ряд навигационных иконок — обе просто переводят на отдельный

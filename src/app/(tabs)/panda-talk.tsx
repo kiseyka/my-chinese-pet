@@ -1,13 +1,14 @@
 // app/(tabs)/panda-talk.tsx
 //
 // Сцена разговора с пандой: сверху панда крупным планом (PandaTalkStage,
-// panda_talk.riv), снизу — диалог лентой, с прокруткой.
-//   kind=thought — мысль из облачка (PandaThoughtContent): фраза, вопрос, загадка;
-//   kind=play    — игра по тапу без облачка (PandaPlayContent).
+// panda_talk.riv), снизу — диалог лентой, с прокруткой. Сюда ведёт любой тап по панде:
+//   есть облачко — сначала фраза дня (PandaThoughtContent), после «Понятно» — меню игр;
+//   нет облачка  — сразу меню игр (PandaPlayContent). В меню — «Фраза дня», если её
+//                  уже читали сегодня: открыть ещё раз.
 // Панда отзывается на диалог через PandaMood (ждёт ответа, радуется, удивляется)
 // и «говорит», пока звучит озвучка (store/speechStore).
 //
-// «Назад» — к панде; мысль без ответа остаётся, облачко вернётся.
+// «Назад» — к панде; недочитанная фраза остаётся, облачко вернётся.
 // Экран остаётся смонтированным между заходами (вкладка) — каждый заход начинаем заново.
 
 import BackIcon from "@/assets/images/icons/arrow-left.svg";
@@ -19,12 +20,12 @@ import {
 } from "@/components/panda/PandaMood";
 import { PlayContent } from "@/components/panda/PandaPlayContent";
 import { PandaTalkStage } from "@/components/panda/PandaTalkStage";
-import { ThoughtContent } from "@/components/panda/PandaThoughtContent";
+import { PhraseOfDay } from "@/components/panda/PandaThoughtContent";
 import { usePandaStore } from "@/store/pandaStore";
 import { colors } from "@/theme/colors";
 import { resolveThought } from "@/utils/panda/thoughts";
 import * as Speech from "expo-speech";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,7 +34,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const PANEL_OVERLAP = 24;
 
 export default function PandaTalkRoute() {
-  const { kind } = useLocalSearchParams<{ kind?: string }>();
   const [visit, setVisit] = useState(0);
   useFocusEffect(
     useCallback(() => {
@@ -46,17 +46,26 @@ export default function PandaTalkRoute() {
   );
 
   return (
-    <PandaTalk key={`${kind}-${visit}`} kind={kind === "play" ? "play" : "thought"} />
+    <PandaTalk key={visit} />
   );
 }
 
-function PandaTalk({ kind }: { kind: "thought" | "play" }) {
+type Step =
+  | { kind: "menu" }
+  /** again — фраза, прочитанная сегодня, открыта ещё раз из меню. */
+  | { kind: "phrase"; phraseId: string; again: boolean };
+
+function PandaTalk() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Мысль — какой она была при входе: после ответа она закрывается в сторе,
-  // а на экране должна остаться до «Понятно»
-  const [thought] = useState(() => usePandaStore.getState().thought);
+  // Есть фраза дня — начинаем с неё, иначе сразу меню игр
+  const [step, setStep] = useState<Step>(() => {
+    const thought = usePandaStore.getState().thought;
+    return thought
+      ? { kind: "phrase", phraseId: thought.phraseId, again: false }
+      : { kind: "menu" };
+  });
 
   const [waiting, setWaiting] = useState<PandaWaiting | null>(null);
   const [reaction, setReaction] = useState<{ kind: PandaReaction; id: number } | null>(
@@ -101,19 +110,26 @@ function PandaTalk({ kind }: { kind: "thought" | "play" }) {
             }}
             keyboardShouldPersistTaps="handled"
           >
-            {kind === "play" ? (
-              <PlayContent onClose={goPet} />
-            ) : thought ? (
-              <ThoughtContent
-                thought={thought}
+            {step.kind === "menu" ? (
+              <PlayContent
+                onClose={goPet}
+                onOpenPhrase={(phraseId) =>
+                  setStep({ kind: "phrase", phraseId, again: true })
+                }
+              />
+            ) : (
+              <PhraseOfDay
+                key={`${step.phraseId}-${step.again}`}
+                phraseId={step.phraseId}
+                again={step.again}
                 onDone={() => {
-                  resolveThought("done");
-                  goPet();
+                  if (!step.again) resolveThought();
+                  setStep({ kind: "menu" });
                 }}
-                // Ушли на экран письма или этапа — мысль остаётся
+                // Ушли на экран этапа — недочитанная фраза остаётся
                 onLeave={() => {}}
               />
-            ) : null}
+            )}
           </ScrollView>
         </View>
       </View>
