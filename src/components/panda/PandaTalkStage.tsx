@@ -1,7 +1,8 @@
 // src/components/panda/PandaTalkStage.tsx
 //
 // Панда крупным планом в сцене разговора (/panda-talk): отдельный файл
-// assets/motion/panda_talk.riv (артборд 400×320, прозрачный фон — за ним цвет сцены).
+// assets/motion/panda_talk_thinking.riv (артборд 400×320, прозрачный фон — за ним цвет
+// сцены). Сейчас в нём только вход thinking; остальные добавляй в этот же файл.
 // State Machine 1, входы:
 //   talking   (bool)    — говорит: пока звучит озвучка (store/speechStore);
 //   listening (bool)    — ждёт ответа на свой вопрос (PandaMood.setWaiting("listening"));
@@ -24,8 +25,11 @@ import type { PandaReaction, PandaWaiting } from "./PandaMood";
 
 const STATE_MACHINE = "State Machine 1";
 
-/** Входы, которые точно есть в panda_talk.riv. Добавишь thinking в Rive — допиши. */
-const RIVE_INPUTS = new Set<string>(["talking", "listening", "happy", "surprised"]);
+/**
+ * Входы, которые точно есть в файле сцены. Добавишь вход в Rive — допиши сюда:
+ * "talking", "listening", "happy", "surprised".
+ */
+const RIVE_INPUTS = new Set<string>(["thinking"]);
 /** Пропорция артборда panda_talk (ширина / высота). */
 export const TALK_STAGE_RATIO = 400 / 320;
 
@@ -73,7 +77,7 @@ export function PandaTalkStage({ waiting, reaction }: PandaTalkStageProps) {
     <View style={{ width: "100%", aspectRatio: TALK_STAGE_RATIO }}>
       <Rive
         ref={ref}
-        source={require("@/assets/motion/panda_talk.riv")}
+        source={require("@/assets/motion/panda_talk_thinking.riv")}
         stateMachineName={STATE_MACHINE}
         fit={Fit.Contain}
         style={{ width: "100%", height: "100%" }}

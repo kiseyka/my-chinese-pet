@@ -93,7 +93,12 @@
     "listen": "Listen and guess",
     "listenHint": "The panda says a word — find the character",
     "stroke": "Finish the stroke",
-    "strokeHint": "One stroke is missing from the character"
+    "strokeHint": "One stroke is missing from the character",
+    "round": "Riddle {{n}} of {{total}}",
+    "next": "Next",
+    "roundPerfect": "All correct! Here are your coins",
+    "roundGood": "Not bad! Here's a coin",
+    "roundNone": "You'll get it next time!"
   },
   "stroke": {
     "task": "Add the stroke",

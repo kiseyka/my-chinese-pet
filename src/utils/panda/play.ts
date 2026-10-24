@@ -15,10 +15,14 @@
 // первые этапы пути. Для «угадай» и «послушай» — слова до 2 иероглифов.
 // Последние загаданные не повторяются.
 //
-// Награды (решено 23 октября): только опыт, как в тренировках — 1 за верный ответ,
-// 2 за слово, написанное без ошибок. Монет нет: за тренировку их максимум 5, и слово
-// у панды не должно стоить почти столько же. Привязанность +1 за доигранную игру —
-// внутренний счётчик, на экране её нет: отношения с пандой = уровень опыта.
+// «Угадай» и «послушай» — раунд из ROUND_SIZE загадок подряд (каждая загадка — одна
+// игра из лимита, так что за 3 часа выходит 5 раундов).
+//
+// Награды: опыт, как в тренировках — 1 за верный ответ, 2 за слово, написанное без
+// ошибок. Плюс монеты за раунд «угадай»/«послушай» (решено 24 октября): все загадки
+// верно — ROUND_PERFECT_COINS, с ошибками — ROUND_COINS, ни одной верной — ничего.
+// Привязанность +1 за доигранную игру — внутренний счётчик, на экране её нет:
+// отношения с пандой = уровень опыта.
 // Точки слов игры не меняют.
 
 import type { Word } from "@/content/flashcards/types";
@@ -44,6 +48,18 @@ export const STROKE_REWARD = 1;
 export const STROKE_PERFECT_REWARD = 1;
 export const WRITE_REWARD = 1;
 export const WRITE_PERFECT_REWARD = 2;
+
+/** Загадок в раунде «угадай» / «послушай». */
+export const ROUND_SIZE = 3;
+/** Монеты за раунд: все верно / с ошибками (но хоть одна верная). */
+export const ROUND_PERFECT_COINS = 2;
+export const ROUND_COINS = 1;
+
+/** Сколько монет за раунд: correct верных из total. */
+export function roundCoins(correct: number, total: number): number {
+  if (correct === 0) return 0;
+  return correct === total ? ROUND_PERFECT_COINS : ROUND_COINS;
+}
 
 /** Сколько игр ещё можно сейчас (за последние 3 часа). */
 export function getPlaysLeft(playTimes: number[], now = Date.now()): number {
@@ -128,6 +144,22 @@ export function pickPlayWord(kind: PlayKind): Word | undefined {
   return words.find(
     (word) => buildReadingExamQuestion(word, translate).options.length >= 3,
   );
+}
+
+/**
+ * Слова для раунда «угадай» / «послушай»: до count разных слов (меньше — если больше
+ * загадать нечего). Как pickPlayWord: только слова с двумя похожими вариантами.
+ */
+export function pickPlayWords(kind: "pick" | "listen", count: number): Word[] {
+  const translate = (key: string) => i18n.t(key);
+  return candidateWords(kind)
+    .filter((word) => buildReadingExamQuestion(word, translate).options.length >= 3)
+    .slice(0, count);
+}
+
+/** Раунд доигран: монеты (если заработаны). */
+export function finishRound(coins: number) {
+  if (coins > 0) useProgressStore.getState().addCoins(coins);
 }
 
 /** Игра доиграна: опыт (если есть), привязанность, лимит. */
