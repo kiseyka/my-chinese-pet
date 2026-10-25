@@ -18,6 +18,8 @@
 //   этап пройден / освоен — пройдены / освоены все его дорожки;
 //   текущий этап — первый непройденный. Ничего не закрыто: заниматься можно любым.
 //   «Продолжить» ведёт в первую непройденную дорожку текущего этапа.
+//   Раздел — все этапы одного уровня HSK (getPathSections): пройден / освоен,
+//   когда пройдены / освоены все его этапы. Других делений нет.
 //
 // Прогресс общий с остальным приложением: точки хранятся у слов, поэтому слово,
 // выученное в «Карточках» или «Написании», засчитывается и здесь.
@@ -305,4 +307,38 @@ export function findPathTraining(
   const stage = findPathStage(id.slice(PATH_TRAINING_PREFIX.length));
   if (!stage || stage.words.length < MIN_STAGE_WORDS) return null;
   return { title: stage.title, words: stage.words };
+}
+
+// ── Разделы HSK ──────────────────────────────────────────────────────────────
+
+/** Раздел пути — все этапы одного уровня HSK. */
+export interface PathSection {
+  level: number;
+  /** Номер первого этапа раздела на всём пути. */
+  firstIndex: number;
+  total: number;
+  passed: number;
+  mastered: number;
+}
+
+/** Разделы по порядку уровней: сколько этапов пройдено и освоено. */
+export function getPathSections(path: PathProgress): PathSection[] {
+  const sections: PathSection[] = [];
+  for (const item of path.stages) {
+    let section = sections[sections.length - 1];
+    if (!section || section.level !== item.stage.level) {
+      section = {
+        level: item.stage.level,
+        firstIndex: item.stage.index,
+        total: 0,
+        passed: 0,
+        mastered: 0,
+      };
+      sections.push(section);
+    }
+    section.total += 1;
+    if (item.passed) section.passed += 1;
+    if (item.mastered) section.mastered += 1;
+  }
+  return sections;
 }
