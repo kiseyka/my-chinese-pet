@@ -18,7 +18,7 @@ import { usePandaStore } from "@/store/pandaStore";
 import { resolveThought } from "@/utils/panda/thoughts";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { BottomSheet } from "@/components/ui/BottomSheet";
+import { BottomSheet, SheetBody } from "@/components/ui/BottomSheet";
 import { PlayContent } from "./PandaPlayContent";
 import { PhraseOfDay } from "./PandaThoughtContent";
 
@@ -38,7 +38,8 @@ interface PandaTalkSheetProps {
 
 export function PandaTalkSheet({ openId, onClose }: PandaTalkSheetProps) {
   return (
-    <BottomSheet item={openId} onClose={onClose}>
+    // manualScroll: у фразы дня «Продолжить» прибито к низу панели
+    <BottomSheet item={openId} onClose={onClose} manualScroll>
       {(id) => <TalkContent key={id} onClose={onClose} />}
     </BottomSheet>
   );
@@ -61,14 +62,22 @@ function TalkContent({ onClose }: { onClose: () => void }) {
 
   if (step.kind === "menu") {
     return (
-      <PlayContent
-        onClose={onClose}
-        onOpenPhrase={(phraseId) => setStep({ kind: "phrase", phraseId, again: true })}
-        onStartGame={(game) => {
-          onClose();
-          router.push({ pathname: "/panda-talk" as any, params: { game } });
-        }}
-      />
+      <SheetBody>
+        <PlayContent
+          onClose={onClose}
+          onOpenPhrase={(phraseId) =>
+            setStep({ kind: "phrase", phraseId, again: true })
+          }
+          onStartGame={(game) => {
+            onClose();
+            // run — каждый заход на страницу игры начинается заново (новый раунд)
+            router.push({
+              pathname: "/panda-talk" as any,
+              params: { game, run: String(Date.now()) },
+            });
+          }}
+        />
+      </SheetBody>
     );
   }
 
