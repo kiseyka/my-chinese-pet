@@ -9,13 +9,14 @@
 //     а её кнопка зовётся «Повторить»;
 //   - этап освоен целиком — галочка на кружке, а вместо «Продолжить» — «Повторить этап»:
 //     он запускает навык, который тренировали меньше (по числу ответов);
-//   - сетка слов этапа: под иероглифом две строки точек — перевод и письмо;
-//     тап по слову открывает панель слова (перевод, звук, «Повторение», наборы).
+//   - список слов этапа (PathWordList): иероглиф, пиньинь, перевод, справа точки
+//     перевода и письма; тап по слову открывает панель слова (перевод, звук,
+//     «Повторение», наборы).
 
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import LanguagesIcon from "@/assets/images/icons/languages.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
-import { PathWordGrid } from "@/components/path/PathWordGrid";
+import { PathWordList } from "@/components/path/PathWordList";
 import { colors } from "@/theme/colors";
 import { WordSheet } from "@/components/flashcards/WordSheet";
 import { Screen } from "@/components/layout/Screen";
@@ -23,7 +24,6 @@ import { BackButton } from "@/components/ui/BackButton";
 import { Hanzi } from "@/components/ui/Hanzi";
 import type { Word } from "@/content/flashcards/types";
 import { usePath } from "@/hooks/usePath";
-import { useWordProgressStore } from "@/store/wordProgressStore";
 import {
   findPathStage,
   getTrackDots,
@@ -33,9 +33,6 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-
-/** Отступы экрана (32) и карточки с сеткой (2 × 12). */
-const GRID_INSET = 32 + 24;
 
 export default function PathStageScreen() {
   const { id, from } = useLocalSearchParams<{ id?: string; from?: string }>();
@@ -58,15 +55,6 @@ export default function PathStageScreen() {
   const writableIds = useMemo(
     () => new Set(stage?.writable.map((w) => w.vocabularyId)),
     [stage],
-  );
-  const readingExams = useWordProgressStore((s) => s.readingExams);
-  const writingExams = useWordProgressStore((s) => s.writingExams);
-  const getExams = useCallback(
-    (word: Word) => ({
-      reading: !!readingExams[word.vocabularyId]?.passedAt,
-      writing: !!writingExams[word.vocabularyId]?.passedAt,
-    }),
-    [readingExams, writingExams],
   );
   const getDots = useCallback(
     (word: Word, track: TrackId) =>
@@ -194,13 +182,11 @@ export default function PathStageScreen() {
           </Pressable>
         )}
 
-        <View className="mt-2 rounded-2xl bg-surface p-3">
-          <PathWordGrid
+        <View className="mt-2 rounded-2xl bg-surface px-3 py-1">
+          <PathWordList
             words={stage.words}
             getDots={getDots}
-            getExams={getExams}
             onSelect={setOpened}
-            horizontalInset={GRID_INSET}
           />
         </View>
       </ScrollView>
