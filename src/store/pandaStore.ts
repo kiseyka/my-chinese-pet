@@ -77,8 +77,13 @@ interface PandaState {
   thought: PandaThought | null;
   /** Когда появилась последняя фраза дня. */
   lastThoughtAt: number;
-  /** Была ли сегодня фраза дня (kinds не пустой — была). */
+  /** Какие облачка были сегодня (фраза дня — есть "phrase"). */
   thoughtsToday: { day: string; kinds: PandaThought["kind"][] };
+  /**
+   * Комната, какой панда её видела в прошлый раз (строка из предметов). Поменялась —
+   * фраза о комнате. null — ещё не видела. См. utils/panda/thoughts.
+   */
+  roomSeen: string | null;
   /** Фразы, которые панда уже рассказала (новых нет — фраз не предлагает). */
   seenPhraseIds: string[];
   /** Коллекция «Фразы дня» в профиле, новые в конце. */
@@ -149,6 +154,7 @@ export const usePandaStore = create<PandaStore>()(
       thought: null,
       lastThoughtAt: 0,
       thoughtsToday: { day: "", kinds: [] },
+      roomSeen: null,
       seenPhraseIds: [],
       collectedPhrases: [],
       recentRiddleWordIds: [],
@@ -248,6 +254,7 @@ export const usePandaStore = create<PandaStore>()(
         thought: state.thought,
         lastThoughtAt: state.lastThoughtAt,
         thoughtsToday: state.thoughtsToday,
+        roomSeen: state.roomSeen,
         seenPhraseIds: state.seenPhraseIds,
         collectedPhrases: state.collectedPhrases,
         recentRiddleWordIds: state.recentRiddleWordIds,

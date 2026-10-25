@@ -6,7 +6,7 @@
 
 import type { Word } from "@/content/flashcards/types";
 import type { PandaPhrase } from "@/content/panda/thoughtPhrases";
-import { PANDA_NAME } from "@/content/panda/name";
+import { PANDA_GLOSSARY } from "@/content/panda/glossary";
 import { allWords } from "@/content/words/vocabulary";
 import i18n from "i18next";
 
@@ -53,8 +53,8 @@ export interface PhraseLineLike {
 export function segmentPhrase(phrase: PhraseLineLike): PhraseSegment[] {
   return phrase.words.map((text) => {
     if (!HAN.test(text)) return { text, pinyin: "", isHan: false };
-    // Имя панды — не из словаря: пиньинь и перевод из content/panda/name
-    if (text === PANDA_NAME.hanzi) return nameSegment(text);
+    // Имя панды, кактус — не из словаря: пиньинь и перевод из глоссария
+    if (PANDA_GLOSSARY[text]) return glossarySegment(text);
 
     const word = findWordByHanzi(text);
     const pinyin =
@@ -69,24 +69,21 @@ export function segmentPhrase(phrase: PhraseLineLike): PhraseSegment[] {
   });
 }
 
-function nameSegment(text: string): PhraseSegment {
+function glossarySegment(text: string): PhraseSegment {
+  const entry = PANDA_GLOSSARY[text];
   const ru = i18n.language?.startsWith("ru");
-  return {
-    text,
-    pinyin: PANDA_NAME.pinyin,
-    isHan: true,
-    gloss: ru ? `${PANDA_NAME.ru} — имя панды` : `${PANDA_NAME.en}, the panda's name`,
-  };
+  return { text, pinyin: entry.pinyin, isHan: true, gloss: ru ? entry.ru : entry.en };
 }
 
 /**
- * Слова фразы из словаря (без знаков и без имени панды — оно всегда знакомо);
+ * Слова фразы из словаря (без знаков и без слов из глоссария панды — они всегда
+ * знакомы);
  * undefined — какого-то слова в словаре нет.
  */
 export function getPhraseWords(phrase: PandaPhrase): Word[] | undefined {
   const words: Word[] = [];
   for (const text of phrase.words) {
-    if (!HAN.test(text) || text === PANDA_NAME.hanzi) continue;
+    if (!HAN.test(text) || PANDA_GLOSSARY[text]) continue;
     const word = findWordByHanzi(text);
     if (!word) return undefined;
     words.push(word);

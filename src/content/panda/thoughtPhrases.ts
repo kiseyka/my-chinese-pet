@@ -2,10 +2,17 @@
 //
 // ФРАЗЫ ДНЯ — короткие фразы на китайском, одна в день: панда говорит её, когда
 // пользователь тапает по облачку «…» (см. utils/panda/thoughts.ts). Прочитанные —
-// в «Фразах дня» в профиле, поэтому каждая фраза должна быть интересна и потом:
-// факт, разговорное выражение с пояснением, вопрос-знакомство (цвет, еда, число —
-// ответ панда запомнит). Вопросов про состояние «сегодня» (пил ли воду, устал ли,
-// какие планы) не пишем: без свободного ответа они пустые, а перечитывать их незачем.
+// в «Фразах дня» в профиле, поэтому каждая фраза должна быть интересна и потом.
+// Фраза без вариантов ответа должна нести интересный факт или пояснение (note);
+// просто реплик («я проголодалась», «сегодня хорошая погода») не пишем.
+// Вопрос — знакомство с пользователем (цвет, еда, чай или кофе, фрукты, погода):
+// в реакции панда делится своим вкусом («я больше всего люблю рис, но лапша тоже
+// вкусная»), ответ она запоминает. Вопросов, на которые нечего ответить, кроме
+// «да/нет» (пил ли воду, устал ли), не пишем.
+//
+// Слова не из словаря (имя панды, 仙人掌) — в глоссарии content/panda/glossary.ts.
+// О панде: её зовут 竹竹 Жужа, она любит кактусы, зелёный цвет, рис, зелёный чай и
+// бананы, не любит кофе и дождь — новые фразы не должны этому противоречить.
 //
 // Как добавить фразу:
 //   id     — любой уникальный ключ, после выхода НЕ МЕНЯТЬ (по нему помнится, какие фразы
@@ -89,96 +96,115 @@ export const pandaPhrases: PandaPhrase[] = [
       },
     },
   },
+  // Панда любит кактусы (первое растение в комнате — кактус, см. docs/panda-thoughts.md)
   {
-    id: "flower-pretty",
-    words: ["我", "的", "花", "很", "好看", "。"],
-    ru: "Мой цветок очень красивый.",
-    en: "My flower is very pretty.",
+    id: "cactus",
+    words: ["我", "最", "喜欢", "仙人掌", "！", "你", "喜欢", "吗", "？"],
+    ru: "Больше всего я люблю кактусы! А тебе они нравятся?",
+    en: "I love cacti most of all! Do you like them?",
+    pinyin: { 吗: "ma" },
+    note: {
+      ru: "仙人掌 дословно «ладонь небожителя»: 仙人 — бессмертный небожитель, 掌 — ладонь. Плоские стебли кактуса-опунции и правда похожи на ладони.",
+      en: "仙人掌 literally means “palm of an immortal”: 仙人 is an immortal, 掌 is a palm. The flat pads of the prickly pear cactus really do look like palms.",
+      terms: {
+        "仙人": { pinyin: "xiān rén", ru: "бессмертный, небожитель", en: "immortal, celestial being" },
+        "掌": { pinyin: "zhǎng", ru: "ладонь", en: "palm (of the hand)" },
+      },
+    },
+    replies: [
+      {
+        id: "me-too",
+        words: ["我", "也", "喜欢", "！"],
+        ru: "Мне тоже нравятся!",
+        en: "I like them too!",
+        reaction: {
+          words: ["那", "我们", "一起", "养", "仙人掌", "吧", "！"],
+          ru: "Тогда давай вместе растить кактусы!",
+          en: "Then let's grow cacti together!",
+          pinyin: { 一起: "yì qǐ" },
+        },
+      },
+      {
+        id: "flowers",
+        words: ["我", "更", "喜欢", "花", "。"],
+        ru: "Мне больше нравятся цветы.",
+        en: "I like flowers more.",
+        reaction: {
+          words: ["仙人掌", "也", "会", "开花", "！"],
+          ru: "Кактусы тоже цветут!",
+          en: "Cacti bloom too!",
+        },
+      },
+      {
+        id: "why",
+        words: ["为什么", "？"],
+        ru: "Почему?",
+        en: "Why?",
+        reaction: {
+          words: ["仙人掌", "不用", "很", "多", "水", "！"],
+          ru: "Кактусу не нужно много воды!",
+          en: "A cactus doesn't need much water!",
+        },
+      },
+    ],
   },
   {
-    id: "like-rice",
-    words: ["我", "喜欢", "吃", "米饭", "。"],
-    ru: "Я люблю есть рис.",
-    en: "I like eating rice.",
-  },
-  {
-    id: "weather-good",
-    when: { time: ["morning", "day"] },
-    words: ["今天", "天气", "很", "好", "。"],
-    ru: "Сегодня хорошая погода.",
-    en: "The weather is nice today.",
-  },
-  // Черновик от Claude — проверь, поправь или замени
-  {
-    id: "hungry",
-    words: ["我", "饿", "了", "。"],
-    ru: "Я проголодалась.",
-    en: "I'm hungry.",
-  },
-  {
-    id: "tea-together",
-    words: ["我们", "一起", "喝", "茶", "吧", "！"],
-    ru: "Давай вместе попьём чаю!",
-    en: "Let's have some tea together!",
-    pinyin: { 一起: "yì qǐ" },
-  },
-  {
-    id: "rain-outside",
-    when: { season: ["spring", "summer", "autumn"] },
-    words: ["外面", "下雨", "了", "。"],
-    ru: "На улице пошёл дождь.",
-    en: "It started raining outside.",
-  },
-  {
-    id: "dress-warm",
-    when: { season: ["autumn", "winter"] },
-    words: ["今天", "很", "冷", "，", "多", "穿", "衣服", "！"],
-    ru: "Сегодня холодно, оденься потеплее!",
-    en: "It's cold today, dress warmly!",
-  },
-  {
-    id: "moon",
-    words: ["我", "喜欢", "看", "月亮", "。"],
-    ru: "Я люблю смотреть на луну.",
-    en: "I like looking at the moon.",
-  },
-  {
-    id: "rest",
-    words: ["我们", "休息", "一会儿", "吧", "。"],
-    ru: "Давай немного отдохнём.",
-    en: "Let's rest for a bit.",
-    pinyin: { 一会儿: "yí huìr" },
-  },
-  {
-    id: "flower-smell",
-    words: ["我", "的", "花", "很", "香", "。"],
-    ru: "Мой цветок так приятно пахнет.",
-    en: "My flower smells so nice.",
+    id: "weather-today",
+    words: ["今天", "天气", "怎么样", "？"],
+    ru: "Какая сегодня погода?",
+    en: "How's the weather today?",
+    note: {
+      ru: "天气 дословно «небесный воздух»: 天 — небо, 气 — воздух, пар. Тот же 气 есть в 生气 — «сердиться», дословно «рождать пар».",
+      en: "天气 literally means “sky air”: 天 is sky, 气 is air or vapour. The same 气 is in 生气, “to get angry” — literally “to produce steam”.",
+    },
+    replies: [
+      {
+        id: "sunny",
+        words: ["今天", "是", "晴天", "！"],
+        ru: "Сегодня солнечно!",
+        en: "It's sunny today!",
+        reaction: {
+          words: ["今天", "的", "太阳", "真", "好", "！"],
+          ru: "Какое сегодня хорошее солнышко!",
+          en: "The sun is so nice today!",
+        },
+      },
+      {
+        id: "rain",
+        words: ["下雨", "了", "。"],
+        ru: "Идёт дождь.",
+        en: "It's raining.",
+        reaction: {
+          words: ["我", "不", "喜欢", "下雨", "……", "我们", "在", "家", "喝", "茶", "吧", "。"],
+          ru: "Не люблю дождь… Давай посидим дома с чаем.",
+          en: "I don't like rain… Let's stay home with some tea.",
+        },
+      },
+      {
+        id: "cold",
+        words: ["很", "冷", "。"],
+        ru: "Холодно.",
+        en: "It's cold.",
+        reaction: {
+          words: ["多", "穿", "衣服", "！"],
+          ru: "Оденься потеплее!",
+          en: "Dress warmly!",
+        },
+      },
+    ],
   },
   {
     id: "dumplings",
-    words: ["我", "想", "吃", "饺子", "。"],
-    ru: "Хочу пельменей.",
-    en: "I want some dumplings.",
-  },
-  {
-    id: "happy-today",
-    words: ["我", "今天", "很", "高兴", "！"],
-    ru: "Мне сегодня так радостно!",
-    en: "I'm so happy today!",
-  },
-  {
-    id: "thanks-study",
-    words: ["谢谢", "你", "和", "我", "一起", "学习", "！"],
-    ru: "Спасибо, что учишься вместе со мной!",
-    en: "Thank you for studying with me!",
-    pinyin: { 一起: "yì qǐ" },
-  },
-  {
-    id: "no-rain",
-    words: ["我", "不", "喜欢", "下雨", "。"],
-    ru: "Я не люблю дождь.",
-    en: "I don't like rain.",
+    words: ["过年", "吃", "饺子", "！"],
+    ru: "На Новый год едят пельмени!",
+    en: "Dumplings for the New Year!",
+    note: {
+      ru: "На севере Китая пельмени 饺子 лепят всей семьёй в канун Нового года по лунному календарю. По форме они похожи на старинный слиток серебра 元宝, поэтому пельмени — к богатству. Иногда в один прячут монетку: кому попадётся, тому весь год везёт.",
+      en: "In northern China, families make 饺子 dumplings together on Lunar New Year's Eve. They're shaped like an old silver ingot, 元宝, so dumplings stand for wealth. Sometimes a coin is hidden in one — whoever finds it is lucky all year.",
+      terms: {
+        "元宝": { pinyin: "yuán bǎo", ru: "старинный слиток серебра или золота", en: "old silver or gold ingot" },
+      },
+    },
   },
   {
     id: "what-color",
@@ -231,133 +257,6 @@ export const pandaPhrases: PandaPhrase[] = [
         },
       },
     ],
-  },
-  {
-    id: "green",
-    words: ["我", "最", "喜欢", "绿色", "。"],
-    ru: "Больше всего я люблю зелёный.",
-    en: "Green is my favorite color.",
-  },
-  {
-    id: "stars",
-    when: { time: ["day", "evening"] },
-    words: ["晚上", "我们", "看", "星星", "吧", "。"],
-    ru: "Вечером давай посмотрим на звёзды.",
-    en: "Let's look at the stars tonight.",
-  },
-  {
-    id: "cake",
-    words: ["蛋糕", "很", "甜", "，", "我", "很", "喜欢", "！"],
-    ru: "Торт сладкий, обожаю!",
-    en: "Cake is sweet, I love it!",
-  },
-  {
-    id: "not-hard",
-    words: ["汉语", "不", "难", "！"],
-    ru: "Китайский — это не сложно!",
-    en: "Chinese isn't hard!",
-  },
-  {
-    id: "reading-room",
-    words: ["我", "在", "房间", "里", "看", "书", "。"],
-    ru: "Я читаю книжку в комнате.",
-    en: "I'm reading a book in my room.",
-  },
-  {
-    id: "write-name",
-    words: ["我", "会", "写", "我", "的", "名字", "！"],
-    ru: "Я умею писать своё имя!",
-    en: "I can write my name!",
-  },
-  {
-    id: "know-name",
-    words: ["你", "知道", "我", "的", "名字", "吗", "？"],
-    ru: "Ты знаешь, как меня зовут?",
-    en: "Do you know my name?",
-    pinyin: { 吗: "ma" },
-  },
-  {
-    id: "our-room",
-    words: ["我", "很", "喜欢", "我们", "的", "房间", "。"],
-    ru: "Мне очень нравится наша комната.",
-    en: "I really like our room.",
-  },
-  {
-    id: "park-walk",
-    when: { time: ["morning", "day", "evening"] },
-    words: ["我", "想", "去", "公园", "散步", "。"],
-    ru: "Хочу погулять в парке.",
-    en: "I want to go for a walk in the park.",
-  },
-  {
-    id: "fruit",
-    words: ["苹果", "好吃", "，", "香蕉", "也", "好吃", "！"],
-    ru: "Яблоки вкусные, и бананы тоже!",
-    en: "Apples are tasty, and bananas too!",
-  },
-  {
-    id: "sunny",
-    when: { time: ["morning", "day"] },
-    words: ["今天", "的", "太阳", "真", "好", "。"],
-    ru: "Сегодня такое хорошее солнышко.",
-    en: "The sun is so nice today.",
-  },
-  {
-    id: "hanzi-pretty",
-    words: ["汉字", "很", "漂亮", "。"],
-    ru: "Иероглифы такие красивые.",
-    en: "Chinese characters are so beautiful.",
-  },
-  {
-    id: "cute-sleeping",
-    words: ["我", "睡觉", "的", "时候", "很", "可爱", "吗", "？"],
-    ru: "Я милая, когда сплю?",
-    en: "Am I cute when I sleep?",
-    pinyin: { 吗: "ma" },
-    replies: [
-      {
-        id: "very",
-        words: ["很", "可爱", "！"],
-        ru: "Очень милая!",
-        en: "Very cute!",
-        reaction: {
-          words: ["谢谢", "你", "！"],
-          ru: "Спасибо!",
-          en: "Thank you!",
-        },
-      },
-      {
-        id: "of-course",
-        words: ["当然", "！"],
-        ru: "Конечно!",
-        en: "Of course!",
-        reaction: {
-          words: ["我", "很", "高兴", "！"],
-          ru: "Как приятно!",
-          en: "That makes me happy!",
-        },
-      },
-    ],
-  },
-  {
-    id: "good-friend",
-    words: ["你", "是", "我", "的", "好", "朋友", "。"],
-    ru: "Ты мой хороший друг.",
-    en: "You're my good friend.",
-  },
-  {
-    id: "see-tomorrow",
-    when: { time: ["evening", "night"] },
-    words: ["明天见", "！"],
-    ru: "До завтра!",
-    en: "See you tomorrow!",
-  },
-  {
-    id: "snow-outside",
-    when: { season: ["winter"] },
-    words: ["下雪", "了", "！", "我们", "出去", "吧", "！"],
-    ru: "Пошёл снег! Пойдём на улицу!",
-    en: "It's snowing! Let's go outside!",
   },
   // Разговорные фразы с пояснением «Почему так говорят?» — черновик от Claude
   {
@@ -574,9 +473,9 @@ export const pandaPhrases: PandaPhrase[] = [
   {
     id: "remember-green",
     requires: { phraseId: "what-color", replyId: "green" },
-    words: ["你", "喜欢", "绿色", "，", "我", "的", "花", "也", "是", "绿色", "的", "！"],
-    ru: "Ты любишь зелёный — а мой цветок тоже зелёный!",
-    en: "You like green — and my flower is green too!",
+    words: ["你", "喜欢", "绿色", "，", "我", "的", "仙人掌", "也", "是", "绿色", "的", "！"],
+    ru: "Ты любишь зелёный — а мой кактус тоже зелёный!",
+    en: "You like green — and my cactus is green too!",
   },
   {
     id: "remember-red",
@@ -611,37 +510,47 @@ export const pandaPhrases: PandaPhrase[] = [
     },
   },
   {
-    id: "tea-question",
-    words: ["你", "喜欢", "喝", "茶", "吗", "？"],
-    ru: "Ты любишь чай?",
-    en: "Do you like tea?",
-    pinyin: { 吗: "ma" },
+    id: "tea-or-coffee",
+    words: ["你", "喜欢", "喝", "茶", "还是", "咖啡", "？"],
+    ru: "Ты больше любишь чай или кофе?",
+    en: "Do you prefer tea or coffee?",
     note: {
-      ru: "Русское «чай» пришло от 茶 chá — через северные сухопутные торговые пути. А английское tea — от южного диалекта Фуцзяни, где говорят «te»: туда приходили морские корабли. Одно слово — два пути по миру.",
-      en: "Russian «чай» comes from 茶 chá, via the northern overland trade routes. English “tea” comes from the southern Fujian dialect, where it's “te” — that's where the sea ships came. One word, two routes around the world.",
+      ru: "Русское «чай» пришло от 茶 chá — через северные сухопутные торговые пути. А английское tea — от южного диалекта Фуцзяни, где говорят «te»: туда приходили морские корабли. И ещё: 红茶, «красный чай», — это то, что мы называем чёрным. Китайцы называют чай по цвету настоя.",
+      en: "Russian «чай» comes from 茶 chá, via the northern overland trade routes. English “tea” comes from the southern Fujian dialect, where it's “te” — that's where the sea ships came. Also: 红茶, “red tea”, is what we call black tea. Chinese name tea by the colour of the brew.",
     },
     replies: [
       {
-        id: "yes",
-        words: ["我", "很", "喜欢", "茶", "！"],
-        ru: "Я очень люблю чай!",
-        en: "I really like tea!",
+        id: "green-tea",
+        words: ["我", "喜欢", "绿茶", "。"],
+        ru: "Я люблю зелёный чай.",
+        en: "I like green tea.",
         reaction: {
-          words: ["我们", "一起", "喝", "茶", "吧", "！"],
-          ru: "Давай вместе попьём!",
-          en: "Let's have some together!",
-          pinyin: { 一起: "yì qǐ" },
+          words: ["我", "也", "最", "喜欢", "绿茶", "！"],
+          ru: "Я тоже больше всего люблю зелёный!",
+          en: "Green tea is my favourite too!",
         },
       },
       {
-        id: "no",
-        words: ["我", "不", "喜欢", "。"],
-        ru: "Не люблю.",
-        en: "I don't like it.",
+        id: "black-tea",
+        words: ["我", "喜欢", "红茶", "。"],
+        ru: "Я люблю чёрный чай.",
+        en: "I like black tea.",
         reaction: {
-          words: ["那", "我们", "喝", "水", "吧", "！"],
-          ru: "Тогда попьём воды!",
-          en: "Then let's drink water!",
+          words: ["红茶", "也", "很", "不错", "！"],
+          ru: "Чёрный тоже очень хорош!",
+          en: "Black tea is great too!",
+        },
+      },
+      {
+        id: "coffee",
+        words: ["我", "喜欢", "咖啡", "。"],
+        ru: "Я люблю кофе.",
+        en: "I like coffee.",
+        reaction: {
+          words: ["咖啡", "？", "我", "不", "喜欢", "咖啡", "，", "太", "苦", "了", "！"],
+          ru: "Кофе? Я не люблю кофе, он слишком горький!",
+          en: "Coffee? I don't like coffee, it's too bitter!",
+          mood: "surprised",
         },
       },
     ],
@@ -662,9 +571,9 @@ export const pandaPhrases: PandaPhrase[] = [
         ru: "Я люблю рис.",
         en: "I like rice.",
         reaction: {
-          words: ["南方", "人", "也", "喜欢", "米饭", "！"],
-          ru: "На юге тоже любят рис!",
-          en: "Southerners love rice too!",
+          words: ["我", "也", "最", "喜欢", "米饭", "！"],
+          ru: "Я тоже больше всего люблю рис!",
+          en: "Rice is my favourite too!",
         },
       },
       {
@@ -673,9 +582,9 @@ export const pandaPhrases: PandaPhrase[] = [
         ru: "Я люблю лапшу.",
         en: "I like noodles.",
         reaction: {
-          words: ["北方", "人", "也", "喜欢", "面条", "！"],
-          ru: "На севере тоже любят лапшу!",
-          en: "Northerners love noodles too!",
+          words: ["我", "最", "喜欢", "米饭", "，", "不过", "面条", "也", "很", "好吃", "！"],
+          ru: "Я больше всего люблю рис, но лапша тоже очень вкусная!",
+          en: "I like rice best, but noodles are very tasty too!",
         },
       },
       {
@@ -684,9 +593,169 @@ export const pandaPhrases: PandaPhrase[] = [
         ru: "Я люблю пельмени.",
         en: "I like dumplings.",
         reaction: {
-          words: ["我", "也", "想", "吃", "饺子", "！"],
-          ru: "Я тоже хочу пельменей!",
-          en: "I want dumplings too!",
+          words: ["我", "最", "喜欢", "米饭", "，", "不过", "饺子", "也", "很", "好吃", "！"],
+          ru: "Я больше всего люблю рис, но пельмени тоже очень вкусные!",
+          en: "I like rice best, but dumplings are very tasty too!",
+        },
+      },
+    ],
+  },
+  {
+    id: "what-sweet",
+    words: ["你", "喜欢", "什么", "甜", "的", "东西", "？"],
+    ru: "Какие сладости ты любишь?",
+    en: "What sweets do you like?",
+    pinyin: { 东西: "dōng xi" },
+    note: {
+      ru: "甜 — «сладкий», и не только про еду. 嘴甜, «сладкий рот», говорят о том, кто умеет сказать приятное.",
+      en: "甜 means “sweet”, and not only about food. 嘴甜, “sweet mouth”, describes someone who knows how to say nice things.",
+      terms: {
+        "嘴甜": { pinyin: "zuǐ tián", ru: "«сладкий рот» — о том, кто говорит приятное", en: "“sweet mouth” — someone who says nice things" },
+      },
+    },
+    replies: [
+      {
+        id: "cake",
+        words: ["我", "喜欢", "蛋糕", "。"],
+        ru: "Я люблю торт.",
+        en: "I like cake.",
+        reaction: {
+          words: ["蛋糕", "很", "甜", "，", "我", "很", "喜欢", "！"],
+          ru: "Торт сладкий, обожаю!",
+          en: "Cake is sweet, I love it!",
+        },
+      },
+      {
+        id: "chocolate",
+        words: ["我", "喜欢", "巧克力", "。"],
+        ru: "Я люблю шоколад.",
+        en: "I like chocolate.",
+        reaction: {
+          words: ["巧克力", "？", "我", "也", "喜欢", "！"],
+          ru: "Шоколад? Я тоже люблю!",
+          en: "Chocolate? I like it too!",
+        },
+      },
+      {
+        id: "mooncake",
+        words: ["我", "喜欢", "月饼", "。"],
+        ru: "Я люблю лунные пряники.",
+        en: "I like mooncakes.",
+        reaction: {
+          words: ["月饼", "很", "甜", "，", "也", "很", "好看", "！"],
+          ru: "Лунные пряники сладкие и такие красивые!",
+          en: "Mooncakes are sweet and so pretty!",
+        },
+      },
+    ],
+  },
+  {
+    id: "what-fruit",
+    words: ["你", "喜欢", "什么", "水果", "？"],
+    ru: "Какие фрукты ты любишь?",
+    en: "What fruit do you like?",
+    note: {
+      ru: "苹果 píngguǒ звучит похоже на 平安 píng'ān — «мир, благополучие». Поэтому в сочельник, по-китайски 平安夜 — «ночь мира», — друзья дарят друг другу яблоки в красивой упаковке.",
+      en: "苹果 píngguǒ sounds like 平安 píng'ān, “peace, safety”. So on Christmas Eve — 平安夜, “peaceful night” in Chinese — friends give each other nicely wrapped apples.",
+      terms: {
+        "平安": { pinyin: "píng ān", ru: "мир, благополучие", en: "peace, safety" },
+        "平安夜": { pinyin: "píng ān yè", ru: "сочельник, «ночь мира»", en: "Christmas Eve, “peaceful night”" },
+      },
+    },
+    replies: [
+      {
+        id: "apple",
+        words: ["我", "喜欢", "苹果", "。"],
+        ru: "Я люблю яблоки.",
+        en: "I like apples.",
+        reaction: {
+          words: ["苹果", "好吃", "，", "香蕉", "也", "好吃", "！"],
+          ru: "Яблоки вкусные, и бананы тоже!",
+          en: "Apples are tasty, and bananas too!",
+        },
+      },
+      {
+        id: "banana",
+        words: ["我", "喜欢", "香蕉", "。"],
+        ru: "Я люблю бананы.",
+        en: "I like bananas.",
+        reaction: {
+          words: ["我", "也", "最", "喜欢", "香蕉", "！"],
+          ru: "Я тоже больше всего люблю бананы!",
+          en: "Bananas are my favourite too!",
+        },
+      },
+      {
+        id: "watermelon",
+        words: ["我", "喜欢", "西瓜", "。"],
+        ru: "Я люблю арбуз.",
+        en: "I like watermelon.",
+        reaction: {
+          words: ["西瓜", "很", "甜", "！"],
+          ru: "Арбуз такой сладкий!",
+          en: "Watermelon is so sweet!",
+        },
+      },
+    ],
+  },
+  {
+    id: "what-hobby",
+    words: ["你", "喜欢", "做", "什么", "？"],
+    ru: "Чем ты любишь заниматься?",
+    en: "What do you like to do?",
+    note: {
+      ru: "В китайских парках с утра людно: пожилые занимаются тайцзицюанем 太极拳, а по вечерам на площадях танцуют 广场舞 — «танцы на площади» — под музыку из колонки.",
+      en: "Chinese parks are busy in the morning: older people practise tai chi, 太极拳, and in the evening they do 广场舞, “square dancing”, to music from a speaker.",
+      terms: {
+        "太极拳": { pinyin: "tài jí quán", ru: "тайцзицюань (тайчи)", en: "tai chi" },
+        "广场舞": { pinyin: "guǎng chǎng wǔ", ru: "«танцы на площади»", en: "“square dancing”" },
+      },
+    },
+    replies: [
+      {
+        id: "read",
+        words: ["我", "喜欢", "看书", "。"],
+        ru: "Я люблю читать.",
+        en: "I like reading.",
+        reaction: {
+          words: ["我", "也", "喜欢", "看书", "！"],
+          ru: "Я тоже люблю читать!",
+          en: "I like reading too!",
+        },
+      },
+      {
+        id: "sport",
+        words: ["我", "喜欢", "运动", "。"],
+        ru: "Я люблю спорт.",
+        en: "I like sports.",
+        reaction: {
+          words: ["我们", "一起", "去", "跑步", "吧", "！"],
+          ru: "Давай вместе пойдём на пробежку!",
+          en: "Let's go for a run together!",
+          pinyin: { 一起: "yì qǐ" },
+        },
+      },
+      {
+        id: "walk",
+        words: ["我", "喜欢", "散步", "。"],
+        ru: "Я люблю гулять.",
+        en: "I like going for walks.",
+        reaction: {
+          words: ["我", "也", "想", "去", "公园", "散步", "！"],
+          ru: "Я тоже хочу погулять в парке!",
+          en: "I want to walk in the park too!",
+        },
+      },
+      {
+        id: "chinese",
+        words: ["我", "喜欢", "学习", "汉语", "。"],
+        ru: "Я люблю учить китайский.",
+        en: "I like learning Chinese.",
+        reaction: {
+          words: ["谢谢", "你", "和", "我", "一起", "学习", "！"],
+          ru: "Спасибо, что учишься вместе со мной!",
+          en: "Thank you for studying with me!",
+          pinyin: { 一起: "yì qǐ" },
         },
       },
     ],
@@ -859,7 +928,38 @@ export const pandaPhrases: PandaPhrase[] = [
   },
 ];
 
-const byId = new Map(pandaPhrases.map((phrase) => [phrase.id, phrase]));
+/**
+ * ФРАЗЫ О КОМНАТЕ — отдельный набор: панда говорит одну из них (облачком), когда
+ * в комнате появился новый предмет или поменялся старый (utils/panda/thoughts,
+ * createThoughtIfDue). Не фраза дня: в дневной лимит не входят, в «Фразы дня» не
+ * попадают и могут повторяться (только не та же, что в прошлый раз). Формат — как у
+ * фраз дня; слова тоже должны быть начаты.
+ */
+export const roomPhrases: PandaPhrase[] = [
+  {
+    id: "room-like",
+    words: ["我", "很", "喜欢", "我们", "的", "房间", "。"],
+    ru: "Мне очень нравится наша комната.",
+    en: "I really like our room.",
+  },
+  {
+    id: "room-new",
+    words: ["新", "的", "东西", "！", "真", "漂亮", "！"],
+    ru: "Что-то новенькое! Как красиво!",
+    en: "Something new! So pretty!",
+    pinyin: { 东西: "dōng xi" },
+  },
+  {
+    id: "room-thanks",
+    words: ["房间", "真", "好看", "，", "谢谢", "你", "！"],
+    ru: "Комната такая красивая, спасибо тебе!",
+    en: "The room looks so nice, thank you!",
+  },
+];
+
+const byId = new Map(
+  [...pandaPhrases, ...roomPhrases].map((phrase) => [phrase.id, phrase]),
+);
 
 export function findPandaPhrase(id: string): PandaPhrase | undefined {
   return byId.get(id);

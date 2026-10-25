@@ -5,7 +5,7 @@
 // в preview- и релизной сборке их нет. Выключить совсем — SHOW_THOUGHT_TEST_PANEL.
 //
 //   Фраза / Вопрос — сразу облачко с фразой дня (вопрос — фраза с вариантами ответа),
-//                    без правил и лимитов;
+//                    без правил и лимитов; Комната — фраза о комнате;
 //   Сброс — убрать облачко, сбросить дневной лимит фразы и лимит игр.
 
 import {
@@ -20,6 +20,7 @@ const SHOW_THOUGHT_TEST_PANEL = true;
 const BUTTONS: Array<{ label: string; type: TestThought }> = [
   { label: "Фраза", type: "phrase" },
   { label: "Вопрос", type: "question" },
+  { label: "Комната", type: "room" },
 ];
 
 export function ThoughtTestPanel() {

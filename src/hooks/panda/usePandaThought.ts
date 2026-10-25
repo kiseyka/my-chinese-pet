@@ -10,6 +10,7 @@
 
 import { useActivityStore } from "@/store/activityStore";
 import { usePandaStore } from "@/store/pandaStore";
+import { useRoomStore } from "@/store/roomStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { whenHydrated } from "@/utils/hydration";
 import { createThoughtIfDue } from "@/utils/panda/thoughts";
@@ -35,6 +36,7 @@ export function usePandaThought(onOpen: () => void) {
         usePandaStore.persist,
         useWordProgressStore.persist,
         useActivityStore.persist,
+        useRoomStore.persist,
       ];
       let left = stores.length;
       for (const store of stores) {

@@ -21,16 +21,32 @@
 //     если облачко ждало, а время фразы прошло («доброе утро» днём), оно пропадает;
 //   - рассказанная фраза больше не предлагается; показанная, но не дочитанная — не
 //     раньше чем через RECENT_PHRASES_LIMIT других (если есть из чего выбрать).
+//
+// Фраза о комнате (kind: "room", roomPhrases): в комнате появился новый предмет или
+// поменялся старый — при следующем заходе на экран панды облачко с фразой о комнате.
+// Важнее фразы дня (реакция сразу), но в дневной лимит не входит, в коллекцию не
+// попадает и может повторяться. Если в этот момент уже висит облачко — реакции нет.
 
-import { pandaPhrases, type PandaPhrase } from "@/content/panda/thoughtPhrases";
+import {
+  findPandaPhrase,
+  pandaPhrases,
+  roomPhrases,
+  type PandaPhrase,
+} from "@/content/panda/thoughtPhrases";
 import { rememberPhrase, usePandaStore } from "@/store/pandaStore";
+import { useRoomStore } from "@/store/roomStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { dayKey } from "@/utils/activity";
 import { shuffle } from "@/utils/shuffle";
 import { getPhraseWords } from "./phraseSegments";
 import { fitsNow } from "./phraseTime";
 
-export type PandaThought = { kind: "phrase"; phraseId: string; createdAt: number };
+/** phrase — фраза дня; room — фраза о комнате (после смены предмета). */
+export type PandaThought = {
+  kind: "phrase" | "room";
+  phraseId: string;
+  createdAt: number;
+};
 
 /**
  * Для проверки на телефоне: true — фраза дня появляется при каждом входе на экран
@@ -80,20 +96,48 @@ function pickPhrase(phrases: PandaPhrase[]): PandaPhrase | undefined {
   return shuffle(fresh.length > 0 ? fresh : phrases)[0];
 }
 
+/** Все слова фразы уже начаты (у каждого хотя бы 1 точка). */
+function wordsStarted(phrase: PandaPhrase): boolean {
+  const progress = useWordProgressStore.getState().flashcardWords;
+  const words = getPhraseWords(phrase);
+  return !!words && words.every((w) => isStarted(progress, w.vocabularyId));
+}
+
+/** Комната как строка: поменялась строка — поменялся какой-то предмет. */
+function roomSnapshot(): string {
+  const { cabinetType, posterType, wallType, floorType, carpetType } =
+    useRoomStore.getState();
+  return [cabinetType, posterType, wallType, floorType, carpetType].join("|");
+}
+
+/** Фраза о комнате: слова начаты, не та же, что в прошлый раз (если есть другая). */
+function pickRoomPhrase(now: number): PandaPhrase | undefined {
+  const last = usePandaStore.getState().recentPhraseIds[0];
+  const fits = roomPhrases.filter((p) => fitsNow(p, now) && wordsStarted(p));
+  const fresh = fits.filter((p) => p.id !== last);
+  return shuffle(fresh.length > 0 ? fresh : fits)[0];
+}
+
 /** Мысль, которую уже нельзя показать: старый вид (загадка), фразы нет или не к месту. */
 function isStale(thought: PandaThought, now: number): boolean {
-  if (thought.kind !== "phrase") return true;
-  const phrase = pandaPhrases.find((p) => p.id === thought.phraseId);
+  if (thought.kind !== "phrase" && thought.kind !== "room") return true;
+  const phrase = findPandaPhrase(thought.phraseId);
   return !phrase || !fitsNow(phrase, now) || dayKey(thought.createdAt) !== dayKey(now);
 }
 
 /**
- * Если пора — выбирает фразу дня и показывает облачко. Вызывается при входе на экран
- * панды. Ничего не делает, если фраза уже висит или сегодня уже была.
+ * Если пора — показывает облачко: фразу о комнате (если поменялся предмет) или фразу
+ * дня. Вызывается при входе на экран панды. Ничего не делает, если облачко уже висит.
  */
 export function createThoughtIfDue(now = Date.now()) {
   const panda = usePandaStore.getState();
   const day = dayKey(now);
+
+  // Комната: сравниваем с тем, что панда видела в прошлый раз. В первый раз только
+  // запоминаем (иначе панда отреагировала бы на комнату по умолчанию)
+  const room = roomSnapshot();
+  const roomChanged = panda.roomSeen !== null && panda.roomSeen !== room;
+  if (panda.roomSeen !== room) usePandaStore.setState({ roomSeen: room });
 
   if (panda.thought && isStale(panda.thought, now)) {
     usePandaStore.setState({ thought: null });
@@ -101,8 +145,20 @@ export function createThoughtIfDue(now = Date.now()) {
     return;
   }
 
+  if (roomChanged) {
+    const roomPhrase = pickRoomPhrase(now);
+    if (roomPhrase) {
+      panda.showThought(
+        { kind: "room", phraseId: roomPhrase.id, createdAt: now },
+        day,
+      );
+      return;
+    }
+  }
+
   const hadToday =
-    panda.thoughtsToday.day === day && panda.thoughtsToday.kinds.length > 0;
+    panda.thoughtsToday.day === day &&
+    panda.thoughtsToday.kinds.includes("phrase");
   if (!TEST_MODE && hadToday) return;
 
   const phrase = pickPhrase(getAvailablePhrases(now));
@@ -127,7 +183,7 @@ export function getTodayPhraseId(now = Date.now()): string | undefined {
 
 // ── Проверка на телефоне ─────────────────────────────────────────────────────
 
-export type TestThought = "phrase" | "question";
+export type TestThought = "phrase" | "question" | "room";
 
 /** Пауза между «убрать старое облачко» и «показать новое», чтобы Rive доиграл. */
 const TEST_SWAP_DELAY_MS = 500;
@@ -141,16 +197,17 @@ const TEST_SWAP_DELAY_MS = 500;
 export function showTestThought(type: TestThought) {
   const fits = (p: PandaPhrase) => type === "phrase" || !!p.replies;
   const available = getAvailablePhrases().filter(fits);
-  const phrase = pickPhrase(
-    available.length > 0 ? available : pandaPhrases.filter(fits),
-  );
+  const phrase =
+    type === "room"
+      ? (pickRoomPhrase(Date.now()) ?? shuffle(roomPhrases)[0])
+      : pickPhrase(available.length > 0 ? available : pandaPhrases.filter(fits));
   if (!phrase) return;
 
   usePandaStore.setState((state) => ({
     recentPhraseIds: rememberPhrase(state.recentPhraseIds, phrase.id),
   }));
   const thought: PandaThought = {
-    kind: "phrase",
+    kind: type === "room" ? "room" : "phrase",
     phraseId: phrase.id,
     createdAt: Date.now(),
   };

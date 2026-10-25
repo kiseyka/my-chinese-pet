@@ -52,8 +52,11 @@ export default function PandaTalkRoute() {
 
 type Step =
   | { kind: "menu" }
-  /** again — фраза, прочитанная сегодня, открыта ещё раз из меню. */
-  | { kind: "phrase"; phraseId: string; again: boolean };
+  /**
+   * again — фраза, прочитанная сегодня, открыта ещё раз из меню;
+   * room — фраза о комнате (в коллекцию не идёт).
+   */
+  | { kind: "phrase"; phraseId: string; again: boolean; room?: boolean };
 
 function PandaTalk() {
   const router = useRouter();
@@ -63,7 +66,12 @@ function PandaTalk() {
   const [step, setStep] = useState<Step>(() => {
     const thought = usePandaStore.getState().thought;
     return thought
-      ? { kind: "phrase", phraseId: thought.phraseId, again: false }
+      ? {
+          kind: "phrase",
+          phraseId: thought.phraseId,
+          again: false,
+          room: thought.kind === "room",
+        }
       : { kind: "menu" };
   });
 
@@ -122,6 +130,7 @@ function PandaTalk() {
                 key={`${step.phraseId}-${step.again}`}
                 phraseId={step.phraseId}
                 again={step.again}
+                collect={!step.room}
                 onDone={() => {
                   if (!step.again) resolveThought();
                   setStep({ kind: "menu" });

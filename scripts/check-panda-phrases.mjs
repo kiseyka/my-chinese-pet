@@ -30,13 +30,16 @@ for (const m of wordsSource.matchAll(/hanzi: "([^"]+)",\s*pinyin: "([^"]*)"/g)) 
   if (!pinyinByHanzi.has(m[1])) pinyinByHanzi.set(m[1], m[2]);
 }
 
-// Имя панды (src/content/panda/name.ts) — не из словаря, но во фразах разрешено
-const { PANDA_NAME } = await import(
-  pathToFileURL(join(root, "src/content/panda/name.ts")).href
+// Глоссарий панды (имя, кактус — src/content/panda/glossary.ts): не из словаря,
+// но во фразах разрешён
+const { PANDA_GLOSSARY } = await import(
+  pathToFileURL(join(root, "src/content/panda/glossary.ts")).href
 );
-pinyinByHanzi.set(PANDA_NAME.hanzi, PANDA_NAME.pinyin);
+for (const [hanzi, entry] of Object.entries(PANDA_GLOSSARY)) {
+  pinyinByHanzi.set(hanzi, entry.pinyin);
+}
 
-const { pandaPhrases } = await import(
+const { pandaPhrases: dailyPhrases, roomPhrases } = await import(
   pathToFileURL(join(root, "src/content/panda/thoughtPhrases.ts")).href
 );
 
@@ -55,6 +58,8 @@ const pinyinOf = (line) =>
     )
     .join(" ");
 
+// Фразы дня и фразы о комнате проверяются вместе (id не должны совпадать)
+const pandaPhrases = [...dailyPhrases, ...roomPhrases];
 const byId = new Map(pandaPhrases.map((p) => [p.id, p]));
 let problems = 0;
 const seen = new Set();

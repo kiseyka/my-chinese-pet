@@ -29,13 +29,21 @@ interface PhraseOfDayProps {
   phraseId: string;
   /** true — фразу уже читали сегодня: не собирать заново, ответ показать сразу. */
   again?: boolean;
+  /** false — фраза о комнате: в «Фразы дня» не кладём. */
+  collect?: boolean;
   /** «Понятно». */
   onDone: () => void;
   /** Уходим на другой экран (этап из тултипа слова). */
   onLeave: () => void;
 }
 
-export function PhraseOfDay({ phraseId, again = false, onDone, onLeave }: PhraseOfDayProps) {
+export function PhraseOfDay({
+  phraseId,
+  again = false,
+  collect = true,
+  onDone,
+  onLeave,
+}: PhraseOfDayProps) {
   const phrase = findPandaPhrase(phraseId);
   const [answer, setAnswer] = useState<string | undefined>(() =>
     again ? usePandaStore.getState().answers[phraseId] : undefined,
@@ -67,7 +75,7 @@ export function PhraseOfDay({ phraseId, again = false, onDone, onLeave }: Phrase
 
   const finish = () => {
     Speech.stop();
-    if (!again) usePandaStore.getState().collectPhrase(phrase.id, answer);
+    if (!again && collect) usePandaStore.getState().collectPhrase(phrase.id, answer);
     onDone();
   };
 
