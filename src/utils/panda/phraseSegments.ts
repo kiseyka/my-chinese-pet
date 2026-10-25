@@ -80,7 +80,7 @@ function glossarySegment(text: string): PhraseSegment {
  * знакомы);
  * undefined — какого-то слова в словаре нет.
  */
-export function getPhraseWords(phrase: PandaPhrase): Word[] | undefined {
+export function getPhraseWords(phrase: PhraseLineLike): Word[] | undefined {
   const words: Word[] = [];
   for (const text of phrase.words) {
     if (!HAN.test(text) || PANDA_GLOSSARY[text]) continue;

@@ -1,14 +1,14 @@
 // src/components/panda/PandaThoughtContent.tsx
 //
 // Фраза дня (см. utils/panda/thoughts) — нижняя часть сцены разговора /panda-talk
-// (сверху панда, PandaTalkStage). Фраза на китайском (PandaPhraseView): панда сразу её
+// (без панды крупным планом). Фраза на китайском (PandaPhraseView): панда сразу её
 // произносит (если звук не выключен в настройках); слова — тултипом, перевод,
-// пояснение; у вопросов — варианты ответа (панда ждёт), после ответа — её реакция
-// (радуется или удивляется, reaction.mood).
+// пояснение; у вопросов — варианты ответа, после ответа — реакция панды.
 //
-//   новая фраза — «Понятно»: фраза (и ответ) уходят в «Фразы дня» профиля;
+//   новая фраза — «Продолжить»: фраза (и ответ) уходят в «Фразы дня» профиля,
+//                 дальше меню игр;
 //   ещё раз     — фраза, прочитанная сегодня, открытая из меню игр: ответ уже
-//                 выбран, «Понятно» просто возвращает в меню.
+//                 выбран, «Продолжить» просто возвращает в меню.
 
 import { findPandaPhrase } from "@/content/panda/thoughtPhrases";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
@@ -18,7 +18,6 @@ import * as Speech from "expo-speech";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
-import { usePandaMood, usePandaWaiting } from "./PandaMood";
 import { PandaPhraseView } from "./PandaPhraseView";
 import { MainButton } from "./PandaRiddles";
 
@@ -31,7 +30,7 @@ interface PhraseOfDayProps {
   again?: boolean;
   /** false — фраза о комнате: в «Фразы дня» не кладём. */
   collect?: boolean;
-  /** «Понятно». */
+  /** «Продолжить». */
   onDone: () => void;
   /** Уходим на другой экран (этап из тултипа слова). */
   onLeave: () => void;
@@ -49,11 +48,9 @@ export function PhraseOfDay({
     again ? usePandaStore.getState().answers[phraseId] : undefined,
   );
   const { speak } = useSpeakHanzi();
-  const { react } = usePandaMood();
 
-  // У вопроса панда ждёт ответа
+  // У вопроса «Продолжить» — только после ответа
   const waitsForAnswer = !!phrase?.replies && !answer;
-  usePandaWaiting(waitsForAnswer, "listening");
 
   // Панда сразу говорит фразу; ушли со сцены — замолкает
   useEffect(() => {
@@ -65,13 +62,9 @@ export function PhraseOfDay({
     };
   }, [phrase, speak]);
 
-  if (!phrase) return <GotIt onPress={onDone} disabled={false} />;
+  if (!phrase) return <Continue onPress={onDone} disabled={false} />;
 
-  const pickAnswer = (replyId: string) => {
-    setAnswer(replyId);
-    const reply = phrase.replies?.find((r) => r.id === replyId);
-    react(reply?.reaction?.mood ?? "happy");
-  };
+  const pickAnswer = (replyId: string) => setAnswer(replyId);
 
   const finish = () => {
     Speech.stop();
@@ -91,16 +84,17 @@ export function PhraseOfDay({
           onLeave();
         }}
       />
-      <GotIt onPress={finish} disabled={waitsForAnswer} />
+      <Continue onPress={finish} disabled={waitsForAnswer} />
     </View>
   );
 }
 
-function GotIt({ onPress, disabled }: { onPress: () => void; disabled: boolean }) {
+/** «Продолжить» — дальше меню игр. */
+function Continue({ onPress, disabled }: { onPress: () => void; disabled: boolean }) {
   const { t } = useTranslation("pandaThoughts");
   return (
     <View className="flex-row">
-      <MainButton label={t("gotIt")} onPress={onPress} disabled={disabled} />
+      <MainButton label={t("continue")} onPress={onPress} disabled={disabled} />
     </View>
   );
 }

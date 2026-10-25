@@ -5,6 +5,8 @@
 //   есть облачко — сначала фраза дня (PandaThoughtContent), после «Понятно» — меню игр;
 //   нет облачка  — сразу меню игр (PandaPlayContent). В меню — «Фраза дня», если её
 //                  уже читали сегодня: открыть ещё раз.
+// Панда крупным планом — только в меню игр и загадках; у фразы её нет (решено 25 октября:
+// анимаций под фразы пока не будет), там сверху только «назад».
 // Панда отзывается на диалог через PandaMood (ждёт ответа, радуется, удивляется)
 // и «говорит», пока звучит озвучка (store/speechStore).
 //
@@ -88,13 +90,15 @@ function PandaTalk() {
   );
 
   const goPet = () => router.navigate("/pet");
+  const showStage = step.kind !== "phrase";
 
   return (
     <PandaMoodContext.Provider value={mood}>
       <View className="flex-1 bg-[#EDE0CE]" style={{ paddingTop: insets.top }}>
-        {/* Снизу запас на заход панели: панель ложится на него, а не на лапки */}
-        <View style={{ paddingBottom: PANEL_OVERLAP }}>
-          <PandaTalkStage waiting={waiting} reaction={reaction} />
+        {/* Снизу запас на заход панели: панель ложится на него, а не на лапки.
+            Без панды (фраза) — только строка с «назад» */}
+        <View style={{ paddingBottom: PANEL_OVERLAP, minHeight: showStage ? 0 : 76 }}>
+          {showStage && <PandaTalkStage waiting={waiting} reaction={reaction} />}
           <Pressable
             onPress={goPet}
             hitSlop={12}

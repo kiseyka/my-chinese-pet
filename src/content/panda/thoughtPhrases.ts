@@ -24,8 +24,10 @@
 //            по выбору в профиле, без выбора — «пил(а)» (utils/gender.ts);
 //   pinyin — только если пиньинь слова во фразе отличается от словаря
 //            (изменение тона: { "一个": "yí gè" }). Остальное берётся из словаря;
-//   note   — необязательно: «Почему так говорят?» — откуда фраза, когда её говорят,
+//   note   — необязательно: пояснение под фразой — факт, откуда фраза, когда её говорят,
 //            чем отличается от похожих (ru, en). Показывается сразу под фразой.
+//            Заголовок — по kind: "why" — «Почему так говорят?» (разговорные выражения),
+//            "word" — «Откуда это слово?», без kind — «Интересный факт».
 //            Иероглифы подряд в пояснении — одно выражение: тап переводит его целиком
 //            (送钟 «дарить часы», а не 送 и 钟 по отдельности). Перевод берётся из
 //            note.terms, затем из самой фразы/ответов, затем из словаря. Если выражения
@@ -42,9 +44,11 @@
 //   requires — необязательно: фраза появится, только если на вопрос phraseId ответили
 //            replyId. Так панда «помнит» ответы: «ты любишь зелёный — мой цветок тоже».
 //
-// Панда покажет фразу, только когда у пользователя есть хотя бы 1 точка (перевода
-// или письма) у каждого её слова. Проверка: node --no-warnings --experimental-strip-types scripts/check-panda-phrases.mjs
-// (слова, которых нет в словаре, и склейку).
+// Фраза открывается по уровню HSK (utils/panda/phraseLevel): уровень фразы — HSK
+// большей части её слов (вместе с ответами и реакциями); фразы HSK 1 и 2 открыты сразу,
+// HSK 3 — когда пользователь на HSK 2, HSK 4 — на HSK 3.
+// Проверка: node --no-warnings --experimental-strip-types scripts/check-panda-phrases.mjs
+// (уровень каждой фразы, слова, которых нет в словаре, склейку).
 
 /** Строка по-китайски с переводом: реплика, ответ, реакция. */
 export interface PhraseLine {
@@ -72,6 +76,9 @@ export interface PandaPhrase extends PhraseLine {
   note?: {
     ru: string;
     en: string;
+    /** Заголовок пояснения: why — «Почему так говорят?» (разговорные выражения),
+     *  word — «Откуда это слово?», без kind — «Интересный факт». */
+    kind?: "why" | "word";
     /** Выражения из пояснения, которых нет в словаре или у которых тут особый смысл. */
     terms?: Record<string, { pinyin?: string; ru: string; en: string }>;
   };
@@ -88,6 +95,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Привет! Я Жужа!",
     en: "Hi! I'm Zhuzhu!",
     note: {
+      kind: "word",
       ru: "竹竹 — моё имя. 竹 значит «бамбук». Китайцы часто дают малышам и питомцам ласковые имена из двух одинаковых слогов. По-русски зови меня Жужа!",
       en: "竹竹 is my name. 竹 means “bamboo”. Chinese often give children and pets cute names made of a doubled syllable. You can call me Zhuzhu!",
       terms: {
@@ -104,6 +112,7 @@ export const pandaPhrases: PandaPhrase[] = [
     en: "I love cacti most of all! Do you like them?",
     pinyin: { 吗: "ma" },
     note: {
+      kind: "word",
       ru: "仙人掌 дословно «ладонь небожителя»: 仙人 — бессмертный небожитель, 掌 — ладонь. Плоские стебли кактуса-опунции и правда похожи на ладони.",
       en: "仙人掌 literally means “palm of an immortal”: 仙人 is an immortal, 掌 is a palm. The flat pads of the prickly pear cactus really do look like palms.",
       terms: {
@@ -154,6 +163,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Какая сегодня погода?",
     en: "How's the weather today?",
     note: {
+      kind: "word",
       ru: "天气 дословно «небесный воздух»: 天 — небо, 气 — воздух, пар. Тот же 气 есть в 生气 — «сердиться», дословно «рождать пар».",
       en: "天气 literally means “sky air”: 天 is sky, 气 is air or vapour. The same 气 is in 生气, “to get angry” — literally “to produce steam”.",
     },
@@ -258,7 +268,7 @@ export const pandaPhrases: PandaPhrase[] = [
       },
     ],
   },
-  // Разговорные фразы с пояснением «Почему так говорят?» — черновик от Claude
+  // Разговорные фразы с пояснением «Почему так говорят?» (note.kind: "why")
   {
     id: "chi-le-ma",
     words: ["你", "吃", "了", "吗", "？"],
@@ -266,6 +276,7 @@ export const pandaPhrases: PandaPhrase[] = [
     en: "Hi! (literally: “Have you eaten?”)",
     pinyin: { 吗: "ma" },
     note: {
+      kind: "why",
       ru: "Это приветствие, а не вопрос про еду. Так показывают заботу: «у тебя всё хорошо?». Обычно это объясняют тем, что сытость веками была главной заботой: если человек поел, значит, всё в порядке. Отвечают коротко: 吃了 (поел) или 还没 (ещё нет). Сейчас так говорят реже, чаще старшие.",
       en: "It's a greeting, not a question about food — a way to show you care. It's usually explained by centuries when having enough to eat was the main worry: if you've eaten, all is well. Short answers: 吃了 (I have) or 还没 (not yet). Today it's less common, more often said by older people.",
       terms: {
@@ -305,6 +316,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Пока-пока!",
     en: "Bye-bye!",
     note: {
+      kind: "why",
       ru: "Это заимствование из английского bye-bye — звучит почти так же. 拜拜 — лёгкое прощание с друзьями, в мессенджерах. 再见 («снова увидимся») — обычное, подходит для всех. В речи часто слышно báibái, хотя в словарях пишут bàibài.",
       en: "A loanword from English “bye-bye” — it sounds almost the same. 拜拜 is a casual goodbye for friends and chats. 再见 (“see again”) is the standard one, fine with anyone. In speech you'll often hear báibái, though dictionaries write bàibài.",
     },
@@ -315,6 +327,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Ещё увидимся!",
     en: "See you later!",
     note: {
+      kind: "why",
       ru: "Дословно «обернусь — увижу»: значит, встретимся скоро. Так прощаются с одноклассниками или коллегами. А если знаешь, когда увидитесь, время ставят перед 见: 明天见 — до завтра.",
       en: "Literally “turn your head and see”: we'll meet again soon. Said to classmates or coworkers. If you know when you'll meet, the time goes before 见: 明天见 — see you tomorrow.",
     },
@@ -325,6 +338,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Давно не виделись!",
     en: "Long time no see!",
     note: {
+      kind: "why",
       ru: "Дословно «очень долго не видеть». Английское long time no see звучит слово в слово так же и выглядит как калька с китайского — но откуда оно на самом деле, лингвисты спорят: есть и версия про упрощённый английский индейцев Северной Америки.",
       en: "Literally “very long not see”. English “long time no see” matches it word for word and looks like a calque from Chinese — but linguists still argue about its origin; there's also a theory it comes from Native American pidgin English.",
     },
@@ -335,6 +349,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Учишь китайский — давай, вперёд!",
     en: "Learning Chinese — go for it!",
     note: {
+      kind: "why",
       ru: "加油 дословно «добавь масла», как заправить машину. Так подбадривают всех: спортсменов, друзей перед экзаменом, себя.",
       en: "加油 literally means “add oil”, like refuelling a car. It's how you cheer on anyone: athletes, friends before an exam, yourself.",
     },
@@ -346,6 +361,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Спасибо за сегодняшние труды!",
     en: "Thanks for your hard work today!",
     note: {
+      kind: "why",
       ru: "辛苦 — «горько и тяжело». 辛苦了 говорят тому, кто потрудился: коллегам после работы, курьеру, другу после трудного дня. Это не жалость, а благодарность за усилия.",
       en: "辛苦 means “bitter and hard”. 辛苦了 is said to someone who worked hard: coworkers after work, a courier, a friend after a tough day. It's not pity — it's thanks for the effort.",
     },
@@ -356,6 +372,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Счастливо! (дословно: «Иди медленно»)",
     en: "Take care! (literally: “Walk slowly”)",
     note: {
+      kind: "why",
       ru: "Так хозяева, продавцы или официанты прощаются с уходящим гостем: не спеши, береги себя по дороге. Сам уходящий так не говорит.",
       en: "Hosts, shopkeepers or waiters say this to a leaving guest: don't hurry, take care on the way. The person leaving doesn't say it.",
     },
@@ -367,6 +384,7 @@ export const pandaPhrases: PandaPhrase[] = [
     en: "You say I'm cute? Oh, not at all!",
     pinyin: { 哪里: "nǎ li" },
     note: {
+      kind: "why",
       ru: "哪里哪里 дословно «где? где?» — «где же тут хорошее?». Так скромно отвечают на похвалу. Сейчас это звучит немного официально: молодые чаще просто говорят 谢谢.",
       en: "哪里哪里 is literally “where? where?” — “where's the good part?”. It's a modest reply to a compliment. Today it sounds a bit formal; younger people often just say 谢谢.",
       terms: {
@@ -380,6 +398,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Пьём чай — до дна!",
     en: "Let's drink tea — cheers!",
     note: {
+      kind: "why",
       ru: "干杯 дословно «сухой бокал» — то есть выпить до дна. Но допивать необязательно: после тоста достаточно сделать глоток.",
       en: "干杯 literally means “dry cup” — drink it all. But you don't have to finish: a sip after the toast is fine.",
     },
@@ -390,6 +409,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Здравствуйте!",
     en: "Hello! (polite)",
     note: {
+      kind: "why",
       ru: "您 — вежливое «вы»: к старшим, учителям, незнакомым. Посмотри на иероглиф: это 你 («ты»), а под ним 心 — «сердце». Получается «ты» с уважением от сердца.",
       en: "您 is the polite “you”: for elders, teachers, strangers. Look at the character: it's 你 (“you”) with 心 (“heart”) underneath — “you”, with respect from the heart.",
     },
@@ -401,6 +421,7 @@ export const pandaPhrases: PandaPhrase[] = [
     en: "You're welcome!",
     pinyin: { 不客气: "bú kè qi" },
     note: {
+      kind: "why",
       ru: "Дословно «не будь гостем»: не церемонься, мы свои. Так отвечают на 谢谢. Ещё говорят 不用谢 — «не нужно благодарить».",
       en: "Literally “don't be a guest”: no need for ceremony, we're close. It's the reply to 谢谢. People also say 不用谢 — “no need to thank”.",
       terms: {
@@ -414,6 +435,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Ничего страшного!",
     en: "No worries!",
     note: {
+      kind: "why",
       ru: "Дословно «нет связи»: это ни на что не влияет, не переживай. Классический ответ на 对不起 (прости).",
       en: "Literally “no connection”: it doesn't matter, don't worry. The classic reply to 对不起 (sorry).",
     },
@@ -424,6 +446,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Пей побольше горячей воды!",
     en: "Drink more hot water!",
     note: {
+      kind: "why",
       ru: "Самый частый китайский совет при любом недомогании: простуда, усталость, болит живот. В интернете фраза стала мемом про заботу «для галочки» — когда больше сказать нечего.",
       en: "The most common Chinese advice for any ailment: a cold, tiredness, a stomach ache. Online it became a meme about token care — what you say when you have nothing else to offer.",
     },
@@ -434,6 +457,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Что поедим? — Да всё равно!",
     en: "What shall we eat? — Whatever!",
     note: {
+      kind: "why",
       ru: "随便 — «как удобно, как угодно». Это самый частый ответ на «что будем есть?», и над ним шутят: «随便» — самое трудное блюдо, его нет ни в одном меню.",
       en: "随便 means “as you like, whatever”. It's the most common answer to “what shall we eat?”, and people joke that “随便” is the hardest dish — no menu has it.",
     },
@@ -444,6 +468,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Ну ты даёшь, круто!",
     en: "You're amazing!",
     note: {
+      kind: "why",
       ru: "Раньше 厉害 значило «суровый, жёсткий, страшный». Сейчас это главная разговорная похвала: «круто, впечатляет».",
       en: "厉害 used to mean “harsh, fierce, terrible”. Now it's the go-to casual praise: “awesome, impressive”.",
     },
@@ -455,6 +480,7 @@ export const pandaPhrases: PandaPhrase[] = [
     en: "Hello? (on the phone)",
     pinyin: { 喂: "wéi" },
     note: {
+      kind: "why",
       ru: "喂 по телефону обычно звучит вторым тоном — wéi, мягко, как «алло?». А wèi четвёртым тоном — резкое «эй!», им окликают.",
       en: "On the phone 喂 is usually said with the second tone — wéi, soft, like “hello?”. With the fourth tone, wèi, it's a sharp “hey!” to call someone.",
     },
@@ -465,6 +491,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Я наелась!",
     en: "I'm full!",
     note: {
+      kind: "why",
       ru: "Хозяева в Китае подкладывают гостю еду, пока тарелка не опустеет. 我吃饱了 — вежливый способ сказать «спасибо, больше не нужно».",
       en: "Chinese hosts keep adding food to a guest's plate while it's empty. 我吃饱了 is the polite way to say “thank you, I'm done”.",
     },
@@ -491,6 +518,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Я панда!",
     en: "I'm a panda!",
     note: {
+      kind: "word",
       ru: "熊猫 дословно «медведь-кошка»: 熊 — медведь, 猫 — кошка. А на Тайване говорят наоборот — 猫熊, «кошка-медведь». Животное одно, слова переставлены.",
       en: "熊猫 literally means “bear-cat”: 熊 is bear, 猫 is cat. In Taiwan it's the other way round — 猫熊, “cat-bear”. Same animal, swapped words.",
       terms: {
@@ -505,6 +533,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Доброе утро!",
     en: "Morning!",
     note: {
+      kind: "why",
       ru: "早 — «рано». Это короткое 早上好 («доброе утро»): утром знакомым часто говорят просто 早！ Отвечают тем же словом.",
       en: "早 means “early”. It's short for 早上好 (“good morning”): in the morning people often just say 早！ and get the same word back.",
     },
@@ -515,6 +544,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Ты больше любишь чай или кофе?",
     en: "Do you prefer tea or coffee?",
     note: {
+      kind: "word",
       ru: "Русское «чай» пришло от 茶 chá — через северные сухопутные торговые пути. А английское tea — от южного диалекта Фуцзяни, где говорят «te»: туда приходили морские корабли. И ещё: 红茶, «красный чай», — это то, что мы называем чёрным. Китайцы называют чай по цвету настоя.",
       en: "Russian «чай» comes from 茶 chá, via the northern overland trade routes. English “tea” comes from the southern Fujian dialect, where it's “te” — that's where the sea ships came. Also: 红茶, “red tea”, is what we call black tea. Chinese name tea by the colour of the brew.",
     },
@@ -607,6 +637,7 @@ export const pandaPhrases: PandaPhrase[] = [
     en: "What sweets do you like?",
     pinyin: { 东西: "dōng xi" },
     note: {
+      kind: "word",
       ru: "甜 — «сладкий», и не только про еду. 嘴甜, «сладкий рот», говорят о том, кто умеет сказать приятное.",
       en: "甜 means “sweet”, and not only about food. 嘴甜, “sweet mouth”, describes someone who knows how to say nice things.",
       terms: {
@@ -816,6 +847,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Что ты хочешь купить?",
     en: "What do you want to buy?",
     note: {
+      kind: "word",
       ru: "东西 — «восток-запад», а значит «вещь». Одна из версий: в старой столице Чанъань были два больших рынка, Восточный и Западный. «Пойти на восток и запад» значило пойти за покупками, а потом так стали называть сами покупки.",
       en: "东西 is “east-west”, and it means “thing”. One theory: the old capital Chang'an had two big markets, East and West. “Going east and west” meant going shopping — and then the purchases themselves got the name.",
     },
@@ -826,6 +858,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Хочу поехать в Китай!",
     en: "I want to go to China!",
     note: {
+      kind: "word",
       ru: "中国 — «срединное государство»: 中 — середина, 国 — страна. Посмотри на 中: черта прямо через центр квадрата.",
       en: "中国 means “middle kingdom”: 中 is middle, 国 is country. Look at 中: a stroke right through the middle of a square.",
     },
@@ -904,6 +937,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Здравствуйте, дядя и тётя!",
     en: "Hello, uncle and auntie!",
     note: {
+      kind: "why",
       ru: "Дети и молодые часто зовут незнакомых взрослых 叔叔 «дядя» и 阿姨 «тётя» — продавщицу, соседа, водителя. Это вежливо и тепло, родство тут ни при чём.",
       en: "Kids and young people often call adult strangers 叔叔 “uncle” and 阿姨 “auntie” — a shop assistant, a neighbour, a driver. It's polite and warm; no family ties needed.",
     },
@@ -914,6 +948,7 @@ export const pandaPhrases: PandaPhrase[] = [
     ru: "Я люблю кошек!",
     en: "I love cats!",
     note: {
+      kind: "word",
       ru: "Прислушайся к 猫 māo — похоже на «мяу». Считается, что слово и появилось как подражание кошачьему голосу.",
       en: "Listen to 猫 māo — it sounds like “meow”. The word is thought to have started as an imitation of a cat's call.",
     },

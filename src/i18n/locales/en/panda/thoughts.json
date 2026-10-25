@@ -110,5 +110,8 @@
     "hint": "I showed where the stroke goes — draw it",
     "hintIdle": "Which stroke is missing?"
   },
-  "writeOutline": "With outline"
+  "writeOutline": "With outline",
+  "continue": "Continue",
+  "factNote": "Fun fact",
+  "wordNote": "Where the word comes from"
 }

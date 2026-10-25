@@ -32,6 +32,29 @@ for (const m of wordsSource.matchAll(/hanzi: "([^"]+)",\s*pinyin: "([^"]*)"/g)) 
 
 // Глоссарий панды (имя, кактус — src/content/panda/glossary.ts): не из словаря,
 // но во фразах разрешён
+// Уровень фразы — как в src/utils/panda/phraseLevel.ts: HSK большей части слов
+const { getWordHsk } = await import(
+  pathToFileURL(join(root, "src/content/words/hsk.ts")).href
+);
+const idByHanzi = new Map();
+for (const m of wordsSource.matchAll(/id: "([^"]+)",\s*hanzi: "([^"]+)"/g)) {
+  if (!idByHanzi.has(m[2])) idByHanzi.set(m[2], m[1]);
+}
+const OTHER_LEVEL = 5;
+const phraseLevel = (phrase) => {
+  const lines = [phrase];
+  for (const reply of phrase.replies ?? []) {
+    lines.push(reply);
+    if (reply.reaction) lines.push(reply.reaction);
+  }
+  const ids = new Set(
+    lines.flatMap((l) => l.words).map((w) => idByHanzi.get(w)).filter(Boolean),
+  );
+  const levels = [...ids].map((id) => getWordHsk(id) ?? OTHER_LEVEL).sort((a, b) => a - b);
+  return levels.length ? levels[Math.floor(levels.length / 2)] : 1;
+};
+const byLevel = {};
+
 const { PANDA_GLOSSARY } = await import(
   pathToFileURL(join(root, "src/content/panda/glossary.ts")).href
 );
@@ -118,7 +141,10 @@ for (const phrase of pandaPhrases) {
     (phrase.requires
       ? `  [после ${phrase.requires.phraseId}=${phrase.requires.replyId}]`
       : "") + when;
-  console.log(`${mark} ${phrase.id}: ${phrase.words.join("")}  ${pinyinOf(phrase)}${extra}`);
+  const level = phraseLevel(phrase);
+  byLevel[level] = (byLevel[level] ?? 0) + 1;
+  const levelLabel = level >= OTHER_LEVEL ? "HSK 5+" : `HSK ${level}`;
+  console.log(`${mark} [${levelLabel}] ${phrase.id}: ${phrase.words.join("")}  ${pinyinOf(phrase)}${extra}`);
   for (const reply of phrase.replies ?? []) {
     const reaction = reply.reaction ? `  → ${reply.reaction.words.join("")}` : "";
     console.log(`    · ${reply.words.join("")}  ${pinyinOf(reply)}${reaction}`);
@@ -127,5 +153,8 @@ for (const phrase of pandaPhrases) {
   problems += issues.length;
 }
 
-console.log(`\nФраз: ${pandaPhrases.length}, проблем: ${problems}`);
+const levelSummary = Object.entries(byLevel)
+  .map(([level, n]) => `${Number(level) >= OTHER_LEVEL ? "HSK 5+" : `HSK ${level}`}: ${n}`)
+  .join(", ");
+console.log(`\nФраз: ${pandaPhrases.length} (${levelSummary}), проблем: ${problems}`);
 process.exit(problems > 0 ? 1 : 0);

@@ -6,7 +6,8 @@
 // меню игр (utils/panda/play). Облачко — только фраза, загадок в нём нет: в загадки
 // играют по желанию, из меню.
 //
-// Фраза дня — короткая фраза на китайском из слов, которые пользователь уже изучает
+// Фраза дня — короткая фраза на китайском по уровню пользователя (utils/panda/phraseLevel:
+// фразы HSK 1 и 2 открыты сразу, HSK 3 — с HSK 2, HSK 4 — с HSK 3)
 // (content/panda/thoughtPhrases.ts): факт, разговорное выражение с пояснением или
 // вопрос-знакомство («какой цвет тебе нравится?»). Ответ на вопрос запоминается и
 // открывает фразы с requires («ты любишь зелёный — мой цветок тоже»). Прочитанная
@@ -35,10 +36,9 @@ import {
 } from "@/content/panda/thoughtPhrases";
 import { rememberPhrase, usePandaStore } from "@/store/pandaStore";
 import { useRoomStore } from "@/store/roomStore";
-import { useWordProgressStore } from "@/store/wordProgressStore";
 import { dayKey } from "@/utils/activity";
 import { shuffle } from "@/utils/shuffle";
-import { getPhraseWords } from "./phraseSegments";
+import { getUserHskLevel, isPhraseUnlocked } from "./phraseLevel";
 import { fitsNow } from "./phraseTime";
 
 /** phrase — фраза дня; room — фраза о комнате (после смены предмета). */
@@ -54,19 +54,9 @@ export type PandaThought = {
  */
 const TEST_MODE = false as boolean;
 
-type ProgressMap = ReturnType<
-  typeof useWordProgressStore.getState
->["flashcardWords"];
-
-/** У слова есть хотя бы одна точка (перевода или письма). */
-function isStarted(progress: ProgressMap, wordId: string): boolean {
-  const item = progress[wordId];
-  return !!item && (item.reading.streak > 0 || item.writing.streak > 0);
-}
-
-/** Фразы, все слова которых пользователь уже изучает и которые ещё не рассказаны. */
+/** Фразы, открытые по уровню HSK и ещё не рассказанные. */
 export function getAvailablePhrases(now = Date.now()): PandaPhrase[] {
-  const progress = useWordProgressStore.getState().flashcardWords;
+  const level = getUserHskLevel();
   const { seenPhraseIds, answers } = usePandaStore.getState();
   const seen = new Set(seenPhraseIds);
   return pandaPhrases.filter((phrase) => {
@@ -79,8 +69,7 @@ export function getAvailablePhrases(now = Date.now()): PandaPhrase[] {
     ) {
       return false;
     }
-    const words = getPhraseWords(phrase);
-    return !!words && words.every((w) => isStarted(progress, w.vocabularyId));
+    return isPhraseUnlocked(phrase, level);
   });
 }
 
@@ -96,13 +85,6 @@ function pickPhrase(phrases: PandaPhrase[]): PandaPhrase | undefined {
   return shuffle(fresh.length > 0 ? fresh : phrases)[0];
 }
 
-/** Все слова фразы уже начаты (у каждого хотя бы 1 точка). */
-function wordsStarted(phrase: PandaPhrase): boolean {
-  const progress = useWordProgressStore.getState().flashcardWords;
-  const words = getPhraseWords(phrase);
-  return !!words && words.every((w) => isStarted(progress, w.vocabularyId));
-}
-
 /** Комната как строка: поменялась строка — поменялся какой-то предмет. */
 function roomSnapshot(): string {
   const { cabinetType, posterType, wallType, floorType, carpetType } =
@@ -110,10 +92,13 @@ function roomSnapshot(): string {
   return [cabinetType, posterType, wallType, floorType, carpetType].join("|");
 }
 
-/** Фраза о комнате: слова начаты, не та же, что в прошлый раз (если есть другая). */
+/** Фраза о комнате: по уровню, не та же, что в прошлый раз (если есть другая). */
 function pickRoomPhrase(now: number): PandaPhrase | undefined {
   const last = usePandaStore.getState().recentPhraseIds[0];
-  const fits = roomPhrases.filter((p) => fitsNow(p, now) && wordsStarted(p));
+  const level = getUserHskLevel();
+  const fits = roomPhrases.filter(
+    (p) => fitsNow(p, now) && isPhraseUnlocked(p, level),
+  );
   const fresh = fits.filter((p) => p.id !== last);
   return shuffle(fresh.length > 0 ? fresh : fits)[0];
 }

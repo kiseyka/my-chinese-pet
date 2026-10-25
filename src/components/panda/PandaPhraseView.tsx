@@ -1,10 +1,13 @@
 // src/components/panda/PandaPhraseView.tsx
 //
 // Фраза панды как маленький диалог, сверху вниз:
-//   - шапка: справа озвучка и глазик пиньиня (саму панду видно над диалогом);
-//   - фраза по словам (пиньинь при скрытии только прозрачный — фраза не прыгает);
-//   - «Показать перевод» — плашка, которая на месте превращается в перевод;
-//   - пояснение «Почему так говорят?» — сразу карточкой, если оно есть;
+//   - фраза по словам и в той же строке справа — озвучка и глазик пиньиня
+//     (пиньинь при скрытии только прозрачный — фраза не прыгает);
+//   - «Перевод» — маленькая ссылка, которая на месте превращается в перевод
+//     (так же у ответа пользователя и у реакции панды);
+//   - пояснение — сразу карточкой, если оно есть; заголовок по смыслу (note.kind):
+//     «Почему так говорят?» у разговорных выражений, «Откуда это слово?» у
+//     происхождения слова, иначе «Интересный факт»;
 //   - у вопросов — варианты ответа; выбранный ответ встаёт справа, как сообщение
 //     пользователя, а под ним — реакция панды.
 // Тап по слову (во фразе, в ответе панды, по иероглифу в пояснении) — тултип над словом
@@ -15,8 +18,8 @@
 // Варианты ответа — короткие (до 3 иероглифов) сеткой 2×2, длинные — списком на всю
 // ширину. Пиньинь над иероглифами — по глазику, перевод под ними — по значку 文A.
 // Место под оба оставлено всегда: переключение только проявляет текст, ничего не прыгает.
-// После ответа: свой ответ и реакция панды озвучиваются подряд, у обоих есть озвучка,
-// перевод реакции — по ссылке «Перевод».
+// После ответа: свой ответ и реакция панды озвучиваются подряд, у обоих есть озвучка
+// и ссылка «Перевод».
 //
 // compact — в списке профиля: без шапки и без выбора ответа (ответ, если был, показан).
 
@@ -67,6 +70,12 @@ const TIP_WIDTH = 260;
 const TIP_OFFSET = 28;
 /** Высота тултипа до первого замера. */
 const TIP_HEIGHT = 140;
+/** Высота строки пиньиня над иероглифами (PandaText) — иконки шапки встают вровень с иероглифами. */
+const PINYIN_LINE = 20;
+/** Размер иконок шапки. */
+const HEADER_ICON = 24;
+/** Размер иероглифов фразы по умолчанию (как в PandaText). */
+const DEFAULT_SIZE = 30;
 
 interface PandaPhraseViewProps {
   phrase: PandaPhrase;
@@ -198,37 +207,57 @@ export function PandaPhraseView({
       // Тап по пустому месту только закрывает тултип, без отклика
       android_disableSound
     >
-      {!compact && (
-        // Панда видна над диалогом (сцена /panda-talk) — в шапке только озвучка и глазик
-        <View className="flex-row items-center justify-end">
-          <View className="flex-row items-center gap-4">
-            <Pressable
-              onPress={() => speakForced(phraseText(phrase))}
-              hitSlop={8}
-              className="active:opacity-60"
-              accessibilityRole="button"
-              accessibilityLabel={t("listen")}
-            >
-              <VolumeIcon width={24} height={24} color={`${colors.text}99`} />
-            </Pressable>
-            <PinyinToggle />
+      {/* Фраза и в той же строке — озвучка и глазик (иконки вровень с иероглифами) */}
+      <View className="gap-1">
+        <View className="flex-row items-start gap-3">
+          <View className="flex-1">
+            <PandaText
+              segments={segments}
+              size={size}
+              selected={tip?.segment ?? null}
+              onWordPress={openTip}
+            />
           </View>
+          {!compact && (
+            <View
+              className="flex-row items-center gap-4"
+              style={{
+                marginTop:
+                  PINYIN_LINE +
+                  Math.max(0, ((size ?? DEFAULT_SIZE) * 1.3 - HEADER_ICON) / 2),
+              }}
+            >
+              <Pressable
+                onPress={() => speakForced(phraseText(phrase))}
+                hitSlop={8}
+                className="active:opacity-60"
+                accessibilityRole="button"
+                accessibilityLabel={t("listen")}
+              >
+                <VolumeIcon
+                  width={HEADER_ICON}
+                  height={HEADER_ICON}
+                  color={`${colors.text}99`}
+                />
+              </Pressable>
+              <PinyinToggle size={HEADER_ICON} />
+            </View>
+          )}
         </View>
-      )}
 
-      <PandaText
-        segments={segments}
-        size={size}
-        selected={tip?.segment ?? null}
-        onWordPress={openTip}
-      />
-
-      <TranslationReveal key={phrase.id} line={phrase} compact={compact} />
+        <TranslationLink key={phrase.id} line={phrase} />
+      </View>
 
       {note && (
         <View className="rounded-2xl bg-primary/10 px-4 py-3">
           <Text className="mb-1 font-nunitoBold text-small text-primary">
-            {t("whyNote")}
+            {t(
+              phrase.note?.kind === "why"
+                ? "whyNote"
+                : phrase.note?.kind === "word"
+                  ? "wordNote"
+                  : "factNote",
+            )}
           </Text>
           <MixedText
             text={note}
@@ -280,40 +309,34 @@ export function PandaPhraseView({
 
 // ── Перевод ──────────────────────────────────────────────────────────────────
 
-/** Плашка «Показать перевод», которая на том же месте превращается в перевод. */
-function TranslationReveal({
-  line,
-  compact,
-}: {
-  line: PhraseLine;
-  compact: boolean;
-}) {
+/**
+ * Маленькая ссылка «Перевод», которая на том же месте превращается в перевод (тап —
+ * обратно). Одна и та же у фразы, у ответа пользователя и у реакции панды.
+ * light — на зелёном фоне (ответ пользователя).
+ */
+function TranslationLink({ line, light = false }: { line: PhraseLine; light?: boolean }) {
   const { t } = useTranslation("pandaThoughts");
   const [shown, setShown] = useState(false);
 
-  if (shown) {
-    return (
-      <Pressable
-        onPress={() => setShown(false)}
-        className="min-h-12 justify-center active:opacity-70"
-      >
-        <Text
-          className={`font-nunito text-text ${compact ? "text-body" : "text-lead"}`}
-        >
-          {lineTranslation(line)}
-        </Text>
-      </Pressable>
-    );
-  }
+  const color = light
+    ? shown
+      ? "text-white/90"
+      : "text-white"
+    : shown
+      ? "text-textSecondary"
+      : "text-primary";
 
   return (
     <Pressable
-      onPress={() => setShown(true)}
-      className="min-h-12 justify-center rounded-2xl border border-dashed border-primary/40 px-4 active:opacity-70"
+      onPress={() => setShown((v) => !v)}
+      hitSlop={6}
+      className="self-start active:opacity-60"
       accessibilityRole="button"
     >
-      <Text className="font-nunito text-body text-primary">
-        {t("showTranslation")}
+      <Text
+        className={`font-nunito text-small ${color} ${light && !shown ? "underline" : ""}`}
+      >
+        {shown ? lineTranslation(line) : t("translation")}
       </Text>
     </Pressable>
   );
@@ -427,7 +450,6 @@ function Exchange({
   onSpeak: (text: string) => void;
 }) {
   const { t } = useTranslation("pandaThoughts");
-  const [showTranslation, setShowTranslation] = useState(false);
   const replySegments = useMemo(() => segmentPhrase(reply), [reply]);
   const reactionSegments = useMemo(
     () => (reply.reaction ? segmentPhrase(reply.reaction) : []),
@@ -436,17 +458,22 @@ function Exchange({
 
   return (
     <View className="gap-2">
-      <Pressable
-        onPress={() => onSpeak(phraseText(reply))}
-        className="flex-row items-end gap-2 self-end rounded-2xl rounded-br-md bg-primary px-3 py-1.5 active:opacity-80"
-        accessibilityRole="button"
-        accessibilityLabel={phraseText(reply)}
-      >
-        <PandaText segments={replySegments} size={22} light />
-        <View className="pb-1.5">
-          <VolumeIcon width={16} height={16} color="#FFFFFF" />
-        </View>
-      </Pressable>
+      <View className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-primary px-3 py-1.5">
+        <Pressable
+          onPress={() => onSpeak(phraseText(reply))}
+          className="flex-row items-end gap-2 active:opacity-80"
+          accessibilityRole="button"
+          accessibilityLabel={phraseText(reply)}
+        >
+          <View className="shrink">
+            <PandaText segments={replySegments} size={22} light />
+          </View>
+          <View className="pb-1.5">
+            <VolumeIcon width={16} height={16} color="#FFFFFF" />
+          </View>
+        </Pressable>
+        <TranslationLink line={reply} light />
+      </View>
 
       {reply.reaction && (
         <View className="flex-row items-start gap-2 self-start">
@@ -473,22 +500,7 @@ function Exchange({
                 <VolumeIcon width={18} height={18} color={`${colors.text}99`} />
               </Pressable>
             </View>
-            <Pressable
-              onPress={() => setShowTranslation((v) => !v)}
-              hitSlop={6}
-              className="self-start active:opacity-60"
-              accessibilityRole="button"
-            >
-              <Text
-                className={`font-nunito text-small ${
-                  showTranslation ? "text-textSecondary" : "text-primary"
-                }`}
-              >
-                {showTranslation
-                  ? lineTranslation(reply.reaction)
-                  : t("translation")}
-              </Text>
-            </Pressable>
+            <TranslationLink line={reply.reaction} />
           </View>
         </View>
       )}
