@@ -8,11 +8,23 @@
 // Свайп вниз закрывает панель, только когда содержимое прокручено до самого верха
 // (иначе палец листает список). За ручку панель можно утянуть всегда.
 //
+// Кнопка, прибитая к низу панели (не уезжает с прокруткой): manualScroll + SheetBody с
+// footer. Тогда панель сама не прокручивает содержимое — это делает SheetBody, а
+// панель через контекст знает, прокручено ли оно до верха (для свайпа).
+//
 // Панель открыта, пока item не null. Пока идёт анимация закрытия, содержимое
 // рисуется по последнему item (а не пустота). Содержимое передаётся функцией:
 // children(item).
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import {
   Animated,
   Dimensions,
@@ -39,6 +51,59 @@ const CLOSE_VELOCITY = 0.8;
 /** С какого сдвига пальца жест считается свайпом, а не тапом. */
 const DRAG_START = 8;
 
+interface SheetScroll {
+  scrollRef: RefObject<ScrollView | null>;
+  onScroll: (y: number) => void;
+}
+const SheetScrollContext = createContext<SheetScroll | null>(null);
+
+/**
+ * Содержимое панели с manualScroll: прокручиваемая часть и footer, прибитый к низу
+ * панели (над панелью навигации). Без footer — как обычная панель.
+ */
+export function SheetBody({
+  children,
+  footer,
+}: {
+  children: ReactNode;
+  footer?: ReactNode;
+}) {
+  const insets = useSafeAreaInsets();
+  const sheet = useContext(SheetScrollContext);
+  return (
+    <>
+      <ScrollView
+        ref={sheet?.scrollRef}
+        // flexShrink: прокрутка сжимается до высоты панели, а не вылезает за экран
+        style={{ flexGrow: 0, flexShrink: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: SHEET_HORIZONTAL_INSET / 2,
+          paddingBottom: footer ? 8 : insets.bottom + 16,
+        }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+        overScrollMode="never"
+        scrollEventThrottle={16}
+        onScroll={(event) => sheet?.onScroll(event.nativeEvent.contentOffset.y)}
+      >
+        {children}
+      </ScrollView>
+      {footer && (
+        <View
+          style={{
+            paddingHorizontal: SHEET_HORIZONTAL_INSET / 2,
+            paddingTop: 12,
+            paddingBottom: insets.bottom + 16,
+          }}
+        >
+          {footer}
+        </View>
+      )}
+    </>
+  );
+}
+
 interface BottomSheetProps<T> {
   /** Что показываем; null — панель закрыта. */
   item: T | null;
@@ -48,6 +113,11 @@ interface BottomSheetProps<T> {
   /** Тап по пустому месту панели (не по кнопкам) — например, закрыть тултип. */
   onBackgroundTap?: () => void;
   children: (item: T) => ReactNode;
+  /**
+   * true — панель не оборачивает содержимое в прокрутку: содержимое само рисует
+   * SheetBody (например, чтобы прибить кнопку к низу).
+   */
+  manualScroll?: boolean;
 }
 
 export function BottomSheet<T>({
@@ -56,6 +126,7 @@ export function BottomSheet<T>({
   onOpen,
   onBackgroundTap,
   children,
+  manualScroll = false,
 }: BottomSheetProps<T>) {
   const insets = useSafeAreaInsets();
 
@@ -206,6 +277,13 @@ export function BottomSheet<T>({
 
   if (shown === null) return null;
 
+  const sheetScroll: SheetScroll = {
+    scrollRef,
+    onScroll: (y) => {
+      scrollY.current = y;
+    },
+  };
+
   return (
     <Modal
       visible={visible}
@@ -244,25 +322,13 @@ export function BottomSheet<T>({
           <View className="mb-3 h-1 w-10 self-center rounded-full bg-text/20" />
 
           {/* Содержимое: прокручивается, если не помещается */}
-          <ScrollView
-            ref={scrollRef}
-            // flexShrink: прокрутка сжимается до высоты панели, а не вылезает за экран
-            style={{ flexGrow: 0, flexShrink: 1 }}
-            contentContainerStyle={{
-              paddingHorizontal: SHEET_HORIZONTAL_INSET / 2,
-              paddingBottom: insets.bottom + 16,
-            }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-            overScrollMode="never"
-            scrollEventThrottle={16}
-            onScroll={(event) => {
-              scrollY.current = event.nativeEvent.contentOffset.y;
-            }}
-          >
-            {children(shown)}
-          </ScrollView>
+          <SheetScrollContext.Provider value={sheetScroll}>
+            {manualScroll ? (
+              children(shown)
+            ) : (
+              <SheetBody>{children(shown)}</SheetBody>
+            )}
+          </SheetScrollContext.Provider>
         </Animated.View>
       </View>
     </Modal>

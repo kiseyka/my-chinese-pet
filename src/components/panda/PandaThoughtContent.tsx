@@ -16,8 +16,9 @@ import { phraseText } from "@/utils/panda/phraseSegments";
 import * as Speech from "expo-speech";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { SheetBody } from "@/components/ui/BottomSheet";
 import { PandaPhraseView } from "./PandaPhraseView";
+import { View } from "react-native";
 import { MainButton } from "./PandaRiddles";
 
 /** Через сколько панда заговорит: сцена успевает появиться. */
@@ -61,18 +62,26 @@ export function PhraseOfDay({
     };
   }, [phrase, speak]);
 
-  if (!phrase) return <Continue onPress={onDone} disabled={false} />;
+  if (!phrase) {
+    return (
+      <SheetBody footer={<Continue onPress={onDone} disabled={false} />}>
+        {null}
+      </SheetBody>
+    );
+  }
 
   const pickAnswer = (replyId: string) => setAnswer(replyId);
 
   const finish = () => {
     Speech.stop();
-    if (!again && collect) usePandaStore.getState().collectPhrase(phrase.id, answer);
+    if (!again && collect)
+      usePandaStore.getState().collectPhrase(phrase.id, answer);
     onDone();
   };
 
+  // «Продолжить» прибито к низу шторки: фраза с пояснением прокручивается над ним
   return (
-    <View className="gap-5">
+    <SheetBody footer={<Continue onPress={finish} disabled={waitsForAnswer} />}>
       <PandaPhraseView
         phrase={phrase}
         answer={answer}
@@ -83,13 +92,18 @@ export function PhraseOfDay({
           onLeave();
         }}
       />
-      <Continue onPress={finish} disabled={waitsForAnswer} />
-    </View>
+    </SheetBody>
   );
 }
 
 /** «Продолжить» — дальше меню игр. */
-function Continue({ onPress, disabled }: { onPress: () => void; disabled: boolean }) {
+function Continue({
+  onPress,
+  disabled,
+}: {
+  onPress: () => void;
+  disabled: boolean;
+}) {
   const { t } = useTranslation("pandaThoughts");
   return (
     <View className="flex-row">

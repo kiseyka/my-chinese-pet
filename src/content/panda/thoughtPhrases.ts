@@ -961,6 +961,287 @@ export const pandaPhrases: PandaPhrase[] = [
     en: "Good night, sweet dreams!",
     pinyin: { 个: "ge" },
   },
+  // ── Фразы от 25 октября (черновик — проверить) ───────────────────────────────
+  {
+    id: "dian-ying",
+    words: ["我们", "一起", "看", "电影", "吧", "！"],
+    ru: "Давай вместе посмотрим кино!",
+    en: "Let's watch a movie together!",
+    pinyin: { 一起: "yì qǐ" },
+    note: {
+      kind: "word",
+      ru: "电影 — дословно «электрическая тень»: 电 — электричество, 影 — тень. Так же устроены и другие новые вещи: 电脑 «электрический мозг» — компьютер, 电视 «электрическое зрение» — телевизор.",
+      en: "电影 literally means “electric shadow”: 电 is electricity, 影 is shadow. Other modern things work the same way: 电脑 “electric brain” is a computer, 电视 “electric seeing” is a TV.",
+      terms: {
+        "影": { pinyin: "yǐng", ru: "тень", en: "shadow" },
+        "电视": { pinyin: "diàn shì", ru: "телевизор", en: "television" },
+      },
+    },
+  },
+  {
+    id: "shou-ji",
+    words: ["我", "的", "手机", "呢", "？"],
+    ru: "А где мой телефон?",
+    en: "Where's my phone?",
+    note: {
+      kind: "word",
+      ru: "手机 — «ручная машинка»: 手 — рука, 机 — машина. А обычный телефон — 电话, «электрическая речь». 呢 в конце — короткий вопрос «а где же…?».",
+      en: "手机 is a “hand machine”: 手 is hand, 机 is machine. A landline is 电话, “electric speech”. 呢 at the end makes a short question: “where's…?”",
+      terms: {
+        "机": { pinyin: "jī", ru: "машина, механизм", en: "machine" },
+      },
+    },
+  },
+  {
+    id: "huo-che",
+    words: ["我", "想", "坐", "火车", "去", "中国", "。"],
+    ru: "Хочу поехать в Китай на поезде.",
+    en: "I want to go to China by train.",
+    note: {
+      kind: "word",
+      ru: "火车 — «огненная повозка»: первые поезда тянули паровозы с топкой. А 汽车 — «паровая повозка», так назвали автомобиль. Поезд давно не на огне, а название осталось.",
+      en: "火车 is a “fire cart”: the first trains were pulled by steam engines with a firebox. 汽车, a “steam cart”, became the word for car. Trains no longer run on fire, but the name stuck.",
+    },
+  },
+  {
+    id: "sheng-ri",
+    words: ["生日", "快乐", "！"],
+    ru: "С днём рождения!",
+    en: "Happy birthday!",
+    note: {
+      ru: "На день рождения в Китае едят 长寿面 — «лапшу долголетия». Чем длиннее лапша, тем длиннее жизнь, поэтому её не режут и стараются не перекусывать.",
+      en: "On birthdays people in China eat 长寿面, “longevity noodles”. The longer the noodles, the longer the life — so they're never cut, and you try not to bite them through.",
+      terms: {
+        "长寿面": { pinyin: "cháng shòu miàn", ru: "лапша долголетия", en: "longevity noodles" },
+      },
+    },
+  },
+  {
+    id: "xin-nian",
+    when: { season: ["winter"] },
+    words: ["新年", "快乐", "！"],
+    ru: "С Новым годом!",
+    en: "Happy New Year!",
+    note: {
+      ru: "На Новый год на дверь вешают иероглиф 福 «счастье» вверх ногами. «Перевёрнутый» — 倒 dào, а это звучит как 到 dào «пришло». Получается 福到了 — «счастье пришло».",
+      en: "At New Year the character 福 “good fortune” is hung upside down on the door. “Upside down” is 倒 dào, which sounds like 到 dào “has arrived” — so it says 福到了, “fortune has arrived”.",
+      terms: {
+        "福": { pinyin: "fú", ru: "счастье, удача", en: "good fortune" },
+        "倒": { pinyin: "dào", ru: "перевёрнутый", en: "upside down" },
+        "到": { pinyin: "dào", ru: "прибыть, прийти", en: "to arrive" },
+        "福到了": { pinyin: "fú dào le", ru: "счастье пришло", en: "fortune has arrived" },
+      },
+    },
+  },
+  {
+    id: "da-jia",
+    words: ["大家", "好", "！"],
+    ru: "Всем привет!",
+    en: "Hi, everyone!",
+    note: {
+      kind: "word",
+      ru: "大家 — «все», а дословно «большая семья»: 大 — большой, 家 — семья, дом. Так здороваются с группой — учитель с классом, ведущий со зрителями.",
+      en: "大家 means “everyone”, literally “big family”: 大 is big, 家 is family, home. It's how you greet a group — a teacher with a class, a host with an audience.",
+    },
+  },
+  {
+    id: "you-peng",
+    words: ["有", "朋友", "来", "，", "我", "很", "高兴", "！"],
+    ru: "Когда приходят друзья, я так рада!",
+    en: "When friends come over, I'm so happy!",
+    note: {
+      ru: "Это почти цитата из Конфуция: 有朋自远方来，不亦乐乎 — «Разве не радостно, когда друг приезжает издалека?». Её до сих пор говорят, встречая гостей.",
+      en: "This is almost a quote from Confucius: 有朋自远方来，不亦乐乎 — “Isn't it a joy when a friend comes from afar?”. People still say it when welcoming guests.",
+      terms: {
+        "有朋自远方来": {
+          pinyin: "yǒu péng zì yuǎn fāng lái",
+          ru: "друг приезжает издалека",
+          en: "a friend comes from afar",
+        },
+        "不亦乐乎": { pinyin: "bú yì lè hū", ru: "разве не радостно?", en: "isn't it a joy?" },
+      },
+    },
+  },
+  {
+    id: "he-cha",
+    words: ["我们", "一起", "喝", "茶", "吧", "！"],
+    ru: "Давай вместе выпьем чаю!",
+    en: "Let's drink some tea together!",
+    pinyin: { 一起: "yì qǐ" },
+    note: {
+      kind: "word",
+      ru: "Русское «чай» пришло от 茶 chá — по суше, с караванами. А английское tea — от «тэ», так 茶 звучит в провинции Фуцзянь, откуда чай везли морем. Оба слова — один и тот же иероглиф!",
+      en: "Russian “chai” comes from 茶 chá, carried overland by caravans. English “tea” comes from “te”, how 茶 sounds in Fujian, where tea was shipped by sea. Both words are the same character!",
+    },
+  },
+  {
+    id: "xiu-xi",
+    words: ["我", "想", "休息", "。"],
+    ru: "Хочу отдохнуть.",
+    en: "I want to rest.",
+    note: {
+      kind: "word",
+      ru: "Посмотри на 休: слева человек 亻, справа дерево 木. Человек прислонился к дереву — отдыхает.",
+      en: "Look at 休: a person 亻 on the left, a tree 木 on the right. A person leaning against a tree — resting.",
+      terms: {
+        "休": { pinyin: "xiū", ru: "отдыхать", en: "to rest" },
+        "亻": { pinyin: "rén", ru: "человек (ключ)", en: "person (radical)" },
+        "木": { pinyin: "mù", ru: "дерево", en: "tree" },
+      },
+    },
+  },
+  {
+    id: "ming-tian",
+    words: ["明天", "见", "！"],
+    ru: "До завтра!",
+    en: "See you tomorrow!",
+    note: {
+      kind: "word",
+      ru: "明 — солнце 日 и луна 月 вместе, значит «светлый, ясный». А 明天 — «наступающий день», завтра.",
+      en: "明 is the sun 日 and the moon 月 together, meaning “bright, clear”. And 明天 is “the coming day” — tomorrow.",
+      terms: {
+        "明": { pinyin: "míng", ru: "светлый, ясный", en: "bright, clear" },
+        "日": { pinyin: "rì", ru: "солнце, день", en: "sun, day" },
+        "月": { pinyin: "yuè", ru: "луна, месяц", en: "moon, month" },
+      },
+    },
+  },
+  {
+    id: "liang-ge",
+    words: ["我", "有", "两", "个", "朋友", "。"],
+    ru: "У меня два друга.",
+    en: "I have two friends.",
+    pinyin: { 个: "ge" },
+    note: {
+      kind: "why",
+      ru: "Цифра «два» — 二 èr, но когда считают предметы, говорят 两 liǎng: 两个朋友, а не 二个. 二 остаётся для счёта и чисел: 一、二、三, 十二.",
+      en: "The digit “two” is 二 èr, but when counting things you say 两 liǎng: 两个朋友, not 二个. 二 stays for counting and numbers: 一、二、三, 十二.",
+      terms: {
+        "两个朋友": { pinyin: "liǎng ge péng you", ru: "два друга", en: "two friends" },
+        "二个": { pinyin: "èr ge", ru: "(так не говорят)", en: "(not used)" },
+        "十二": { pinyin: "shí èr", ru: "двенадцать", en: "twelve" },
+      },
+    },
+  },
+  {
+    id: "wei-phone",
+    words: ["喂", "？", "你好", "！"],
+    ru: "Алло? Здравствуйте!",
+    en: "Hello? (on the phone)",
+    pinyin: { 喂: "wéi" },
+    note: {
+      kind: "why",
+      ru: "По телефону 喂 произносят мягко, вторым тоном — wéi. А резкое wèi четвёртым тоном — это «эй!», так окликают человека.",
+      en: "On the phone 喂 is said softly, with the second tone — wéi. A sharp fourth-tone wèi is “hey!”, used to call out to someone.",
+    },
+  },
+  {
+    id: "cat-or-dog",
+    words: ["你", "喜欢", "猫", "还是", "狗", "？"],
+    ru: "Ты любишь кошек или собак?",
+    en: "Do you like cats or dogs?",
+    note: {
+      kind: "why",
+      ru: "还是 — «или» в вопросе с выбором. В обычном предложении «или» — другое слово, 或者: 喝茶或者咖啡都可以 — «можно чай или кофе».",
+      en: "还是 is “or” in a question with a choice. In a plain statement “or” is a different word, 或者: 喝茶或者咖啡都可以 — “tea or coffee are both fine”.",
+      terms: {
+        "或者": { pinyin: "huò zhě", ru: "или (в утверждении)", en: "or (in statements)" },
+        "喝茶或者咖啡都可以": {
+          pinyin: "hē chá huò zhě kā fēi dōu kě yǐ",
+          ru: "можно чай или кофе",
+          en: "tea or coffee are both fine",
+        },
+      },
+    },
+    replies: [
+      {
+        id: "cat",
+        words: ["我", "喜欢", "猫", "。"],
+        ru: "Я люблю кошек.",
+        en: "I like cats.",
+        reaction: {
+          words: ["我", "也", "喜欢", "猫", "！"],
+          ru: "Я тоже люблю кошек!",
+          en: "I like cats too!",
+        },
+      },
+      {
+        id: "dog",
+        words: ["我", "喜欢", "狗", "。"],
+        ru: "Я люблю собак.",
+        en: "I like dogs.",
+        reaction: {
+          words: ["狗", "很", "可爱", "！"],
+          ru: "Собаки такие милые!",
+          en: "Dogs are so cute!",
+        },
+      },
+      {
+        id: "both",
+        words: ["我", "都", "喜欢", "！"],
+        ru: "Я люблю и тех, и других!",
+        en: "I like both!",
+        reaction: {
+          words: ["我", "也", "是", "！"],
+          ru: "Я тоже!",
+          en: "Me too!",
+        },
+      },
+    ],
+  },
+  {
+    id: "what-season",
+    words: ["你", "最", "喜欢", "什么", "季节", "？"],
+    ru: "Какое время года ты любишь больше всего?",
+    en: "What's your favourite season?",
+    replies: [
+      {
+        id: "spring",
+        words: ["春天", "。"],
+        ru: "Весну.",
+        en: "Spring.",
+        reaction: {
+          words: ["春天", "很", "漂亮", "，", "花", "很", "多", "！"],
+          ru: "Весной так красиво, столько цветов!",
+          en: "Spring is so pretty, so many flowers!",
+        },
+      },
+      {
+        id: "summer",
+        words: ["夏天", "。"],
+        ru: "Лето.",
+        en: "Summer.",
+        reaction: {
+          words: ["夏天", "太", "热", "了", "，", "熊猫", "怕", "热", "！"],
+          ru: "Летом слишком жарко, панды боятся жары!",
+          en: "Summer is too hot — pandas don't like the heat!",
+          mood: "surprised",
+        },
+      },
+      {
+        id: "autumn",
+        words: ["秋天", "。"],
+        ru: "Осень.",
+        en: "Autumn.",
+        reaction: {
+          words: ["秋天", "不", "冷", "也", "不", "热", "，", "真", "好", "！"],
+          ru: "Осенью ни холодно, ни жарко — здорово!",
+          en: "Autumn is neither cold nor hot — lovely!",
+        },
+      },
+      {
+        id: "winter",
+        words: ["冬天", "。"],
+        ru: "Зиму.",
+        en: "Winter.",
+        reaction: {
+          words: ["我", "也", "最", "喜欢", "冬天", "！", "熊猫", "不", "怕", "冷", "。"],
+          ru: "Я тоже больше всего люблю зиму! Панды не боятся холода.",
+          en: "Winter is my favourite too! Pandas aren't afraid of the cold.",
+        },
+      },
+    ],
+  },
 ];
 
 /**
