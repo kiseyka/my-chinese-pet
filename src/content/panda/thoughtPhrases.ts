@@ -74,6 +74,21 @@ export interface PandaPhrase extends PhraseLine {
 
 // Тестовые фразы — замени своими
 export const pandaPhrases: PandaPhrase[] = [
+  // Панда представляется — первая фраза дня (FIRST_PHRASE_ID в utils/panda/thoughts)
+  {
+    id: "hello-name",
+    words: ["你好", "！", "我", "是", "竹竹", "！"],
+    ru: "Привет! Я Жужа!",
+    en: "Hi! I'm Zhuzhu!",
+    note: {
+      ru: "竹竹 — моё имя. 竹 значит «бамбук». Китайцы часто дают малышам и питомцам ласковые имена из двух одинаковых слогов. По-русски зови меня Жужа!",
+      en: "竹竹 is my name. 竹 means “bamboo”. Chinese often give children and pets cute names made of a doubled syllable. You can call me Zhuzhu!",
+      terms: {
+        "竹竹": { pinyin: "Zhúzhu", ru: "Жужа — имя панды", en: "Zhuzhu, the panda's name" },
+        "竹": { pinyin: "zhú", ru: "бамбук", en: "bamboo" },
+      },
+    },
+  },
   {
     id: "flower-pretty",
     words: ["我", "的", "花", "很", "好看", "。"],

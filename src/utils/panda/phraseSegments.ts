@@ -6,7 +6,9 @@
 
 import type { Word } from "@/content/flashcards/types";
 import type { PandaPhrase } from "@/content/panda/thoughtPhrases";
+import { PANDA_NAME } from "@/content/panda/name";
 import { allWords } from "@/content/words/vocabulary";
+import i18n from "i18next";
 
 const HAN = /\p{Script=Han}/u;
 
@@ -51,6 +53,8 @@ export interface PhraseLineLike {
 export function segmentPhrase(phrase: PhraseLineLike): PhraseSegment[] {
   return phrase.words.map((text) => {
     if (!HAN.test(text)) return { text, pinyin: "", isHan: false };
+    // Имя панды — не из словаря: пиньинь и перевод из content/panda/name
+    if (text === PANDA_NAME.hanzi) return nameSegment(text);
 
     const word = findWordByHanzi(text);
     const pinyin =
@@ -65,11 +69,24 @@ export function segmentPhrase(phrase: PhraseLineLike): PhraseSegment[] {
   });
 }
 
-/** Слова фразы из словаря (без знаков); undefined — какого-то слова в словаре нет. */
+function nameSegment(text: string): PhraseSegment {
+  const ru = i18n.language?.startsWith("ru");
+  return {
+    text,
+    pinyin: PANDA_NAME.pinyin,
+    isHan: true,
+    gloss: ru ? `${PANDA_NAME.ru} — имя панды` : `${PANDA_NAME.en}, the panda's name`,
+  };
+}
+
+/**
+ * Слова фразы из словаря (без знаков и без имени панды — оно всегда знакомо);
+ * undefined — какого-то слова в словаре нет.
+ */
 export function getPhraseWords(phrase: PandaPhrase): Word[] | undefined {
   const words: Word[] = [];
   for (const text of phrase.words) {
-    if (!HAN.test(text)) continue;
+    if (!HAN.test(text) || text === PANDA_NAME.hanzi) continue;
     const word = findWordByHanzi(text);
     if (!word) return undefined;
     words.push(word);

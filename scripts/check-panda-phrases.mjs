@@ -30,6 +30,12 @@ for (const m of wordsSource.matchAll(/hanzi: "([^"]+)",\s*pinyin: "([^"]*)"/g)) 
   if (!pinyinByHanzi.has(m[1])) pinyinByHanzi.set(m[1], m[2]);
 }
 
+// Имя панды (src/content/panda/name.ts) — не из словаря, но во фразах разрешено
+const { PANDA_NAME } = await import(
+  pathToFileURL(join(root, "src/content/panda/name.ts")).href
+);
+pinyinByHanzi.set(PANDA_NAME.hanzi, PANDA_NAME.pinyin);
+
 const { pandaPhrases } = await import(
   pathToFileURL(join(root, "src/content/panda/thoughtPhrases.ts")).href
 );

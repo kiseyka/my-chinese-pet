@@ -68,8 +68,13 @@ export function getAvailablePhrases(now = Date.now()): PandaPhrase[] {
   });
 }
 
+/** Первой панда представляется («Привет! Я Жужа!»), если эта фраза уже доступна. */
+const FIRST_PHRASE_ID = "hello-name";
+
 /** Случайная фраза; недавно показанные — только если других нет. */
 function pickPhrase(phrases: PandaPhrase[]): PandaPhrase | undefined {
+  const first = phrases.find((phrase) => phrase.id === FIRST_PHRASE_ID);
+  if (first) return first;
   const recent = new Set(usePandaStore.getState().recentPhraseIds);
   const fresh = phrases.filter((phrase) => !recent.has(phrase.id));
   return shuffle(fresh.length > 0 ? fresh : phrases)[0];
