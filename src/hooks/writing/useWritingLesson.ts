@@ -252,6 +252,22 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     }
   };
 
+  /**
+   * «Не помню — показать контур» на этапе по памяти: раскрывает контур всего иероглифа
+   * в этой ячейке. Как и раскрытие при застревании: на итоговом этапе слово считается
+   * написанным с подсказкой.
+   */
+  const revealOutline = () => {
+    if (!stage || !slot || stage.mode !== "memory" || phase !== "active") return;
+    setRevealed((prev) => Array.from(new Set([...prev, ...slot.strokeIndices])));
+    if (stage.isFinal) {
+      setAssisted(true);
+      setAssistedChars((prev) =>
+        prev.includes(slot.charIndex) ? prev : [...prev, slot.charIndex],
+      );
+    }
+  };
+
   const continueAfterResult = () => {
     if (!current || isFinishing.current) return;
 
@@ -364,6 +380,12 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
     snappedIndices,
     rawStrokes,
     hintIndex,
+    /** Можно ли сейчас показать контур (этап по памяти, контур раскрыт не весь). */
+    canRevealOutline:
+      stage?.mode === "memory" &&
+      phase === "active" &&
+      strokeIndices.some((index) => !revealed.includes(index)),
+    revealOutline,
     handleStroke,
     finishDemo,
     continueAfterResult,

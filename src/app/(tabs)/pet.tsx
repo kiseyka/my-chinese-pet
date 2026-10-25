@@ -6,10 +6,14 @@ import shopImg from "@/assets/images/shop.png";
 import { CoinBalance } from "@/components/CoinBalance";
 import { Screen } from "@/components/layout/Screen";
 import { PandaScene } from "@/components/panda/PandaScene";
+import { PandaTalkSheet } from "@/components/panda/PandaTalkSheet";
+import { ThoughtTestPanel } from "@/components/panda/ThoughtTestPanel";
+import { usePandaThought } from "@/hooks/panda/usePandaThought";
 import { NavIconButton } from "@/components/ui/NavIconButton";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { colors } from "@/theme/colors";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const PandaScreen = () => {
@@ -18,6 +22,25 @@ const PandaScreen = () => {
   const xp = useProgressStore((s) => s.xp);
   const { level, xpIntoLevel, xpForNextLevel } = getLevelInfo(xp);
   const progressPercent = Math.min(100, (xpIntoLevel / xpForNextLevel) * 100);
+  // Любой тап по панде — шторка разговора: фраза дня (если над головой облачко,
+  // utils/panda/thoughts), затем меню игр (utils/panda/play). С облачком сначала
+  // доигрывает анимация тапа
+  const [talkId, setTalkId] = useState<number | null>(null);
+  const openTalk = () => setTalkId(Date.now());
+  const thought = usePandaThought(openTalk);
+  const tapPanda = () => {
+    if (thought.thought) thought.tapPanda();
+    else openTalk();
+  };
+  const closeTalk = () => {
+    setTalkId(null);
+    thought.closed();
+  };
+  // «Ещё» на странице игры (/panda-talk) возвращает сюда с play — снова меню игр
+  const { play } = useLocalSearchParams<{ play?: string }>();
+  useEffect(() => {
+    if (play) setTalkId(Date.now());
+  }, [play]);
 
   return (
     <Screen className="bg-[#EDE0CE]">
@@ -62,6 +85,9 @@ const PandaScreen = () => {
         <CoinBalance />
       </View>
 
+      {/* Только в режиме разработки: запустить облачко для проверки */}
+      <ThoughtTestPanel />
+
       {/* Сцена с пандой — на весь экран под шапкой. */}
       <View
         style={{
@@ -82,14 +108,17 @@ const PandaScreen = () => {
             bottom: 0,
           }}
         >
-          <PandaScene />
+          <PandaScene
+            hasThought={thought.hasCloud}
+            onPandaPress={tapPanda}
+          />
         </View>
       </View>
 
       <View className="flex-1" />
 
-      {/* Новости панды пока не показываются: копятся тихо (utils/panda/news),
-          вернуть плашку — usePandaNews + PandaDialogBubble, когда будут тексты/анимации */}
+      {/* Новости панды не показываются: копятся тихо (utils/panda/news).
+          Тап по панде — шторка разговора: фраза дня и игры, см. PandaTalkSheet */}
       <View className="flex-1" />
 
       {/* Ряд навигационных иконок — обе просто переводят на отдельный
@@ -107,6 +136,8 @@ const PandaScreen = () => {
           onPress={() => router.push("/shop")}
         />
       </View>
+
+      <PandaTalkSheet openId={talkId} onClose={closeTalk} />
     </Screen>
   );
 };

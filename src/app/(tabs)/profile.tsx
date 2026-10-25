@@ -9,6 +9,7 @@
 //       изучено слов (сданы все экзамены слова) — тап: список этих слов;
 //       текущий этап пути — тап: экран этапа;
 //   - галерея лучших написаний (ProfileGallery);
+//   - фразы, которые рассказала панда (ProfilePandaPhrases);
 //   - внизу: политика конфиденциальности и лицензии.
 // Данные: wordProgressStore, activityStore (журнал), userProgressStore (опыт),
 // profileStore (имя), galleryStore.
@@ -25,6 +26,7 @@ import { WordSheet } from "@/components/flashcards/WordSheet";
 import { Screen } from "@/components/layout/Screen";
 import { NameModal } from "@/components/profile/NameModal";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
+import { ProfilePandaPhrases } from "@/components/profile/ProfilePandaPhrases";
 import { StudyCalendar } from "@/components/profile/StudyCalendar";
 import { BackButton } from "@/components/ui/BackButton";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -60,6 +62,8 @@ export default function ProfileScreen() {
   const { level } = getLevelInfo(xp);
   const name = useProfileStore((s) => s.name);
   const setName = useProfileStore((s) => s.setName);
+  const gender = useProfileStore((s) => s.gender);
+  const setGender = useProfileStore((s) => s.setGender);
 
   const [editingName, setEditingName] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -99,8 +103,10 @@ export default function ProfileScreen() {
       <NameModal
         visible={editingName}
         initialName={name}
-        onConfirm={(value) => {
+        initialGender={gender}
+        onConfirm={(value, nextGender) => {
           setName(value);
+          setGender(nextGender);
           setEditingName(false);
         }}
         onClose={() => setEditingName(false)}
@@ -244,6 +250,8 @@ export default function ProfileScreen() {
         </View>
 
         <ProfileGallery />
+
+        <ProfilePandaPhrases />
 
         {/* Документы */}
         <View className="overflow-hidden rounded-2xl bg-surface">

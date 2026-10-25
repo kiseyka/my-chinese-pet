@@ -38,8 +38,16 @@ const GRID_INSET = 32 + 24;
 
 export default function PathStageScreen() {
   const { id, from } = useLocalSearchParams<{ id?: string; from?: string }>();
-  // «Назад» — в «Словарь», если этап открыли оттуда («Показать»), иначе на путь
-  const backHref = from === "dictionary" ? "/vocabulary" : "/games/path";
+  // «Назад» — туда, откуда открыли этап: «Словарь» («Показать»), панда или профиль
+  // (тап по слову во фразе панды), иначе на путь
+  const backHref =
+    from === "dictionary"
+      ? "/vocabulary"
+      : from === "pet"
+        ? "/pet"
+        : from === "profile"
+          ? "/profile"
+          : "/games/path";
   const stage = findPathStage(id ?? "");
   const { progress, flashcardWords, startTraining } = usePath();
   const [opened, setOpened] = useState<Word | null>(null);
