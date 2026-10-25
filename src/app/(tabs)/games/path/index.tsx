@@ -6,10 +6,11 @@
 //     Других делений нет (темы — это сами этапы).
 //   - В шапке экрана справа — «HSK 1 ▾»: показывает раздел, который сейчас на экране;
 //     тап открывает шторку с разделами и их прогрессом, выбор прокручивает карту
-//     к шапке раздела.
+//     к разделу. В шторке выделен раздел, который сейчас на экране; раздел текущего
+//     этапа помечен «сейчас изучается».
 //   - У каждой точки одно кольцо общего прогресса, рядом — название и навыки иконками
 //     (文A — перевод, карандаш — письмо). Пройденные этапы залиты и с галочкой,
-//     текущий крупнее, с обводкой и значком панды; галочка — только у освоенного
+//     текущий крупнее и пульсирует; галочка — только у освоенного
 //     этапа (3 точки у каждого слова в переводе и письме).
 //   - Ничего не закрыто: тап по любой точке открывает экран этапа (stage.tsx).
 //   - Внизу «Продолжить» (или «Начать») — сразу запускает нужную тренировку
@@ -312,6 +313,7 @@ export default function PathScreen() {
       <SectionSheet
         open={sheetOpen}
         sections={sections}
+        visibleLevel={visibleLevel}
         currentLevel={currentLevel}
         onSelect={jumpTo}
         onClose={() => setSheetOpen(false)}
@@ -412,13 +414,16 @@ function Milestone({
 function SectionSheet({
   open,
   sections,
+  visibleLevel,
   currentLevel,
   onSelect,
   onClose,
 }: {
   open: boolean;
   sections: PathSection[];
-  /** Раздел текущего этапа: помечается «сейчас». */
+  /** Раздел, который сейчас на экране: выделен обводкой. */
+  visibleLevel?: number;
+  /** Раздел текущего этапа (куда ведёт «Продолжить»): плашка «сейчас изучается». */
   currentLevel?: number;
   onSelect: (level: number) => void;
   onClose: () => void;
@@ -433,18 +438,19 @@ function SectionSheet({
           <View className="mt-4 gap-2">
             {sections.map((section) => {
               const share = section.total > 0 ? section.passed / section.total : 0;
+              const isVisible = section.level === visibleLevel;
               const isCurrent = section.level === currentLevel;
               return (
                 <Pressable
                   key={section.level}
                   onPress={() => onSelect(section.level)}
                   className={`rounded-2xl bg-surface px-4 py-3 active:opacity-70 ${
-                    isCurrent
+                    isVisible
                       ? "border-2 border-primary"
                       : "border-2 border-transparent"
                   }`}
                   accessibilityRole="button"
-                  accessibilityLabel={`HSK ${section.level}, ${sectionStatus(section)}${isCurrent ? ", сейчас" : ""}`}
+                  accessibilityLabel={`HSK ${section.level}, ${sectionStatus(section)}${isCurrent ? ", сейчас изучается" : ""}${isVisible ? ", открыт" : ""}`}
                 >
                   <View className="flex-row items-center gap-2">
                     <Text className="font-nunitoBold text-body text-text">
@@ -454,7 +460,7 @@ function SectionSheet({
                     {isCurrent && (
                       <View className="rounded-full bg-primary/15 px-2 py-0.5">
                         <Text className="font-nunitoBold text-caption text-primary">
-                          сейчас
+                          сейчас изучается
                         </Text>
                       </View>
                     )}

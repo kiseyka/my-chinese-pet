@@ -6,8 +6,7 @@
 //
 // Состояния:
 //   пройден  — кружок залит primary, иероглиф белый;
-//   текущий  — крупнее, обводка primary, мягкий пульс, значок панды в углу,
-//              карточка подписи с обводкой primary — сразу видно, где ты сейчас;
+//   текущий  — крупнее, мягкий пульс вокруг;
 //   впереди  — светлый кружок с бледным иероглифом (открыть тоже можно);
 //   освоен   — как пройден, плюс галочка в углу: у каждого слова 3 точки
 //              и в переводе, и в письме. Галочка — только за освоение.
@@ -31,7 +30,6 @@
 
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import LanguagesIcon from "@/assets/images/icons/languages.svg";
-import PandaIcon from "@/assets/images/icons/panda.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { colors } from "@/theme/colors";
@@ -68,9 +66,6 @@ const LABEL_GAP = 10;
 /** Пунктир непройденной тропинки: тот же зелёный, чуть прозрачнее сплошной. */
 export const PATH_DASH_OPACITY = 0.75;
 export const PATH_DASH = "2 12";
-
-/** Значок панды у текущего этапа. */
-const MARKER_SIZE = 24;
 
 /** « · » в названии — неразрывными пробелами: «Я, ты, он · 2» не рвётся перед «· 2». */
 function keepPartTogether(title: string): string {
@@ -211,11 +206,7 @@ export const PathNode = memo(function PathNode({
         >
           <View
             className={`items-center justify-center rounded-full ${
-              state === "passed"
-                ? "bg-primary"
-                : state === "current"
-                  ? "border-[3px] border-primary bg-surface"
-                  : "bg-surface"
+              state === "passed" ? "bg-primary" : "bg-surface"
             }`}
             style={{ width: size, height: size }}
           >
@@ -245,15 +236,6 @@ export const PathNode = memo(function PathNode({
             </View>
           ) : null}
 
-          {/* Текущий этап: Жужа рядом — «ты здесь» */}
-          {state === "current" && (
-            <View
-              className="absolute items-center justify-center rounded-full border-2 border-surface bg-primary"
-              style={{ right: 0, bottom: 0, width: MARKER_SIZE, height: MARKER_SIZE }}
-            >
-              <PandaIcon width={14} height={14} />
-            </View>
-          )}
         </View>
 
         <View
@@ -262,11 +244,7 @@ export const PathNode = memo(function PathNode({
         >
           {/* Карточка подписи: непрозрачная, чтобы текст читался поверх рисунка фона */}
           <View
-            className={`rounded-2xl bg-surface px-3 py-1.5 ${
-              state === "current"
-                ? "border-2 border-primary"
-                : "border border-border"
-            } ${
+            className={`rounded-2xl border border-border bg-surface px-3 py-1.5 ${
               labelOnRight ? "items-start" : "items-end"
             }`}
           >
