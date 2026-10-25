@@ -1,16 +1,19 @@
 // src/components/panda/PandaPlayContent.tsx
 //
-// Меню игр с пандой (utils/panda/play) — в шторке разговора (PandaTalkSheet, поверх
-// комнаты). Открывается любым тапом по панде (с облачком —
-// после фразы дня). Игры выбирает пользователь, панда сама их не навязывает:
-//   меню    — «Чем займёмся?»: сверху «Фраза дня» (если её сегодня уже читали —
-//             послушать ещё раз), затем «Угадай слово», «Послушай и угадай»,
-//             «Допиши черту» (+1 опыт), «Напиши слово» (+1, без ошибок +2; только
-//             слова с 3 точками письма или сданным экзаменом);
-//   pick, listen — раунд из ROUND_SIZE загадок прямо в сцене («Загадка 1 из 3»,
-//             «Дальше»); в конце монеты за раунд (все верно — 2, с ошибками — 1),
-//             «Ещё» (если игры остались) и «Готово»;
-//   stroke, write — экран письма /panda-riddle (source=play, у stroke — mode=stroke);
+// Игры с пандой (utils/panda/play). Правило: где будут анимации панды — целая страница,
+// где нет — модальная шторка.
+//   меню    — «Чем займёмся?» в шторке разговора (PandaTalkSheet, поверх комнаты).
+//             Открывается любым тапом по панде (с облачком — после фразы дня).
+//             Сверху «Фраза дня» (если её сегодня уже читали — послушать ещё раз),
+//             затем «Угадай слово», «Послушай и угадай», «Допиши черту» (+1 опыт),
+//             «Напиши слово» (+1, без ошибок +2; только слова с 3 точками письма или
+//             сданным экзаменом). Выбор игры закрывает шторку и открывает её страницу;
+//   pick, listen, write — страница /panda-talk?game=… с пандой крупным планом
+//             (PandaTalkStage, поза «думает»): раунд из ROUND_SIZE загадок («Загадка
+//             1 из 3», «Дальше»), в конце монеты за раунд (все верно — 2, с ошибками —
+//             1), «Ещё» (снова меню в шторке) и «Готово»; у write — вопрос и выбор «По
+//             контуру» / «По памяти», дальше экран письма;
+//   stroke  — сразу экран письма /panda-riddle (mode=stroke);
 //   устала  — игры кончились (15 за 3 часа): «Давай отдохнём, приходи через …»;
 //   пусто   — слов ещё нет: «Сначала выучи пару слов на пути» и кнопка «К пути».
 // Позже сюда же: погладить, покормить (когда будут анимации).
@@ -46,8 +49,13 @@ import ZapIcon from "@/assets/images/icons/zap.svg";
 import { colors } from "@/theme/colors";
 import { MainButton, PickRiddle, WriteRiddle } from "./PandaRiddles";
 
+/** Игры, у которых своя страница с пандой (/panda-talk?game=…). */
+export type PageGame = "pick" | "listen" | "write";
+
 type Step =
   | { kind: "menu" }
+  /** Страница игры, а загадать нечего. */
+  | { kind: "none" }
   | {
       kind: "pick" | "listen";
       words: Word[];
@@ -59,25 +67,47 @@ type Step =
     }
   | { kind: "write"; word: Word; variant: number };
 
-/**
- * onClose — назад к панде (и перед переходом на другой экран);
- * onOpenPhrase — открыть ещё раз фразу дня, прочитанную сегодня.
- */
+/** Первый шаг игры: слова для раунда или слово для письма; null — загадать нечего. */
+function buildGameStep(kind: PageGame): Step | null {
+  if (kind === "pick" || kind === "listen") {
+    const words = pickPlayWords(kind, ROUND_SIZE);
+    if (words.length === 0) return null;
+    return { kind, words, index: 0, correct: 0, variant: Date.now() };
+  }
+  const word = pickPlayWord(kind);
+  return word ? { kind: "write", word, variant: Date.now() } : null;
+}
+
+interface PlayContentProps {
+  /** Назад к панде (и перед переходом на другой экран). */
+  onClose: () => void;
+  /** Меню: открыть ещё раз фразу дня, прочитанную сегодня. */
+  onOpenPhrase?: (phraseId: string) => void;
+  /** Меню: выбрана игра со своей страницей (закрыть шторку и открыть страницу). */
+  onStartGame?: (game: PageGame) => void;
+  /** Страница игры: какая игра. Без него — меню. */
+  game?: PageGame;
+  /** Страница игры: «Ещё» — снова меню (в шторке). */
+  onMore?: () => void;
+}
+
 export function PlayContent({
   onClose,
   onOpenPhrase,
-}: {
-  onClose: () => void;
-  onOpenPhrase: (phraseId: string) => void;
-}) {
+  onStartGame,
+  game,
+  onMore,
+}: PlayContentProps) {
   const { t } = useTranslation("pandaThoughts");
   const router = useRouter();
   const playTimes = usePandaStore((s) => s.playTimes);
   // Подписка на коллекцию: только что дочитанная фраза сразу появляется в меню
   usePandaStore((s) => s.collectedPhrases.length);
-  const [step, setStep] = useState<Step>({ kind: "menu" });
+  const [step, setStep] = useState<Step>(() =>
+    game ? (buildGameStep(game) ?? { kind: "none" }) : { kind: "menu" },
+  );
   const todayPhraseId = getTodayPhraseId();
-  const phraseCard = todayPhraseId ? (
+  const phraseCard = todayPhraseId && onOpenPhrase ? (
     <PlayCard
       title={t("play.phraseOfDay")}
       subtitle={t("play.phraseOfDayHint")}
@@ -88,24 +118,24 @@ export function PlayContent({
   const playsLeft = getPlaysLeft(playTimes);
 
   const start = (kind: PlayKind) => {
-    if (kind === "pick" || kind === "listen") {
-      const words = pickPlayWords(kind, ROUND_SIZE);
-      if (words.length === 0) return;
-      setStep({ kind, words, index: 0, correct: 0, variant: Date.now() });
+    if (kind !== "stroke") {
+      // Своя страница с пандой — туда; иначе (нет страницы) прямо здесь
+      if (onStartGame) {
+        onStartGame(kind);
+        return;
+      }
+      const next = buildGameStep(kind);
+      if (next) setStep(next);
       return;
     }
     const word = pickPlayWord(kind);
     if (!word) return;
-    // «Допиши черту» — на экране письма (холст в панели мешал бы свайпу панели)
-    if (kind === "stroke") {
-      onClose();
-      router.push({
-        pathname: "/panda-riddle",
-        params: { wordId: word.vocabularyId, source: "play", mode: "stroke" },
-      });
-      return;
-    }
-    setStep({ kind: "write", word, variant: Date.now() });
+    // «Допиши черту» — на экране письма
+    onClose();
+    router.push({
+      pathname: "/panda-riddle",
+      params: { wordId: word.vocabularyId, source: "play", mode: "stroke" },
+    });
   };
 
   if (step.kind === "pick" || step.kind === "listen") {
@@ -161,7 +191,7 @@ export function PlayContent({
                     <MainButton
                       label={t("play.more")}
                       variant="secondary"
-                      onPress={() => setStep({ kind: "menu" })}
+                      onPress={() => (onMore ? onMore() : setStep({ kind: "menu" }))}
                     />
                   )}
                   <MainButton
@@ -191,12 +221,12 @@ export function PlayContent({
     );
   }
 
-  // Меню
+  // Страница игры, а загадать нечего (слова успели кончиться) — как пустое меню
   const canPick = canPlay("pick");
   const canWrite = canPlay("write");
   const canStroke = canPlay("stroke");
 
-  if (!canPick) {
+  if (!canPick || step.kind === "none") {
     return (
       <View className="gap-5">
         <Text className="font-nunito text-lead text-text">{t("play.empty")}</Text>

@@ -12,8 +12,8 @@ import { usePandaThought } from "@/hooks/panda/usePandaThought";
 import { NavIconButton } from "@/components/ui/NavIconButton";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { colors } from "@/theme/colors";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const PandaScreen = () => {
@@ -36,6 +36,11 @@ const PandaScreen = () => {
     setTalkId(null);
     thought.closed();
   };
+  // «Ещё» на странице игры (/panda-talk) возвращает сюда с play — снова меню игр
+  const { play } = useLocalSearchParams<{ play?: string }>();
+  useEffect(() => {
+    if (play) setTalkId(Date.now());
+  }, [play]);
 
   return (
     <Screen className="bg-[#EDE0CE]">

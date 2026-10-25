@@ -1,7 +1,7 @@
 // src/store/speechStore.ts
 //
 // Идёт ли сейчас озвучка (не сохраняется на диск). По нему панда в сцене разговора
-// «говорит», пока звучит фраза (раньше — вход talking в panda_talk.riv; сцену убрали).
+// «говорит» (вход talking в panda_talk.riv), пока звучит фраза.
 
 import { create } from "zustand";
 

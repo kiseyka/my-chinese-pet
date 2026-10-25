@@ -1,18 +1,22 @@
 // src/components/panda/PandaTalkSheet.tsx
 //
 // Разговор с пандой — нижняя шторка поверх комнаты (панда в комнате видна над ней).
+// Правило: где будут анимации панды — целая страница, где нет — шторка. В шторке только
+// фраза дня и меню «Чем займёмся?»; игры открываются своими страницами
+// (/panda-talk?game=… с пандой крупным планом, /panda-riddle).
 // Открывается любым тапом по панде:
 //   есть облачко — сначала фраза дня (PhraseOfDay), после «Продолжить» — меню игр;
 //   нет облачка  — сразу меню игр «Чем займёмся?» (PlayContent). В меню — «Фраза дня»,
 //                  если её уже читали сегодня: открыть ещё раз.
 // Закрыть — свайп вниз или тап по затемнению. Недочитанная фраза остаётся, облачко
-// вернётся. Панды крупным планом нет (решено 25 октября).
+// вернётся.
 //
-// Переход на другой экран (письмо, этап из тултипа слова) сначала закрывает шторку:
-// иначе она осталась бы поверх нового экрана.
+// Переход на другой экран (игра, письмо, этап из тултипа слова) сначала закрывает
+// шторку: иначе она осталась бы поверх нового экрана.
 
 import { usePandaStore } from "@/store/pandaStore";
 import { resolveThought } from "@/utils/panda/thoughts";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { PlayContent } from "./PandaPlayContent";
@@ -41,6 +45,7 @@ export function PandaTalkSheet({ openId, onClose }: PandaTalkSheetProps) {
 }
 
 function TalkContent({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
   // Есть фраза дня (облачко) — начинаем с неё, иначе сразу меню игр
   const [step, setStep] = useState<Step>(() => {
     const thought = usePandaStore.getState().thought;
@@ -59,6 +64,10 @@ function TalkContent({ onClose }: { onClose: () => void }) {
       <PlayContent
         onClose={onClose}
         onOpenPhrase={(phraseId) => setStep({ kind: "phrase", phraseId, again: true })}
+        onStartGame={(game) => {
+          onClose();
+          router.push({ pathname: "/panda-talk" as any, params: { game } });
+        }}
       />
     );
   }
