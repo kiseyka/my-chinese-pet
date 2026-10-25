@@ -168,13 +168,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="panda-talk"
-        options={{
-          href: null,
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
         name="panda-riddle"
         options={{
           href: null,

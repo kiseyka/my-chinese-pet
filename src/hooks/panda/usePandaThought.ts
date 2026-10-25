@@ -4,9 +4,10 @@
 //   - при входе на экран — выбрать фразу дня, если сегодня её ещё не было
 //     (utils/panda/thoughts);
 //   - облачко видно, пока фраза есть и мы не ушли в сцену разговора;
-//   - тап по панде — анимация тапа в Rive, затем сцена разговора /panda-talk (onOpen);
-//   - вернулись, не дочитав, — облачко возвращается (до конца дня);
-//   - «Понятно» закрывает фразу в самой сцене (resolveThought).
+//   - тап по панде — анимация тапа в Rive, затем шторка разговора (onOpen,
+//     components/panda/PandaTalkSheet);
+//   - закрыли шторку, не дочитав (closed), — облачко возвращается (до конца дня);
+//   - «Продолжить» закрывает фразу в самой шторке (resolveThought).
 
 import { useActivityStore } from "@/store/activityStore";
 import { usePandaStore } from "@/store/pandaStore";
@@ -17,7 +18,7 @@ import { createThoughtIfDue } from "@/utils/panda/thoughts";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-/** Сцена открывается, когда доиграло сжатие облачка. */
+/** Шторка открывается, когда доиграло сжатие облачка. */
 const OPEN_DELAY_MS = 250;
 
 export function usePandaThought(onOpen: () => void) {
@@ -73,5 +74,7 @@ export function usePandaThought(onOpen: () => void) {
         onOpen();
       }, OPEN_DELAY_MS);
     },
+    /** Шторку закрыли: недочитанная фраза снова облачком. */
+    closed: () => setOpen(false),
   };
 }
