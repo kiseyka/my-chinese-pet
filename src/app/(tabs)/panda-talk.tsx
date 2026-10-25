@@ -15,7 +15,6 @@
 // раз. (Раньше счётчик заходов менялся в useFocusEffect уже после первого рендера —
 // игра и Rive-панда собирались дважды, и страница открывалась с задержкой.)
 
-import BackIcon from "@/assets/images/icons/arrow-left.svg";
 import {
   PandaMoodContext,
   type PandaMood,
@@ -24,15 +23,12 @@ import {
 } from "@/components/panda/PandaMood";
 import { PlayContent, type PageGame } from "@/components/panda/PandaPlayContent";
 import { PandaTalkStage } from "@/components/panda/PandaTalkStage";
-import { colors } from "@/theme/colors";
+import { BackButton } from "@/components/ui/BackButton";
 import * as Speech from "expo-speech";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-/** Насколько панель диалога заходит на сцену (скруглённый верх поверх панды). */
-const PANEL_OVERLAP = 24;
 
 const GAMES: PageGame[] = ["pick", "listen"];
 
@@ -74,36 +70,29 @@ function PandaTalk({ game }: { game: PageGame }) {
 
   return (
     <PandaMoodContext.Provider value={mood}>
-      <View className="flex-1 bg-[#EDE0CE]" style={{ paddingTop: insets.top }}>
-        {/* Снизу запас на заход панели: панель ложится на него, а не на лапки */}
-        <View style={{ paddingBottom: PANEL_OVERLAP }}>
+      {/* Один фон на всю страницу: панда стоит прямо на нём (у артборда фон прозрачный) */}
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+        <View>
           <PandaTalkStage waiting={waiting} reaction={reaction} />
-          <Pressable
-            onPress={goPet}
-            hitSlop={12}
-            className="absolute left-4 top-2 h-11 w-11 items-center justify-center rounded-full bg-surface/80 active:opacity-70"
-            accessibilityRole="button"
-            accessibilityLabel="Назад"
-          >
-            <BackIcon width={24} height={24} color={colors.text} />
-          </Pressable>
+          {/* Стрелка «назад» — как везде в приложении, без подложки */}
+          <View className="absolute left-4 top-2">
+            <BackButton href="/pet" />
+          </View>
         </View>
 
-        <View
-          className="flex-1 rounded-t-3xl bg-background"
-          style={{ marginTop: -PANEL_OVERLAP }}
+        {/* flexGrow — кнопки игры прижаты к низу экрана, длинное — прокручивается */}
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingHorizontal: 20,
+            paddingTop: 8,
+            paddingBottom: insets.bottom + 16,
+          }}
+          keyboardShouldPersistTaps="handled"
         >
-          <ScrollView
-            contentContainerStyle={{
-              paddingHorizontal: 20,
-              paddingTop: 24,
-              paddingBottom: insets.bottom + 24,
-            }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <PlayContent game={game} onClose={goPet} onMore={backToMenu} />
-          </ScrollView>
-        </View>
+          <PlayContent game={game} onClose={goPet} onMore={backToMenu} />
+        </ScrollView>
       </View>
     </PandaMoodContext.Provider>
   );

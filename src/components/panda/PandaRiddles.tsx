@@ -70,6 +70,8 @@ export function PickRiddle({
   const praise = useLine("riddle.correct", variant, translation);
 
   const [picked, setPicked] = useState<Word | null>(null);
+  // Пока не ответили — пустые строки той же высоты (место зарезервировано)
+  const shown = picked ?? word;
   const answered = picked !== null;
   const correct = picked?.vocabularyId === word.vocabularyId;
 
@@ -86,7 +88,7 @@ export function PickRiddle({
   };
 
   return (
-    <View className="gap-5">
+    <View className="flex-1 gap-5">
       {listen ? (
         <View className="flex-row items-center gap-4">
           <Pressable
@@ -132,34 +134,78 @@ export function PickRiddle({
         })}
       </View>
 
-      {/* Место под ответом есть всегда — окно не прыгает после выбора */}
+      {/* Место под ответом есть всегда — окно не прыгает после выбора.
+          Ошибка: правильное слово и под ним выбранное — с пиньинем и переводом */}
       <View
-        className={`flex-row items-start justify-between gap-3 ${listen ? "min-h-24" : "min-h-16"}`}
+        className="flex-row items-start justify-between gap-3"
         style={{ opacity: answered ? 1 : 0 }}
       >
-        <View className="flex-1 gap-1">
+        <View className="flex-1 gap-2">
           <Text className="font-nunitoBold text-body text-text">
             {correct ? praise : tp("riddle.wrong")}
           </Text>
-          <Pressable
-            onPress={() => speakForced(word.hanzi)}
+          <AnswerWord
+            word={word}
+            translation={listen ? translation : undefined}
             disabled={!answered}
-            className="flex-row items-center gap-3 self-start active:opacity-70"
-          >
-            <Hanzi size="sm">{word.hanzi}</Hanzi>
-            <Pinyin size="sm">{word.pinyin}</Pinyin>
-          </Pressable>
-          {listen && (
-            <Text className="font-nunito text-small text-textSecondary" numberOfLines={2}>
-              {translation}
+            onSpeak={() => speakForced(word.hanzi)}
+          />
+          {/* Строка под выбранное слово есть всегда: после ответа ничего не сдвигается */}
+          <View style={{ opacity: answered && !correct ? 1 : 0 }}>
+            <Text className="font-nunito text-small text-textSecondary">
+              {tp("riddle.yourAnswer")}
             </Text>
-          )}
+            <AnswerWord
+              word={shown}
+              translation={t(shown.translation)}
+              wrong
+              disabled={!answered || correct}
+              onSpeak={() => speakForced(shown.hanzi)}
+            />
+          </View>
         </View>
         {!!reward && correct && <RewardBadge xp={reward} />}
       </View>
 
-      {actions(answered)}
+      {/* Кнопки — внизу экрана */}
+      <View className="mt-auto">{actions(answered)}</View>
     </View>
+  );
+}
+
+/** Слово в ответе загадки: иероглиф, пиньинь и (если есть) перевод; тап — озвучка. */
+function AnswerWord({
+  word,
+  translation,
+  wrong = false,
+  disabled,
+  onSpeak,
+}: {
+  word: Word;
+  translation?: string;
+  /** Выбранное по ошибке — красная полоска слева. */
+  wrong?: boolean;
+  disabled: boolean;
+  onSpeak: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onSpeak}
+      disabled={disabled}
+      className={`gap-0.5 self-start active:opacity-70 ${
+        wrong ? "border-l-2 border-error pl-2" : ""
+      }`}
+    >
+      <View className="flex-row items-center gap-3">
+        <Hanzi size="sm">{word.hanzi}</Hanzi>
+        <Pinyin size="sm">{word.pinyin}</Pinyin>
+      </View>
+      {translation !== undefined && (
+        <Text className="font-nunito text-small text-textSecondary" numberOfLines={2}>
+          {translation}
+        </Text>
+      )}
+    </Pressable>
   );
 }
 

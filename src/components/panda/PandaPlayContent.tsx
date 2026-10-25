@@ -130,7 +130,7 @@ export function PlayContent({
     const total = riddles.length;
     const isLast = index === total - 1;
     return (
-      <View className="gap-4">
+      <View className="flex-1 gap-4">
         {total > 1 && (
           <Text className="font-nunito text-small text-textSecondary">
             {t("play.round", { n: index + 1, total })}
@@ -261,10 +261,6 @@ export function PlayContent({
           onPress={() => start("stroke")}
         />
       </View>
-
-      <Text className="text-center font-nunito text-caption text-textSecondary">
-        {t("play.left", { count: playsLeft })}
-      </Text>
     </View>
   );
 }
@@ -297,7 +293,8 @@ function PlayCard({
         <Text className="font-nunitoBold text-body text-text">{title}</Text>
         <Text className="font-nunito text-small text-textSecondary">{subtitle}</Text>
       </View>
-      {reward && (
+      {/* Закрытая игра — без награды: иначе бледная «+1» выглядит другим цветом */}
+      {reward && !disabled && (
         <View className="flex-row items-center gap-1">
           <Text className="font-nunitoBold text-body text-text">{reward}</Text>
           <ZapIcon width={18} height={18} color={colors.primary} />

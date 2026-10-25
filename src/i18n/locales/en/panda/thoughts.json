@@ -32,7 +32,8 @@
       "Guess by ear!",
       "What did I say? Find the character!",
       "Listen carefully…"
-    ]
+    ],
+    "yourAnswer": "Your answer:"
   },
   "profile": {
     "title": "Phrases of the day",
@@ -54,8 +55,6 @@
     "pick": "Guess the word",
     "pickHint": "Pick the character by its meaning",
     "writeLocked": "Practise writing at least one word first",
-    "left_one": "{{count}} more game",
-    "left_other": "{{count}} more games",
     "more": "More",
     "done": "Done",
     "ok": "Okay",
