@@ -26,7 +26,7 @@ import {
   getMinutesUntilPlay,
   getPlaysLeft,
   pickGuessRound,
-  pickStrokeWord,
+  pickStrokeWords,
   type GuessRiddle,
   type PlayKind,
 } from "@/utils/panda/play";
@@ -115,13 +115,16 @@ export function PlayContent({
       if (next) setStep(next);
       return;
     }
-    const word = pickStrokeWord();
-    if (!word) return;
-    // «Допиши черту» — на экране письма; run — каждый заход начинается заново
+    const words = pickStrokeWords(ROUND_SIZE);
+    if (words.length === 0) return;
+    // «Допиши черту» — раунд на экране письма; run — каждый заход начинается заново
     onClose();
     router.push({
       pathname: "/panda-riddle",
-      params: { wordId: word.vocabularyId, run: String(Date.now()) },
+      params: {
+        wordIds: words.map((w) => w.vocabularyId).join(","),
+        run: String(Date.now()),
+      },
     });
   };
 
@@ -266,7 +269,7 @@ export function PlayContent({
         <PlayCard
           title={t("play.stroke")}
           subtitle={canStroke ? t("play.strokeHint") : t("play.writeLocked")}
-          reward={`+${STROKE_REWARD}`}
+          reward={t("play.upTo", { n: ROUND_SIZE * STROKE_REWARD })}
           disabled={!canStroke}
           onPress={() => start("stroke")}
         />
@@ -317,7 +320,7 @@ function PlayCard({
 }
 
 /** Итог раунда: реплика панды и опыт за раунд (если заработан). */
-function RoundResult({ xp, text }: { xp: number; text: string }) {
+export function RoundResult({ xp, text }: { xp: number; text: string }) {
   return (
     <View className="flex-row items-center justify-between gap-3 rounded-2xl bg-primary/10 px-4 py-3">
       <Text className="flex-1 font-nunitoBold text-body text-text">{text}</Text>

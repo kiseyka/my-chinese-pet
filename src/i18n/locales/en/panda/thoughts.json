@@ -84,7 +84,7 @@
     "done": "Done!",
     "hint": "I showed where the stroke goes — draw it",
     "hintIdle": "Which stroke is missing?",
-    "finish": "Done"
+    "withHint": "Done, with a hint!"
   },
   "continue": "Continue",
   "factNote": "Fun fact",
