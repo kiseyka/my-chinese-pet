@@ -75,8 +75,6 @@ export function PickRiddle({
   const praise = useLine("riddle.correct", variant, translation);
 
   const [picked, setPicked] = useState<Word | null>(null);
-  // Пока не ответили — пустые строки той же высоты (место зарезервировано)
-  const shown = picked ?? word;
   const answered = picked !== null;
   const correct = picked?.vocabularyId === word.vocabularyId;
 
@@ -96,8 +94,11 @@ export function PickRiddle({
   // Android) и всегда видны — не зависят от длины загадки
   return (
     <View className="flex-1">
+      {/* Прокрутка — только если загадка не влезла; без «пружины» на пустом месте */}
       <ScrollView
         className="flex-1"
+        overScrollMode="never"
+        bounces={false}
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 8,
@@ -153,42 +154,41 @@ export function PickRiddle({
           })}
         </View>
 
-        {/* Место под ответом есть всегда — окно не прыгает после выбора.
-          Ошибка: правильное слово и под ним выбранное — с пиньинем и переводом */}
-        <View
-          className="flex-row items-start justify-between gap-3"
-          style={{ opacity: answered ? 1 : 0 }}
-        >
-          <View className="flex-1 gap-2">
-            <Text className="font-nunitoBold text-body text-text">
-              {correct ? praise : tp("riddle.wrong")}
-            </Text>
-            <AnswerWord
-              word={word}
-              right
-              translation={listen ? translation : undefined}
-              disabled={!answered}
-              onSpeak={() => speakForced(word.hanzi)}
-            />
-            {/* Строка под выбранное слово есть всегда: после ответа ничего не сдвигается */}
-            <View
-              className="gap-1"
-              style={{ opacity: answered && !correct ? 1 : 0 }}
-            >
-              <Text className="font-nunito text-small text-textSecondary">
-                {tp("riddle.yourAnswer")}
+        {/* Ответ появляется под вариантами только после выбора: выше ничего не
+            сдвигается, а кнопки стоят отдельно внизу. Заранее место не держим —
+            иначе под загадкой была пустая прокрутка. Ошибка: правильное слово и под
+            ним выбранное — с пиньинем и переводом */}
+        {answered && (
+          <View className="flex-row items-start justify-between gap-3">
+            <View className="flex-1 gap-2">
+              <Text className="font-nunitoBold text-body text-text">
+                {correct ? praise : tp("riddle.wrong")}
               </Text>
               <AnswerWord
-                word={shown}
-                translation={t(shown.translation)}
-                wrong
-                disabled={!answered || correct}
-                onSpeak={() => speakForced(shown.hanzi)}
+                word={word}
+                right
+                translation={listen ? translation : undefined}
+                disabled={false}
+                onSpeak={() => speakForced(word.hanzi)}
               />
+              {picked && !correct && (
+                <View className="gap-1">
+                  <Text className="font-nunito text-small text-textSecondary">
+                    {tp("riddle.yourAnswer")}
+                  </Text>
+                  <AnswerWord
+                    word={picked}
+                    translation={t(picked.translation)}
+                    wrong
+                    disabled={false}
+                    onSpeak={() => speakForced(picked.hanzi)}
+                  />
+                </View>
+              )}
             </View>
+            {!!reward && correct && <RewardBadge xp={reward} />}
           </View>
-          {!!reward && correct && <RewardBadge xp={reward} />}
-        </View>
+        )}
       </ScrollView>
 
       {/* Кнопки — прибиты к низу экрана */}
