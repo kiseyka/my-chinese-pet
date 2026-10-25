@@ -86,7 +86,9 @@ export interface PandaPhrase extends PhraseLine {
   requires?: { phraseId: string; replyId: string };
 }
 
-// Тестовые фразы — замени своими
+// Фраза без вариантов ответа — не «реплика по ситуации» («завтра экзамен», «вот сто
+// юаней»): у пользователя такой ситуации может не быть. Лучше — то, что панда правда
+// может сказать: о себе, о вас двоих, «в магазине говорят…», «китайцы часто говорят…».
 export const pandaPhrases: PandaPhrase[] = [
   // Панда представляется — первая фраза дня (FIRST_PHRASE_ID в utils/panda/thoughts)
   {
@@ -1709,9 +1711,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "tang",
-    words: ["我", "想", "喝", "汤", "。"],
-    ru: "Хочу суп.",
-    en: "I want soup.",
+    words: ["冬天", "喝", "热", "汤", "最", "好", "了", "！"],
+    ru: "Зимой лучше всего горячий суп!",
+    en: "Hot soup is the best thing in winter!",
     note: {
       ru: "汤 — суп, бульон. В китайском обеде часто есть 汤: считается, что он помогает пищеварению. А ещё 汤 — это не только про еду: 米汤 — рисовый отвар!",
       en: "汤 means soup or broth. A Chinese meal often includes 汤 — it's believed to help digestion. And 汤 isn't just food: 米汤 is rice water!",
@@ -1735,9 +1737,10 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "nai-cha",
-    words: ["我", "想", "喝", "奶茶", "。"],
-    ru: "Хочу молочный чай.",
-    en: "I want milk tea.",
+    words: ["我", "喜欢", "绿茶", "，", "不过", "奶茶", "也", "很", "好", "。"],
+    ru: "Я люблю зелёный чай, но и молочный чай тоже хорош.",
+    en: "I like green tea, but milk tea is nice too.",
+    pinyin: { 不过: "bú guò" },
     note: {
       ru: "奶茶 — чай с молоком: 奶 — молоко, 茶 — чай. Сейчас популярен 珍珠奶茶 — «чай с жемчугом»: жемчужины из тапиоки на дне стакана. Встряхни перед тем, как пить!",
       en: "奶茶 is milk tea: 奶 milk, 茶 tea. These days 珍珠奶茶, “pearl milk tea”, is popular: tapioca pearls at the bottom of the cup. Shake before drinking!",
@@ -1790,10 +1793,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "zhao-qian",
-    words: ["这", "是", "一", "百", "块", "，", "请", "找", "钱", "。"],
-    ru: "Вот сто юаней, сдачу, пожалуйста.",
-    en: "Here's a hundred, please give me change.",
-    pinyin: { 一: "yì" },
+    words: ["在", "商店", "，", "你", "可以", "说", "：", "请", "找", "钱", "。"],
+    ru: "В магазине можно сказать: «Сдачу, пожалуйста».",
+    en: "In a shop you can say: “My change, please.”",
     note: {
       ru: "找 — «искать», но 找钱 — «давать сдачу». Ещё есть 找零 — сдача мелочью. А в остальном 找 — обычное «искать»: 找朋友 — искать друга, 找工作 — искать работу.",
       en: "找 means “to look for”, but 找钱 is “to give change”. Also 找零 — change in small money. Otherwise 找 is just “to look for”: 找朋友 look for a friend, 找工作 look for a job.",
@@ -1821,9 +1823,10 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "duo-shao-qian",
-    words: ["这", "个", "多少", "钱", "？"],
-    ru: "Сколько это стоит?",
-    en: "How much is this?",
+    words: ["在", "商店", "要", "问", "：", "这", "个", "多少", "钱", "？"],
+    ru: "В магазине спрашивают: «Сколько это стоит?»",
+    en: "In a shop you ask: “How much is this?”",
+    pinyin: { 个: "ge" },
     note: {
       ru: "多少钱 — «сколько денег»: 多少 — сколько, 钱 — деньги. Короче тот же вопрос — 这个几块? «Сколько это юаней?» — на слух в магазине услышишь именно так.",
       en: "多少钱 is “how much money”: 多少 how much, 钱 money. A shorter version: 这个几块? “How many yuan is this?” — that's what you'll hear in shops.",
@@ -1835,22 +1838,24 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "tai-gui-le",
-    words: ["太", "贵", "了", "！"],
-    ru: "Слишком дорого!",
-    en: "Too expensive!",
+    words: ["我", "去", "买", "东西", "，", "可是", "太", "贵", "了", "！"],
+    ru: "Я пошла за покупками, но всё слишком дорого!",
+    en: "I went shopping, but it's all too expensive!",
+    pinyin: { 东西: "dōng xi" },
     note: {
       ru: "贵 — дорогой, 便宜 — дёшевый. На рынках торгуются фразой 便宜一点吧 — «подешевле, а?». А в магазинах с фиксированными ценами торг не принят — только 太贵了 и вздох.",
       en: "贵 is expensive, 便宜 is cheap. At markets people haggle with 便宜一点吧 — “a bit cheaper?”. Fixed-price shops don't haggle — just 太贵了 and a sigh.",
       terms: {
+        "太贵了": { pinyin: "tài guì le", ru: "слишком дорого", en: "too expensive" },
         "便宜一点吧": { pinyin: "pián yi yì diǎn ba", ru: "подешевле, а?", en: "a bit cheaper, please?" },
       },
     },
   },
   {
     id: "mian-fei",
-    words: ["免费", "的", "？", "太", "好", "了", "！"],
-    ru: "Бесплатно? Отлично!",
-    en: "Free? Great!",
+    words: ["商店", "里", "的", "水果", "是", "免费", "的", "！", "太", "好", "了", "！"],
+    ru: "В магазине фрукты дают попробовать бесплатно! Здорово!",
+    en: "The shop lets you try fruit for free! Great!",
     note: {
       ru: "免费 — «освобождён от платы»: 免 — освобождать, 费 — плата. В Китае часто есть 免费试吃 — бесплатные пробники еды в магазинах. Панда одобряет!",
       en: "免费 is “exempt from fees”: 免 exempt, 费 fee. Free food samples 免费试吃 are common in Chinese shops. The panda approves!",
@@ -1931,9 +1936,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "qing-wen",
-    words: ["请问", "，", "地铁", "在", "哪里", "？"],
-    ru: "Скажите, пожалуйста, где метро?",
-    en: "Excuse me, where is the subway?",
+    words: ["问", "路", "的", "时候", "，", "先", "说", "：", "请问", "。"],
+    ru: "Когда спрашиваешь дорогу, сначала скажи: «请问».",
+    en: "When asking the way, first say: “请问”.",
     note: {
       ru: "请问 — «разрешаете спросить»: 请 — просить, 问 — спрашивать. Вежливое начало вопроса незнакомому человеку. Без него вопрос звучит резковато!",
       en: "请问 is “may I ask”: 请 to ask politely, 问 to ask. A polite opener for questions to strangers. Without it a question sounds blunt!",
@@ -1941,9 +1946,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "bu-hao-yi-si",
-    words: ["不好意思", "。"],
-    ru: "Извини! (дословно «мне неловко»)",
-    en: "Sorry! (lit. “embarrassed”)",
+    words: ["中国", "人", "常常", "说", "：", "不好意思", "。"],
+    ru: "Китайцы очень часто говорят «不好意思».",
+    en: "Chinese people say “不好意思” all the time.",
     note: {
       ru: "不好意思 — «мне неловко»: 意思 — смысл, интерес. Универсальное слово: извинение, «спасибо» и неловкость одновременно. Не знаешь, что сказать, — скажи 不好意思!",
       en: "不好意思 is “I feel awkward”: 意思 meaning, interest. A universal word: apology, “thanks” and embarrassment in one. Not sure what to say — say 不好意思!",
@@ -1951,9 +1956,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "bao-qian",
-    words: ["抱歉", "，", "我", "迟到", "了", "。"],
-    ru: "Прости, я {опоздал|опоздала}!",
-    en: "Sorry, I'm late!",
+    words: ["抱歉", "比", "对不起", "更", "正式", "。"],
+    ru: "抱歉 звучит официальнее, чем 对不起.",
+    en: "抱歉 sounds more formal than 对不起.",
     note: {
       ru: "抱歉 — «сожалею»: 抱 — обнимать, 歉 — извинение. Чуть формальнее 对不起. 迟到 — «опоздать»: 迟 — поздно, 到 — прибыть. А 早到 — прийти рано!",
       en: "抱歉 means “I regret”: 抱 to hold, 歉 apology. A bit more formal than 对不起. 迟到 is “to be late”: 迟 late, 到 arrive. And 早到 is to arrive early!",
@@ -1965,9 +1970,10 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "gan-xie",
-    words: ["谢谢", "你", "！"],
-    ru: "Спасибо тебе!",
-    en: "Thank you!",
+    words: ["谢谢", "你", "和", "我", "一起", "学习", "汉语", "！"],
+    ru: "Спасибо, что учишь китайский вместе со мной!",
+    en: "Thank you for learning Chinese with me!",
+    pinyin: { 一起: "yì qǐ" },
     note: {
       ru: "谢 — «благодарить», но у этого иероглифа и другие лица: 花谢了 — «цветы увяли», 谢绝 — «отклонить (вежливо)». А на спасибо отвечают 不客气 или 不用谢.",
       en: "谢 is “to thank”, but the character has other faces: 花谢了 — “the flowers have wilted”, 谢绝 — “to decline politely”. And replies to thanks are 不客气 or 不用谢.",
@@ -1981,9 +1987,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "shi-fu",
-    words: ["师傅", "，", "请问", "这", "是", "哪儿", "？"],
-    ru: "Мастер, скажите, это где?",
-    en: "Master, excuse me, where is this?",
+    words: ["坐", "出租车", "的", "时候", "，", "可以", "叫", "司机", "：", "师傅", "！"],
+    ru: "В такси водителя можно позвать: «Шифу!»",
+    en: "In a taxi you can call the driver “师傅!”",
     note: {
       ru: "师傅 — «мастер, учитель»: 师 — учитель, 傅 — наставник. Так вежливо обращаются к водителям такси и автобусов. Так же в фильмах о кунг-фу ученики зовут своего учителя.",
       en: "师傅 is “master, teacher”: 师 teacher, 傅 tutor. It's how you politely address taxi and bus drivers. In kung-fu films, students call their teacher that too.",
@@ -1995,9 +2001,10 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "tong-xue",
-    words: ["同学", "好", "！"],
-    ru: "Привет, одноклассник!",
-    en: "Hello, classmate!",
+    words: ["我们", "一起", "学习", "，", "我们", "是", "同学", "！"],
+    ru: "Мы учимся вместе — значит, мы 同学!",
+    en: "We study together, so we're 同学!",
+    pinyin: { 一起: "yì qǐ" },
     note: {
       ru: "同学 — «одноклассник, сокурсник»: 同 — вместе, 学 — учиться. Студенты в Китае так здороваются между собой. Панда может звать тебя 同学 — мы ведь учимся вместе!",
       en: "同学 is “classmate, fellow student”: 同 together, 学 study. Students in China greet each other this way. The panda can call you 同学 — we're studying together!",
@@ -2008,9 +2015,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "shui-jiao-qi-chuang",
-    words: ["晚上", "早", "睡觉", "，", "早上", "早", "起床", "。"],
-    ru: "Вечером рано спать, утром рано вставать.",
-    en: "Early to bed, early to rise.",
+    words: ["中国", "人", "说", "：", "早", "睡", "早", "起", "身体", "好", "。"],
+    ru: "Китайцы говорят: рано ложиться и рано вставать — для здоровья.",
+    en: "Chinese people say: early to bed, early to rise, good for your health.",
     note: {
       ru: "起床 — «вставать с постели»: 起 — подниматься, 床 — кровать. Поговорка: 早睡早起身体好 — «рано спать и вставать — будешь здоров». Слово в слово: «тело хорошее».",
       en: "起床 is “to get up”: 起 rise, 床 bed. The saying: 早睡早起身体好 — “sleep and rise early and you'll be healthy”. Literally: “body good”.",
@@ -2021,9 +2028,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "duan-lian",
-    words: ["运动", "可以", "锻炼", "身体", "。"],
-    ru: "Спорт укрепляет тело.",
-    en: "Exercise strengthens the body.",
+    words: ["早上", "很", "多", "中国", "人", "在", "公园", "锻炼", "身体", "。"],
+    ru: "По утрам многие китайцы занимаются в парке.",
+    en: "In the mornings many Chinese people exercise in the park.",
     note: {
       ru: "锻炼 — «закалять»: 锻 — ковать, 炼 — плавить. Молот и огонь куют тело! 锻炼身体 — укреплять здоровье, а 晨练 — утренняя зарядка.",
       en: "锻炼 is “to temper”: 锻 to forge, 炼 to smelt. Hammer and fire forge the body! 锻炼身体 means to exercise, and 晨练 is morning exercise.",
@@ -2066,9 +2073,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "xi-zao",
-    words: ["我", "想", "洗澡", "。"],
-    ru: "Хочу принять душ.",
-    en: "I want to take a bath.",
+    words: ["熊猫", "也", "喜欢", "洗澡", "！"],
+    ru: "Панды тоже любят купаться!",
+    en: "Pandas love a bath too!",
     note: {
       ru: "洗澡 — «мыться»: 洗 — мыть, 澡 — купание. В Китае чаще моются вечером, а не утром. 热水澡 — горячая ванна после долгого дня: вот это счастье!",
       en: "洗澡 is “to wash”: 洗 to wash, 澡 bathing. In China people wash more often in the evening than the morning. 热水澡 — a hot bath after a long day: that's happiness!",
@@ -2108,23 +2115,10 @@ export const pandaPhrases: PandaPhrase[] = [
     },
   },
   {
-    id: "ji-dong",
-    words: ["我", "太", "激动", "了", "！"],
-    ru: "Я так взволнована!",
-    en: "I'm so excited!",
-    note: {
-      ru: "激动 — «трепетать от радости»: 激 — волновать, 动 — двигать. Близкое слово 感动 — «быть тронутым до слёз». 太...了 — «слишком…!», но в восторге это хорошо!",
-      en: "激动 is “to tremble with joy”: 激 to stir, 动 to move. A close word is 感动, “to be moved to tears”. 太...了 is “too...!” — but in delight that's a good thing!",
-      terms: {
-        "激": { pinyin: "jī", ru: "волновать", en: "to excite" },
-      },
-    },
-  },
-  {
     id: "bie-dan-xin",
-    words: ["别", "担心", "！"],
-    ru: "Не волнуйся!",
-    en: "Don't worry!",
+    words: ["别", "担心", "，", "错", "了", "也", "没关系", "！"],
+    ru: "Не волнуйся: ошибаться — это нормально!",
+    en: "Don't worry, mistakes are fine!",
     note: {
       ru: "担心 — «тревожиться»: 担 — нести на плечах, 心 — сердце. Тревога — как груз на сердце! На это отвечают 放心 — «будь спокоен»: 放 — отпустить, 心 — сердце.",
       en: "担心 is “to worry”: 担 to carry on the shoulders, 心 heart. Worry is a weight on the heart! The reply is 放心 — “rest easy”: 放 to release, 心 heart.",
@@ -2135,13 +2129,15 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "kan-yi-kan",
-    words: ["我", "看", "看", "。"],
-    ru: "Я посмотрю.",
-    en: "I'll take a look.",
+    words: ["我", "想", "看", "看", "你", "写", "的", "汉字", "！"],
+    ru: "Хочу посмотреть, как ты пишешь иероглифы!",
+    en: "I want to see the characters you write!",
+    pinyin: { 看: "kàn" },
     note: {
       ru: "Глагол, повторённый, — «чуть-чуть, разок»: 看看 — глянуть, 试试 — примерить, 想想 — подумать. Продавцу можно сказать 我看看 — «я просто смотрю», без обязательств.",
       en: "A repeated verb means “a bit”: 看看 take a look, 试试 try on, 想想 think it over. You can tell a seller 我看看 — “I'm just looking”, no strings attached.",
       terms: {
+        "我看看": { pinyin: "wǒ kàn kan", ru: "я посмотрю", en: "let me have a look" },
         "看看": { pinyin: "kàn kan", ru: "глянуть", en: "to take a look" },
         "试试": { pinyin: "shì shi", ru: "попробовать", en: "to give it a try" },
         "想想": { pinyin: "xiǎng xiang", ru: "подумать", en: "to think it over" },
@@ -2149,33 +2145,10 @@ export const pandaPhrases: PandaPhrase[] = [
     },
   },
   {
-    id: "wu-liao",
-    words: ["好", "无聊", "……"],
-    ru: "Как скучно…",
-    en: "So bored...",
-    note: {
-      ru: "无聊 — «скучно»: 无 — нет, 聊 — болтать. 无聊 — некому поболтать и нечем заняться. Скучаешь? Учи китайский с пандой — и скука уйдёт!",
-      en: "无聊 means “bored”: 无 no, 聊 to chat. 无聊 — nobody to chat with, nothing to do. Bored? Study Chinese with the panda — boredom will go away!",
-    },
-  },
-  {
-    id: "lei-le",
-    words: ["今天", "很", "累", "……"],
-    ru: "Как же я сегодня устала…",
-    en: "I'm so tired today...",
-    note: {
-      ru: "累 — «уставший». После трудного дня в Китае говорят 辛苦了 — «спасибо за труды». Так утешь и себя: 辛苦了，我! А ещё лучше — 休息一下.",
-      en: "累 means “tired”. After a hard day Chinese people say 辛苦了 — “thanks for your hard work”. Console yourself too: 辛苦了，我! Or better — 休息一下.",
-      terms: {
-        "休息一下": { pinyin: "xiū xi yí xià", ru: "немного отдохнуть", en: "to take a little rest" },
-      },
-    },
-  },
-  {
     id: "cong-ming",
-    words: ["你", "真", "聪明", "！"],
-    ru: "Ты {такой умный|такая умная}!",
-    en: "You're so smart!",
+    words: ["聪明", "的", "人", "会", "听", "也", "会", "看", "。"],
+    ru: "Умный человек умеет и слушать, и смотреть.",
+    en: "A clever person knows how to listen and to look.",
     note: {
       ru: "聪明 — «умный»: 聪 — хороший слух, 明 — яркий, зрячий. Умный — тот, кто хорошо слышит и видит: сначала слушай и смотри, потом думай. Как при изучении языка!",
       en: "聪明 is “smart”: 聪 good hearing, 明 bright, clear-sighted. The smart one hears and sees well: listen and look first, then think. Just like learning a language!",
@@ -2200,25 +2173,10 @@ export const pandaPhrases: PandaPhrase[] = [
     },
   },
   {
-    id: "e-le",
-    words: ["我", "饿", "了", "，", "想", "吃", "饭", "！"],
-    ru: "Я проголодалась — хочу есть!",
-    en: "I'm hungry — I want to eat!",
-    note: {
-      ru: "饿 — «голодный». «Я умираю с голоду» по-китайски — 我饿死了: 死 — умереть, гипербола для смеха. Тот же ход: 累死了 — «умираю от усталости», 忙死了 — «завален делами».",
-      en: "饿 means “hungry”. “I'm starving” in Chinese is 我饿死了: 死 to die — a hyperbole for fun. Same pattern: 累死了 “dead tired”, 忙死了 “busy to death”.",
-      terms: {
-        "我饿死了": { pinyin: "wǒ è sǐ le", ru: "умираю с голоду", en: "I'm starving" },
-        "累死了": { pinyin: "lèi sǐ le", ru: "умираю от усталости", en: "dead tired" },
-        "忙死了": { pinyin: "máng sǐ le", ru: "завален(а) делами", en: "swamped with work" },
-      },
-    },
-  },
-  {
     id: "man-man-lai",
-    words: ["没关系", "，", "慢", "慢", "来", "。"],
-    ru: "Ничего страшного, не спеши.",
-    en: "It's okay, take your time.",
+    words: ["学", "汉字", "要", "慢", "慢", "来", "。"],
+    ru: "Иероглифы учат потихоньку.",
+    en: "Characters are learned little by little.",
     note: {
       ru: "慢慢来 — «давай потихоньку»: 慢慢 — медленно, 来 — здесь «делать». Утешение новичку: не торопись! И знакомое нам 慢走 — из той же семьи заботливых слов.",
       en: "慢慢来 is “take it slowly”: 慢慢 slowly, 来 here means “to do”. Comfort for a beginner: no rush! And our familiar 慢走 is from the same family of caring words.",
@@ -2231,13 +2189,15 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "zuo-de-hao",
-    words: ["做", "得", "好", "！"],
-    ru: "Молодец, отлично сделано!",
-    en: "Well done!",
+    words: ["熊猫", "走", "得", "很", "慢", "。"],
+    ru: "Панды ходят очень медленно.",
+    en: "Pandas walk very slowly.",
+    pinyin: { 得: "de" },
     note: {
       ru: "得 стоит после глагола и показывает, как выполнено действие: 做得好 — сделано хорошо, 说得对 — сказано верно, 跑得快 — бегает быстро. Три разных 的/地/得 — смотри по месту!",
       en: "得 stands after a verb and shows how the action is done: 做得好 done well, 说得对 said right, 跑得快 runs fast. Three different de's — each in its own place!",
       terms: {
+        "做得好": { pinyin: "zuò de hǎo", ru: "хорошо сделано", en: "well done" },
         "说得对": { pinyin: "shuō de duì", ru: "верно сказано", en: "well said" },
         "跑得快": { pinyin: "pǎo de kuài", ru: "быстро бегает", en: "runs fast" },
       },
@@ -2245,9 +2205,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "zi-ji",
-    words: ["我", "自己", "做", "！"],
-    ru: "Сделаю сама!",
-    en: "I'll do it myself!",
+    words: ["我", "喜欢", "自己", "做", "饭", "。"],
+    ru: "Люблю готовить сама.",
+    en: "I like cooking for myself.",
     note: {
       ru: "自己 — «сам»: 自 — сам, 己 — себя. 我自己 — я сам, 你自己 — ты сам. Китайские родители учат детей: 自己的事情自己做 — «свои дела делай сам».",
       en: "自己 means “oneself”: 自 self, 己 oneself. 我自己 I myself, 你自己 you yourself. Chinese parents teach kids: 自己的事情自己做 — “do your own things yourself”.",
@@ -2261,9 +2221,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "zuo-meng",
-    words: ["我", "做", "了", "一", "个", "梦", "。"],
-    ru: "Мне приснился сон.",
-    en: "I had a dream.",
+    words: ["我", "做", "了", "一", "个", "梦", "，", "梦", "里", "有", "很", "多", "仙人掌", "！"],
+    ru: "Мне приснился сон, а в нём было много кактусов!",
+    en: "I had a dream, and it was full of cacti!",
     pinyin: { 一: "yí", 个: "ge" },
     note: {
       ru: "做梦 — «видеть сон»: 做 — делать, 梦 — сон. Сон как будто тоже надо «делать»! 美梦 — сладкий сон, 白日梦 — мечта наяву.",
@@ -2276,9 +2236,9 @@ export const pandaPhrases: PandaPhrase[] = [
   },
   {
     id: "kaoshi",
-    words: ["明天", "有", "考试", "，", "加油", "！"],
-    ru: "Завтра экзамен — вперёд!",
-    en: "There's an exam tomorrow — good luck!",
+    words: ["你", "考试", "的", "时候", "，", "我", "会", "说", "：", "加油", "！"],
+    ru: "Когда у тебя будет экзамен, я скажу: «加油!»",
+    en: "When you have an exam, I'll say: “加油!”",
     note: {
       ru: "考试 — «экзамен»: 考 — проверять, 试 — пробовать. Самый важный экзамен в Китае — 高考, поступление в университет: результаты меняют всю жизнь. Панда держит за тебя лапы!",
       en: "考试 is “exam”: 考 to test, 试 to try. China's most important exam is 高考, university entrance: the result changes a whole life. The panda is rooting for you!",
@@ -2335,6 +2295,108 @@ export const pandaPhrases: PandaPhrase[] = [
       ru: "Чтобы читать газету, нужно около 3000 иероглифов, а всего их десятки тысяч. Не пугайся: первая тысяча самых частых иероглифов покрывает около 90% любого текста.",
       en: "You need about 3000 characters to read a newspaper, and there are tens of thousands in total. Don't panic: the thousand most frequent characters cover about 90% of any text.",
     },
+  },
+  {
+    id: "wu-liao",
+    words: ["你", "无聊", "的", "时候", "做", "什么", "？"],
+    ru: "Что ты делаешь, когда скучно?",
+    en: "What do you do when you're bored?",
+    note: {
+      kind: "word",
+      ru: "无聊 — «скучно»: 无 — нет, 聊 — болтать. Дословно «не с кем поболтать».",
+      en: "无聊 means “bored”: 无 is no, 聊 is to chat. Literally “nobody to chat with”.",
+      terms: {
+        "无": { pinyin: "wú", ru: "нет, без", en: "no, without" },
+        "聊": { pinyin: "liáo", ru: "болтать", en: "to chat" },
+      },
+    },
+    replies: [
+      {
+        id: "read",
+        words: ["我", "看", "书", "。"],
+        ru: "Читаю.",
+        en: "I read.",
+        reaction: {
+          words: ["看", "书", "很", "好", "！"],
+          ru: "Читать — это здорово!",
+          en: "Reading is great!",
+        },
+      },
+      {
+        id: "phone",
+        words: ["我", "玩", "手机", "。"],
+        ru: "Сижу в телефоне.",
+        en: "I play on my phone.",
+        reaction: {
+          words: ["那", "我们", "一起", "学", "汉语", "吧", "！"],
+          ru: "Тогда давай вместе учить китайский!",
+          en: "Then let's study Chinese together!",
+          pinyin: { 一起: "yì qǐ" },
+        },
+      },
+      {
+        id: "chinese",
+        words: ["我", "学", "汉语", "！"],
+        ru: "Учу китайский!",
+        en: "I study Chinese!",
+        reaction: {
+          words: ["太", "好", "了", "！"],
+          ru: "Отлично!",
+          en: "Great!",
+        },
+      },
+    ],
+  },
+  {
+    id: "lei-le",
+    words: ["你", "累", "的", "时候", "做", "什么", "？"],
+    ru: "Что ты делаешь, когда устаёшь?",
+    en: "What do you do when you're tired?",
+    note: {
+      kind: "why",
+      ru: "Тому, кто устал после трудного дня, в Китае говорят 辛苦了 — «спасибо за труды». А «умираю от усталости» — 累死了: 死 — умереть, просто для преувеличения.",
+      en: "In China you tell someone tired after a hard day 辛苦了 — “thanks for your hard work”. “Dead tired” is 累死了: 死 is to die, just for exaggeration.",
+      terms: {
+        "辛苦了": { pinyin: "xīn kǔ le", ru: "спасибо за труды", en: "thanks for your hard work" },
+        "累死了": { pinyin: "lèi sǐ le", ru: "умираю от усталости", en: "dead tired" },
+        "死": { pinyin: "sǐ", ru: "умереть", en: "to die" },
+      },
+    },
+    replies: [
+      {
+        id: "sleep",
+        words: ["我", "睡觉", "。"],
+        ru: "Сплю.",
+        en: "I sleep.",
+        reaction: {
+          words: ["睡觉", "最", "好", "了", "！"],
+          ru: "Сон — лучше всего!",
+          en: "Sleep is the best!",
+        },
+      },
+      {
+        id: "tea",
+        words: ["我", "喝", "茶", "。"],
+        ru: "Пью чай.",
+        en: "I drink tea.",
+        reaction: {
+          words: ["我", "也", "是", "！", "我", "喜欢", "绿茶", "。"],
+          ru: "Я тоже! Я люблю зелёный чай.",
+          en: "Me too! I like green tea.",
+        },
+      },
+      {
+        id: "music",
+        words: ["我", "听", "音乐", "。"],
+        ru: "Слушаю музыку.",
+        en: "I listen to music.",
+        reaction: {
+          words: ["音乐", "很", "好", "！"],
+          ru: "Музыка — это хорошо!",
+          en: "Music is good!",
+        },
+      },
+    ],
   },
 ];
 
