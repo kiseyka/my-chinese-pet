@@ -1,22 +1,31 @@
 // src/components/path/PathWordList.tsx
 //
-// Список слов на экране этапа: иероглиф, пиньинь и перевод, справа — точки навыков
-// (верхняя строка — перевод, нижняя — письмо; у слова, которое нельзя писать,
-// вместо точек письма пустое место той же высоты, чтобы строки не прыгали).
+// Список слов на экране этапа:
+//   слева    — иероглиф, под ним две строки точек: перевод (зелёные) и письмо (тёмные).
+//              У слова, которое нельзя писать, вместо точек письма пустое место той же
+//              высоты — строки не прыгают;
+//   середина — пиньинь и перевод;
+//   справа   — закладка «Повторение» (залита — слово в повторении; тап переключает)
+//              и «Наборы» (подсвечена, если слово уже в каком-то наборе; тап — шторка
+//              с наборами, как в панели слова).
 // Тап по строке — панель слова (onSelect).
 //
 // Сетка PathWordGrid осталась для «Словаря»: там слов сотни, и список был бы
 // слишком длинным.
 
-import LanguagesIcon from "@/assets/images/icons/languages.svg";
-import PencilIcon from "@/assets/images/icons/pencil.svg";
+import LayersIcon from "@/assets/images/icons/layers.svg";
 import { TRACK_DOT_CLASSES } from "@/components/path/PathWordGrid";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
+import { ReviewButton } from "@/components/ui/ReviewButton";
+import { SetToggleList } from "@/components/word/SetToggleList";
 import type { Word } from "@/content/flashcards/types";
+import { useCustomSetsStore } from "@/store/customSetsStore";
+import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import type { TrackId } from "@/utils/path/stages";
-import { memo } from "react";
+import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
@@ -44,63 +53,120 @@ export const PathWordList = memo(function PathWordList({
   onSelect,
 }: PathWordListProps) {
   const { t } = useTranslation();
+  const review = useWordProgressStore((s) => s.review);
+  const toggleReview = useWordProgressStore((s) => s.toggleReview);
+  const sets = useCustomSetsStore((s) => s.sets);
+
+  // Слова, которые уже лежат хотя бы в одном наборе
+  const inSets = useMemo(
+    () => new Set(sets.flatMap((set) => set.wordIds)),
+    [sets],
+  );
+
+  // Слово, для которого открыта шторка наборов
+  const [setsWord, setSetsWord] = useState<Word | null>(null);
 
   return (
     <View>
       {words.map((word, i) => {
-        const reading = getDots(word, "reading");
-        const writing = getDots(word, "writing");
         const translation = t(word.translation);
+        const inReview = !!review[word.vocabularyId];
+        const inSet = inSets.has(word.vocabularyId);
 
         return (
-          <Pressable
+          <View
             key={word.vocabularyId}
-            onPress={() => onSelect(word)}
-            className={`flex-row items-center gap-3 py-2.5 active:bg-primary/10 ${
+            className={`flex-row items-center ${
               i > 0 ? "border-t border-border" : ""
             }`}
-            accessibilityRole="button"
-            accessibilityLabel={`${word.hanzi}, ${word.pinyin}, ${translation}`}
-            accessibilityHint="Показать слово"
           >
-            <View
-              className="shrink-0 items-center"
-              style={{ width: HANZI_COLUMN }}
+            <Pressable
+              onPress={() => onSelect(word)}
+              className="min-w-0 flex-1 flex-row items-center gap-3 py-2.5 active:opacity-70"
+              accessibilityRole="button"
+              accessibilityLabel={`${word.hanzi}, ${word.pinyin}, ${translation}`}
+              accessibilityHint="Показать слово"
             >
-              <Hanzi
-                size={hanziSize(word.hanzi)}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                maxFontSizeMultiplier={1.2}
+              <View
+                className="shrink-0 items-center gap-1"
+                style={{ width: HANZI_COLUMN }}
               >
-                {word.hanzi}
-              </Hanzi>
-            </View>
+                <Hanzi
+                  size={hanziSize(word.hanzi)}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  maxFontSizeMultiplier={1.2}
+                >
+                  {word.hanzi}
+                </Hanzi>
+                <SkillDots track="reading" level={getDots(word, "reading")} />
+                <SkillDots track="writing" level={getDots(word, "writing")} />
+              </View>
 
-            <View className="min-w-0 flex-1">
-              <Pinyin size="sm" numberOfLines={1} className="text-primary">
-                {word.pinyin}
-              </Pinyin>
-              <Text
-                numberOfLines={2}
-                className="font-nunito text-body text-text"
+              <View className="min-w-0 flex-1">
+                <Pinyin size="sm" numberOfLines={1} className="text-primary">
+                  {word.pinyin}
+                </Pinyin>
+                <Text
+                  numberOfLines={2}
+                  className="font-nunito text-body text-text"
+                >
+                  {translation}
+                </Text>
+              </View>
+            </Pressable>
+
+            {/* Кнопки рядом со строкой, а не внутри: тап по ним не открывает панель слова */}
+            <View className="shrink-0 flex-row items-center gap-1 pl-2">
+              <View className="h-10 w-10 items-center justify-center">
+                <ReviewButton
+                  inReview={inReview}
+                  onToggle={() => toggleReview(word.vocabularyId)}
+                  size={22}
+                />
+              </View>
+              <Pressable
+                onPress={() => setSetsWord(word)}
+                hitSlop={6}
+                className={`h-10 w-10 items-center justify-center rounded-full active:opacity-70 ${
+                  inSet ? "bg-primary/15" : ""
+                }`}
+                accessibilityRole="button"
+                accessibilityLabel={inSet ? "Наборы со словом" : "Добавить в набор"}
               >
-                {translation}
-              </Text>
+                <LayersIcon width={22} height={22} color={colors.primary} />
+              </Pressable>
             </View>
-
-            <View className="shrink-0 gap-1.5 pr-1">
-              <SkillDots track="reading" level={reading} />
-              <SkillDots track="writing" level={writing} />
-            </View>
-          </Pressable>
+          </View>
         );
       })}
+
+      <BottomSheet item={setsWord} onClose={() => setSetsWord(null)}>
+        {(word) => (
+          <>
+            <View className="mb-4 flex-row items-center gap-3">
+              <Hanzi size={28}>{word.hanzi}</Hanzi>
+              <View className="min-w-0 flex-1">
+                <Pinyin size="sm" numberOfLines={1} className="text-primary">
+                  {word.pinyin}
+                </Pinyin>
+                <Text
+                  numberOfLines={1}
+                  className="font-nunito text-body text-text"
+                >
+                  {t(word.translation)}
+                </Text>
+              </View>
+            </View>
+            <SetToggleList word={word} />
+          </>
+        )}
+      </BottomSheet>
     </View>
   );
 });
 
-/** Иконка навыка и три точки. Нет дорожки — пустое место той же высоты. */
+/** Три точки навыка. Нет дорожки — пустое место той же высоты. */
 function SkillDots({
   track,
   level,
@@ -108,26 +174,22 @@ function SkillDots({
   track: TrackId;
   level: number | undefined;
 }) {
-  const Icon = track === "reading" ? LanguagesIcon : PencilIcon;
   const [filled, empty] = TRACK_DOT_CLASSES[track];
 
   return (
     <View
-      className="h-3.5 flex-row items-center gap-1.5"
+      className="flex-row gap-1"
       style={{ opacity: level === undefined ? 0 : 1 }}
       importantForAccessibility="no-hide-descendants"
     >
-      <Icon width={12} height={12} color={colors.textSecondary} />
-      <View className="flex-row gap-1">
-        {[0, 1, 2].map((index) => (
-          <View
-            key={index}
-            className={`h-1.5 w-1.5 rounded-full ${
-              index < (level ?? 0) ? filled : empty
-            }`}
-          />
-        ))}
-      </View>
+      {[0, 1, 2].map((index) => (
+        <View
+          key={index}
+          className={`h-1.5 w-1.5 rounded-full ${
+            index < (level ?? 0) ? filled : empty
+          }`}
+        />
+      ))}
     </View>
   );
 }

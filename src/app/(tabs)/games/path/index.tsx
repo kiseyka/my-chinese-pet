@@ -15,7 +15,9 @@
 //   - Ничего не закрыто: тап по любой точке открывает экран этапа (stage.tsx).
 //   - Внизу «Продолжить» (или «Начать») — сразу запускает нужную тренировку
 //     текущего этапа: сначала перевод, когда он пройден — письмо.
-//   - При открытии карта прокручена к текущему этапу.
+//   - При открытии карта прокручена к текущему этапу — и при каждом возвращении на
+//     экран тоже (после тренировки текущий этап мог смениться, а экран остаётся
+//     смонтированным со старой прокруткой).
 //   - Фон — повторяющийся пейзаж (ScrollingBackground): едет за прокруткой медленнее
 //     тропинки. Рисунок по краям, середина пустая — там идёт тропинка.
 //   - Под шапкой — мягкое затухание фона (HeaderFade), чтобы «Путь» и стрелка
@@ -43,7 +45,7 @@ import {
   type PathSection,
   type StageProgress,
 } from "@/utils/path/stages";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -152,6 +154,25 @@ export default function PathScreen() {
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   const listRef = useRef<FlatList<Row>>(null);
+
+  // Возвращение на экран — снова к текущему этапу. Первый показ уже открыт на нём
+  // (initialScrollIndex), его пропускаем
+  const focusedOnce = useRef(false);
+  const scrollToCurrent = useRef(() => {});
+  scrollToCurrent.current = () => {
+    if (rows[initialIndex] === undefined) return;
+    listRef.current?.scrollToIndex({ index: initialIndex, animated: false });
+    setVisibleLevel(rowLevel(rows[initialIndex]));
+  };
+  useFocusEffect(
+    useCallback(() => {
+      if (!focusedOnce.current) {
+        focusedOnce.current = true;
+        return;
+      }
+      scrollToCurrent.current();
+    }, []),
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const jumpTo = useCallback(
