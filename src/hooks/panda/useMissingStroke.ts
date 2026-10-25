@@ -61,6 +61,8 @@ export function useMissingStroke(word: Word | undefined) {
     target,
     mistakes,
     done,
+    /** Дописал(а) только после подсказки — без опыта за эту черту. */
+    hinted: mistakes >= HINT_AFTER,
     /** Черты, которые уже нарисованы (все, кроме пропущенной; после ответа — все). */
     snappedIndices: done && target ? target.data.strokes.map((_, i) => i) : allButMissing,
     /** Контур пропущенной черты — после HINT_AFTER ошибок. */

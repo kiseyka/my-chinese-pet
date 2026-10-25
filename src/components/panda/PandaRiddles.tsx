@@ -5,9 +5,8 @@
 //   PickRiddle  — «Как по-китайски …?» и три похожих иероглифа; после ответа —
 //                 правильный с пиньинем; если за верный ответ есть опыт — «+N».
 //                 listen — вместо перевода панда произносит слово (сразу и по кнопке),
-//                 перевод появляется после ответа;
-//   WriteRiddle — «Покажешь, как пишется …?» → экран письма /panda-riddle: «Написать»
-//                 (по памяти) или «Не помню — по контуру».
+//                 перевод появляется после ответа. Варианты подбирает раунд
+//                 (utils/panda/play, pickGuessRound) — здесь их не считаем.
 // MainButton — главная кнопка панели (во всю ширину).
 
 import ZapIcon from "@/assets/images/icons/zap.svg";
@@ -16,17 +15,12 @@ import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
 import type { Word } from "@/content/flashcards/types";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
-import { buildReadingExamQuestion } from "@/utils/readingExam";
-import { shuffle } from "@/utils/shuffle";
-import { useRouter } from "expo-router";
 import VolumeIcon from "@/assets/images/icons/volume.svg";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePandaMood, usePandaWaiting } from "./PandaMood";
-
-/** Сколько вариантов в загадке (правильный + неправильные). */
-const RIDDLE_OPTIONS = 3;
 
 /** Реплика из списка вариантов — одна и та же для одной мысли (variant). */
 export function useLine(key: string, variant: number, word: string): string {
@@ -38,13 +32,17 @@ export function useLine(key: string, variant: number, word: string): string {
 
 export function PickRiddle({
   word,
+  options,
   variant,
   reward,
   onAnswer,
   actions,
+  top,
   listen = false,
 }: {
   word: Word;
+  /** Варианты в случайном порядке, среди них word. */
+  options: Word[];
   variant: number;
   /** «Послушай и угадай»: вопрос — звук, а не перевод. */
   listen?: boolean;
@@ -52,12 +50,15 @@ export function PickRiddle({
   reward?: number;
   /** Ответили: верно или нет. */
   onAnswer?: (correct: boolean) => void;
-  /** Кнопки снизу; answered — уже ответили. */
+  /** Кнопки, прибитые к низу экрана; answered — уже ответили. */
   actions: (answered: boolean) => ReactNode;
+  /** Над вопросом (например «Загадка 1 из 3»). */
+  top?: ReactNode;
 }) {
   const { t } = useTranslation();
   const { t: tp } = useTranslation("pandaThoughts");
   const { speakForced } = useSpeakHanzi();
+  const insets = useSafeAreaInsets();
   const translation = t(word.translation);
   const question = useLine(
     listen ? "riddle.listen" : "riddle.pick",
@@ -72,15 +73,6 @@ export function PickRiddle({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const praise = useLine("riddle.correct", variant, translation);
-
-  // Похожие иероглифы, как на экзамене по переводу, но вариантов три
-  const options = useMemo(() => {
-    const { options: all } = buildReadingExamQuestion(word, t);
-    const others = all.filter((o) => o.vocabularyId !== word.vocabularyId);
-    return shuffle([word, ...others.slice(0, RIDDLE_OPTIONS - 1)]);
-    // Варианты собираются один раз на загадку
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [word.vocabularyId]);
 
   const [picked, setPicked] = useState<Word | null>(null);
   const answered = picked !== null;
@@ -98,122 +90,165 @@ export function PickRiddle({
     onAnswer?.(option.vocabularyId === word.vocabularyId);
   };
 
+  // Загадка прокручивается, а кнопки стоят внизу экрана (над панелью навигации
+  // Android) и всегда видны — не зависят от длины загадки
   return (
-    <View className="gap-5">
-      {listen ? (
-        <View className="flex-row items-center gap-4">
-          <Pressable
-            onPress={() => speakForced(word.hanzi, { rate: 0.8 })}
-            className="h-16 w-16 items-center justify-center rounded-full bg-primary active:opacity-70"
-            accessibilityRole="button"
-            accessibilityLabel={tp("listen")}
-          >
-            <VolumeIcon width={30} height={30} color="#FFFFFF" />
-          </Pressable>
-          <Text className="flex-1 font-nunito text-title text-text">{question}</Text>
-        </View>
-      ) : (
-        <Text className="font-nunito text-title text-text">{question}</Text>
-      )}
-
-      <View className="flex-row gap-3">
-        {options.map((option) => {
-          const isAnswer = option.vocabularyId === word.vocabularyId;
-          const isPicked = option.vocabularyId === picked?.vocabularyId;
-          const style = !answered
-            ? "border-primary/30 bg-surface"
-            : isAnswer
-              ? "border-primary bg-primary/15"
-              : isPicked
-                ? "border-error bg-error/10"
-                : "border-border bg-surface opacity-50";
-
-          return (
-            <Pressable
-              key={option.vocabularyId}
-              onPress={() => pick(option)}
-              disabled={answered}
-              className={`min-h-20 flex-1 items-center justify-center rounded-2xl border-2 py-3 active:opacity-70 ${style}`}
-              accessibilityRole="button"
-              accessibilityLabel={option.hanzi}
-            >
-              <Hanzi size={Array.from(option.hanzi).length > 2 ? 24 : 32}>
-                {option.hanzi}
-              </Hanzi>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Место под ответом есть всегда — окно не прыгает после выбора */}
-      <View
-        className={`flex-row items-start justify-between gap-3 ${listen ? "min-h-24" : "min-h-16"}`}
-        style={{ opacity: answered ? 1 : 0 }}
+    <View className="flex-1">
+      {/* Прокрутка — только если загадка не влезла; без «пружины» на пустом месте */}
+      <ScrollView
+        className="flex-1"
+        overScrollMode="never"
+        bounces={false}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 8,
+          paddingBottom: 16,
+          gap: 20,
+        }}
       >
-        <View className="flex-1 gap-1">
-          <Text className="font-nunitoBold text-body text-text">
-            {correct ? praise : tp("riddle.wrong")}
-          </Text>
-          <Pressable
-            onPress={() => speakForced(word.hanzi)}
-            disabled={!answered}
-            className="flex-row items-center gap-3 self-start active:opacity-70"
-          >
-            <Hanzi size="sm">{word.hanzi}</Hanzi>
-            <Pinyin size="sm">{word.pinyin}</Pinyin>
-          </Pressable>
-          {listen && (
-            <Text className="font-nunito text-small text-textSecondary" numberOfLines={2}>
-              {translation}
+        {top}
+        {listen ? (
+          <View className="flex-row items-center gap-4">
+            <Pressable
+              onPress={() => speakForced(word.hanzi, { rate: 0.8 })}
+              className="h-16 w-16 items-center justify-center rounded-full bg-primary active:opacity-70"
+              accessibilityRole="button"
+              accessibilityLabel={tp("listen")}
+            >
+              <VolumeIcon width={30} height={30} color="#FFFFFF" />
+            </Pressable>
+            <Text className="flex-1 font-nunito text-title text-text">
+              {question}
             </Text>
-          )}
-        </View>
-        {!!reward && correct && <RewardBadge xp={reward} />}
-      </View>
+          </View>
+        ) : (
+          <Text className="font-nunito text-title text-text">{question}</Text>
+        )}
 
-      {actions(answered)}
+        <View className="flex-row gap-3">
+          {options.map((option) => {
+            const isAnswer = option.vocabularyId === word.vocabularyId;
+            const isPicked = option.vocabularyId === picked?.vocabularyId;
+            const style = !answered
+              ? "border-primary/30 bg-surface"
+              : isAnswer
+                ? "border-primary bg-primary/15"
+                : isPicked
+                  ? "border-error bg-error/10"
+                  : "border-border bg-surface opacity-50";
+
+            return (
+              <Pressable
+                key={option.vocabularyId}
+                onPress={() => pick(option)}
+                disabled={answered}
+                className={`min-h-20 flex-1 items-center justify-center rounded-2xl border-2 py-3 active:opacity-70 ${style}`}
+                accessibilityRole="button"
+                accessibilityLabel={option.hanzi}
+              >
+                <Hanzi size={Array.from(option.hanzi).length > 2 ? 24 : 32}>
+                  {option.hanzi}
+                </Hanzi>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Ответ появляется под вариантами только после выбора: выше ничего не
+            сдвигается, а кнопки стоят отдельно внизу. Заранее место не держим —
+            иначе под загадкой была пустая прокрутка. Ошибка: правильное слово и под
+            ним выбранное — с пиньинем и переводом */}
+        {answered && (
+          <View className="flex-row items-start justify-between gap-3">
+            <View className="flex-1 gap-2">
+              <Text className="font-nunitoBold text-body text-text">
+                {correct ? praise : tp("riddle.wrong")}
+              </Text>
+              <AnswerWord
+                word={word}
+                right
+                translation={listen ? translation : undefined}
+                disabled={false}
+                onSpeak={() => speakForced(word.hanzi)}
+              />
+              {picked && !correct && (
+                <View className="gap-1">
+                  <Text className="font-nunito text-small text-textSecondary">
+                    {tp("riddle.yourAnswer")}
+                  </Text>
+                  <AnswerWord
+                    word={picked}
+                    translation={t(picked.translation)}
+                    wrong
+                    disabled={false}
+                    onSpeak={() => speakForced(picked.hanzi)}
+                  />
+                </View>
+              )}
+            </View>
+            {!!reward && correct && <RewardBadge xp={reward} />}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Кнопки — прибиты к низу экрана */}
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: insets.bottom + 16,
+        }}
+      >
+        {actions(answered)}
+      </View>
     </View>
   );
 }
 
-export function WriteRiddle({
+/**
+ * Слово в ответе загадки: иероглиф, пиньинь и (если есть) перевод; тап — озвучка.
+ * right — правильный ответ: крупно, в зелёной рамке, чтобы не терялся рядом с ошибкой.
+ * wrong — выбранное по ошибке: мельче и тише, красная полоска слева.
+ */
+function AnswerWord({
   word,
-  variant,
-  source,
-  onClose,
+  translation,
+  right = false,
+  wrong = false,
+  disabled,
+  onSpeak,
 }: {
   word: Word;
-  variant: number;
-  /** play — игра из меню панды (с наградой). */
-  source: "play";
-  onClose: () => void;
+  translation?: string;
+  right?: boolean;
+  wrong?: boolean;
+  disabled: boolean;
+  onSpeak: () => void;
 }) {
-  const router = useRouter();
-  const { t } = useTranslation();
-  const { t: tp } = useTranslation("pandaThoughts");
-  const question = useLine("riddle.write", variant, t(word.translation));
-
-  const write = (outline: boolean) => {
-    onClose();
-    router.push({
-      pathname: "/panda-riddle",
-      params: { wordId: word.vocabularyId, source, ...(outline && { outline: "1" }) },
-    });
-  };
-
+  const box = right
+    ? "rounded-2xl border-2 border-primary bg-primary/15 px-4 py-2"
+    : wrong
+      ? "border-l-2 border-error pl-2"
+      : "";
   return (
-    <View className="gap-5">
-      <Text className="font-nunito text-title text-text">{question}</Text>
-      {/* Не помнишь — можно написать по контуру */}
-      <View className="flex-row gap-3">
-        <MainButton
-          label={tp("writeOutline")}
-          variant="secondary"
-          onPress={() => write(true)}
-        />
-        <MainButton label={tp("write")} onPress={() => write(false)} />
+    <Pressable
+      onPress={onSpeak}
+      disabled={disabled}
+      className={`gap-0.5 self-start active:opacity-70 ${box}`}
+    >
+      <View className="flex-row items-center gap-3">
+        <Hanzi size={right ? "md" : "sm"}>{word.hanzi}</Hanzi>
+        <Pinyin size={right ? "md" : "sm"}>{word.pinyin}</Pinyin>
       </View>
-    </View>
+      {translation !== undefined && (
+        <Text
+          className={`font-nunito ${right ? "text-body text-text" : "text-small text-textSecondary"}`}
+          numberOfLines={2}
+        >
+          {translation}
+        </Text>
+      )}
+    </Pressable>
   );
 }
 

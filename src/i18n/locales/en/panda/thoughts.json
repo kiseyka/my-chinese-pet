@@ -1,7 +1,6 @@
 {
   "gotIt": "Got it",
   "showTranslation": "Show translation",
-  "write": "From memory",
   "riddle": {
     "pick": [
       "How do you say “{{word}}” in Chinese?",
@@ -14,16 +13,6 @@
       "Riddle time! Which character means “{{word}}”?",
       "I need the word “{{word}}”. Which one is it?",
       "Quick, quick: where is “{{word}}”?"
-    ],
-    "write": [
-      "Will you show me how to write “{{word}}”?",
-      "Can you write “{{word}}” for me? I want to see how you do it.",
-      "I forgot how to write “{{word}}”. Remind me?",
-      "Calligraphy lesson! Write “{{word}}”!",
-      "I've got a brush — you've got “{{word}}”. Will you write it?",
-      "I'd like “{{word}}” on my wall. Can you write it nicely?",
-      "I bet you remember how to write “{{word}}”!",
-      "Write “{{word}}” from memory — I'm not peeking!"
     ],
     "correct": [
       "Exactly!",
@@ -43,18 +32,8 @@
       "Guess by ear!",
       "What did I say? Find the character!",
       "Listen carefully…"
-    ]
-  },
-  "riddleWrite": {
-    "task": "Write",
-    "clean": "Not a single mistake!",
-    "mistakes": "You did it! Mistakes: {{count}}",
-    "hint": "I showed you one stroke — keep going",
-    "done": "Done",
-    "saveHint": "Tap your writing to save it to the gallery",
-    "withOutline": "Done! Next time from memory?",
-    "showOutline": "I don't remember — show outline",
-    "hideOutline": "Hide outline"
+    ],
+    "yourAnswer": "Your answer:"
   },
   "profile": {
     "title": "Phrases of the day",
@@ -75,11 +54,7 @@
     "question": "Shall we play? What do you want to do?",
     "pick": "Guess the word",
     "pickHint": "Pick the character by its meaning",
-    "write": "Write a word",
-    "writeHint": "From memory, no outline",
     "writeLocked": "Practise writing at least one word first",
-    "left_one": "{{count}} more game",
-    "left_other": "{{count}} more games",
     "more": "More",
     "done": "Done",
     "ok": "Okay",
@@ -96,21 +71,21 @@
     "strokeHint": "One stroke is missing from the character",
     "round": "Riddle {{n}} of {{total}}",
     "next": "Next",
-    "roundPerfect": "All correct! Here are your coins",
-    "roundGood": "Not bad! Here's a coin",
+    "roundPerfect": "All correct! Well done",
+    "roundGood": "Not bad!",
     "roundNone": "You'll get it next time!",
     "phraseOfDay": "Phrase of the day",
     "phraseOfDayHint": "Hear it again",
-    "writeLockedMastered": "Unlocks when a word has 3 writing dots"
+    "upTo": "up to +{{n}}"
   },
   "stroke": {
     "task": "Add the stroke",
     "clean": "First try!",
     "done": "Done!",
     "hint": "I showed where the stroke goes — draw it",
-    "hintIdle": "Which stroke is missing?"
+    "hintIdle": "Which stroke is missing?",
+    "withHint": "Done, with a hint!"
   },
-  "writeOutline": "With outline",
   "continue": "Continue",
   "factNote": "Fun fact",
   "wordNote": "Where the word comes from"
