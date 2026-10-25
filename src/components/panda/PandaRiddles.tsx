@@ -18,7 +18,8 @@ import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import VolumeIcon from "@/assets/images/icons/volume.svg";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePandaMood, usePandaWaiting } from "./PandaMood";
 
 /** Реплика из списка вариантов — одна и та же для одной мысли (variant). */
@@ -36,6 +37,7 @@ export function PickRiddle({
   reward,
   onAnswer,
   actions,
+  top,
   listen = false,
 }: {
   word: Word;
@@ -48,12 +50,15 @@ export function PickRiddle({
   reward?: number;
   /** Ответили: верно или нет. */
   onAnswer?: (correct: boolean) => void;
-  /** Кнопки снизу; answered — уже ответили. */
+  /** Кнопки, прибитые к низу экрана; answered — уже ответили. */
   actions: (answered: boolean) => ReactNode;
+  /** Над вопросом (например «Загадка 1 из 3»). */
+  top?: ReactNode;
 }) {
   const { t } = useTranslation();
   const { t: tp } = useTranslation("pandaThoughts");
   const { speakForced } = useSpeakHanzi();
+  const insets = useSafeAreaInsets();
   const translation = t(word.translation);
   const question = useLine(
     listen ? "riddle.listen" : "riddle.pick",
@@ -87,121 +92,159 @@ export function PickRiddle({
     onAnswer?.(option.vocabularyId === word.vocabularyId);
   };
 
+  // Загадка прокручивается, а кнопки стоят внизу экрана (над панелью навигации
+  // Android) и всегда видны — не зависят от длины загадки
   return (
-    <View className="flex-1 gap-5">
-      {listen ? (
-        <View className="flex-row items-center gap-4">
-          <Pressable
-            onPress={() => speakForced(word.hanzi, { rate: 0.8 })}
-            className="h-16 w-16 items-center justify-center rounded-full bg-primary active:opacity-70"
-            accessibilityRole="button"
-            accessibilityLabel={tp("listen")}
-          >
-            <VolumeIcon width={30} height={30} color="#FFFFFF" />
-          </Pressable>
-          <Text className="flex-1 font-nunito text-title text-text">{question}</Text>
-        </View>
-      ) : (
-        <Text className="font-nunito text-title text-text">{question}</Text>
-      )}
-
-      <View className="flex-row gap-3">
-        {options.map((option) => {
-          const isAnswer = option.vocabularyId === word.vocabularyId;
-          const isPicked = option.vocabularyId === picked?.vocabularyId;
-          const style = !answered
-            ? "border-primary/30 bg-surface"
-            : isAnswer
-              ? "border-primary bg-primary/15"
-              : isPicked
-                ? "border-error bg-error/10"
-                : "border-border bg-surface opacity-50";
-
-          return (
-            <Pressable
-              key={option.vocabularyId}
-              onPress={() => pick(option)}
-              disabled={answered}
-              className={`min-h-20 flex-1 items-center justify-center rounded-2xl border-2 py-3 active:opacity-70 ${style}`}
-              accessibilityRole="button"
-              accessibilityLabel={option.hanzi}
-            >
-              <Hanzi size={Array.from(option.hanzi).length > 2 ? 24 : 32}>
-                {option.hanzi}
-              </Hanzi>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Место под ответом есть всегда — окно не прыгает после выбора.
-          Ошибка: правильное слово и под ним выбранное — с пиньинем и переводом */}
-      <View
-        className="flex-row items-start justify-between gap-3"
-        style={{ opacity: answered ? 1 : 0 }}
+    <View className="flex-1">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 8,
+          paddingBottom: 16,
+          gap: 20,
+        }}
       >
-        <View className="flex-1 gap-2">
-          <Text className="font-nunitoBold text-body text-text">
-            {correct ? praise : tp("riddle.wrong")}
-          </Text>
-          <AnswerWord
-            word={word}
-            translation={listen ? translation : undefined}
-            disabled={!answered}
-            onSpeak={() => speakForced(word.hanzi)}
-          />
-          {/* Строка под выбранное слово есть всегда: после ответа ничего не сдвигается */}
-          <View style={{ opacity: answered && !correct ? 1 : 0 }}>
-            <Text className="font-nunito text-small text-textSecondary">
-              {tp("riddle.yourAnswer")}
+        {top}
+        {listen ? (
+          <View className="flex-row items-center gap-4">
+            <Pressable
+              onPress={() => speakForced(word.hanzi, { rate: 0.8 })}
+              className="h-16 w-16 items-center justify-center rounded-full bg-primary active:opacity-70"
+              accessibilityRole="button"
+              accessibilityLabel={tp("listen")}
+            >
+              <VolumeIcon width={30} height={30} color="#FFFFFF" />
+            </Pressable>
+            <Text className="flex-1 font-nunito text-title text-text">
+              {question}
+            </Text>
+          </View>
+        ) : (
+          <Text className="font-nunito text-title text-text">{question}</Text>
+        )}
+
+        <View className="flex-row gap-3">
+          {options.map((option) => {
+            const isAnswer = option.vocabularyId === word.vocabularyId;
+            const isPicked = option.vocabularyId === picked?.vocabularyId;
+            const style = !answered
+              ? "border-primary/30 bg-surface"
+              : isAnswer
+                ? "border-primary bg-primary/15"
+                : isPicked
+                  ? "border-error bg-error/10"
+                  : "border-border bg-surface opacity-50";
+
+            return (
+              <Pressable
+                key={option.vocabularyId}
+                onPress={() => pick(option)}
+                disabled={answered}
+                className={`min-h-20 flex-1 items-center justify-center rounded-2xl border-2 py-3 active:opacity-70 ${style}`}
+                accessibilityRole="button"
+                accessibilityLabel={option.hanzi}
+              >
+                <Hanzi size={Array.from(option.hanzi).length > 2 ? 24 : 32}>
+                  {option.hanzi}
+                </Hanzi>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Место под ответом есть всегда — окно не прыгает после выбора.
+          Ошибка: правильное слово и под ним выбранное — с пиньинем и переводом */}
+        <View
+          className="flex-row items-start justify-between gap-3"
+          style={{ opacity: answered ? 1 : 0 }}
+        >
+          <View className="flex-1 gap-2">
+            <Text className="font-nunitoBold text-body text-text">
+              {correct ? praise : tp("riddle.wrong")}
             </Text>
             <AnswerWord
-              word={shown}
-              translation={t(shown.translation)}
-              wrong
-              disabled={!answered || correct}
-              onSpeak={() => speakForced(shown.hanzi)}
+              word={word}
+              right
+              translation={listen ? translation : undefined}
+              disabled={!answered}
+              onSpeak={() => speakForced(word.hanzi)}
             />
+            {/* Строка под выбранное слово есть всегда: после ответа ничего не сдвигается */}
+            <View
+              className="gap-1"
+              style={{ opacity: answered && !correct ? 1 : 0 }}
+            >
+              <Text className="font-nunito text-small text-textSecondary">
+                {tp("riddle.yourAnswer")}
+              </Text>
+              <AnswerWord
+                word={shown}
+                translation={t(shown.translation)}
+                wrong
+                disabled={!answered || correct}
+                onSpeak={() => speakForced(shown.hanzi)}
+              />
+            </View>
           </View>
+          {!!reward && correct && <RewardBadge xp={reward} />}
         </View>
-        {!!reward && correct && <RewardBadge xp={reward} />}
-      </View>
+      </ScrollView>
 
-      {/* Кнопки — внизу экрана */}
-      <View className="mt-auto">{actions(answered)}</View>
+      {/* Кнопки — прибиты к низу экрана */}
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: insets.bottom + 16,
+        }}
+      >
+        {actions(answered)}
+      </View>
     </View>
   );
 }
 
-/** Слово в ответе загадки: иероглиф, пиньинь и (если есть) перевод; тап — озвучка. */
+/**
+ * Слово в ответе загадки: иероглиф, пиньинь и (если есть) перевод; тап — озвучка.
+ * right — правильный ответ: крупно, в зелёной рамке, чтобы не терялся рядом с ошибкой.
+ * wrong — выбранное по ошибке: мельче и тише, красная полоска слева.
+ */
 function AnswerWord({
   word,
   translation,
+  right = false,
   wrong = false,
   disabled,
   onSpeak,
 }: {
   word: Word;
   translation?: string;
-  /** Выбранное по ошибке — красная полоска слева. */
+  right?: boolean;
   wrong?: boolean;
   disabled: boolean;
   onSpeak: () => void;
 }) {
+  const box = right
+    ? "rounded-2xl border-2 border-primary bg-primary/15 px-4 py-2"
+    : wrong
+      ? "border-l-2 border-error pl-2"
+      : "";
   return (
     <Pressable
       onPress={onSpeak}
       disabled={disabled}
-      className={`gap-0.5 self-start active:opacity-70 ${
-        wrong ? "border-l-2 border-error pl-2" : ""
-      }`}
+      className={`gap-0.5 self-start active:opacity-70 ${box}`}
     >
       <View className="flex-row items-center gap-3">
-        <Hanzi size="sm">{word.hanzi}</Hanzi>
-        <Pinyin size="sm">{word.pinyin}</Pinyin>
+        <Hanzi size={right ? "md" : "sm"}>{word.hanzi}</Hanzi>
+        <Pinyin size={right ? "md" : "sm"}>{word.pinyin}</Pinyin>
       </View>
       {translation !== undefined && (
-        <Text className="font-nunito text-small text-textSecondary" numberOfLines={2}>
+        <Text
+          className={`font-nunito ${right ? "text-body text-text" : "text-small text-textSecondary"}`}
+          numberOfLines={2}
+        >
           {translation}
         </Text>
       )}

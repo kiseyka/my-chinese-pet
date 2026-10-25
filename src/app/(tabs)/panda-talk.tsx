@@ -21,13 +21,16 @@ import {
   type PandaReaction,
   type PandaWaiting,
 } from "@/components/panda/PandaMood";
-import { PlayContent, type PageGame } from "@/components/panda/PandaPlayContent";
+import {
+  PlayContent,
+  type PageGame,
+} from "@/components/panda/PandaPlayContent";
 import { PandaTalkStage } from "@/components/panda/PandaTalkStage";
 import { BackButton } from "@/components/ui/BackButton";
 import * as Speech from "expo-speech";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const GAMES: PageGame[] = ["pick", "listen"];
@@ -52,13 +55,15 @@ function PandaTalk({ game }: { game: PageGame }) {
   const insets = useSafeAreaInsets();
 
   const [waiting, setWaiting] = useState<PandaWaiting | null>(null);
-  const [reaction, setReaction] = useState<{ kind: PandaReaction; id: number } | null>(
-    null,
-  );
+  const [reaction, setReaction] = useState<{
+    kind: PandaReaction;
+    id: number;
+  } | null>(null);
   const mood = useMemo<PandaMood>(
     () => ({
       setWaiting,
-      react: (next) => setReaction((prev) => ({ kind: next, id: (prev?.id ?? 0) + 1 })),
+      react: (next) =>
+        setReaction((prev) => ({ kind: next, id: (prev?.id ?? 0) + 1 })),
     }),
     [],
   );
@@ -80,19 +85,10 @@ function PandaTalk({ game }: { game: PageGame }) {
           </View>
         </View>
 
-        {/* flexGrow — кнопки игры прижаты к низу экрана, длинное — прокручивается */}
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: insets.bottom + 16,
-          }}
-          keyboardShouldPersistTaps="handled"
-        >
+        {/* Игра сама делит место: загадка прокручивается, кнопки прибиты к низу */}
+        <View className="flex-1">
           <PlayContent game={game} onClose={goPet} onMore={backToMenu} />
-        </ScrollView>
+        </View>
       </View>
     </PandaMoodContext.Provider>
   );

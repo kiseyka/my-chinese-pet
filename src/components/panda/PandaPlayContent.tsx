@@ -93,13 +93,14 @@ export function PlayContent({
     game ? (buildGameStep(game) ?? { kind: "none" }) : { kind: "menu" },
   );
   const todayPhraseId = getTodayPhraseId();
-  const phraseCard = todayPhraseId && onOpenPhrase ? (
-    <PlayCard
-      title={t("play.phraseOfDay")}
-      subtitle={t("play.phraseOfDayHint")}
-      onPress={() => onOpenPhrase(todayPhraseId)}
-    />
-  ) : null;
+  const phraseCard =
+    todayPhraseId && onOpenPhrase ? (
+      <PlayCard
+        title={t("play.phraseOfDay")}
+        subtitle={t("play.phraseOfDayHint")}
+        onPress={() => onOpenPhrase(todayPhraseId)}
+      />
+    ) : null;
 
   const playsLeft = getPlaysLeft(playTimes);
 
@@ -130,12 +131,7 @@ export function PlayContent({
     const total = riddles.length;
     const isLast = index === total - 1;
     return (
-      <View className="flex-1 gap-4">
-        {total > 1 && (
-          <Text className="font-nunito text-small text-textSecondary">
-            {t("play.round", { n: index + 1, total })}
-          </Text>
-        )}
+      <View className="flex-1">
         <PickRiddle
           key={`${step.variant}-${index}`}
           word={word}
@@ -143,6 +139,13 @@ export function PlayContent({
           variant={step.variant + index}
           listen={step.kind === "listen"}
           reward={PICK_REWARD}
+          top={
+            total > 1 && (
+              <Text className="font-nunito text-small text-textSecondary">
+                {t("play.round", { n: index + 1, total })}
+              </Text>
+            )
+          }
           onAnswer={(right) => {
             // Опыт сразу за каждый верный ответ: ушёл посреди раунда — заработанное остаётся
             finishPlay(word.vocabularyId, right ? PICK_REWARD : 0);
@@ -155,9 +158,7 @@ export function PlayContent({
                 <MainButton
                   label={t("play.next")}
                   disabled={!answered}
-                  onPress={() =>
-                    setStep({ ...step, index: index + 1 })
-                  }
+                  onPress={() => setStep({ ...step, index: index + 1 })}
                 />
               </View>
             ) : (
@@ -179,7 +180,9 @@ export function PlayContent({
                     <MainButton
                       label={t("play.more")}
                       variant="secondary"
-                      onPress={() => (onMore ? onMore() : setStep({ kind: "menu" }))}
+                      onPress={() =>
+                        onMore ? onMore() : setStep({ kind: "menu" })
+                      }
                     />
                   )}
                   <MainButton
@@ -200,10 +203,15 @@ export function PlayContent({
   const canPick = canPlay("pick");
   const canStroke = canPlay("stroke");
 
+  // На странице игры (game) отступы даёт не страница, а сама игра
+  const pad = game ? " px-5 pt-2" : "";
+
   if (!canPick || step.kind === "none") {
     return (
-      <View className="gap-5">
-        <Text className="font-nunito text-lead text-text">{t("play.empty")}</Text>
+      <View className={`gap-5${pad}`}>
+        <Text className="font-nunito text-lead text-text">
+          {t("play.empty")}
+        </Text>
         <View className="flex-row">
           <MainButton
             label={t("play.toPath")}
@@ -219,7 +227,7 @@ export function PlayContent({
 
   if (playsLeft === 0) {
     return (
-      <View className="gap-5">
+      <View className={`gap-5${pad}`}>
         {phraseCard}
         <Text className="font-nunito text-lead text-text">
           {t("play.tired", {
@@ -237,7 +245,9 @@ export function PlayContent({
 
   return (
     <View className="gap-5">
-      <Text className="font-nunito text-lead text-text">{t("play.question")}</Text>
+      <Text className="font-nunito text-lead text-text">
+        {t("play.question")}
+      </Text>
 
       <View className="gap-3">
         {phraseCard}
@@ -291,7 +301,9 @@ function PlayCard({
     >
       <View className="flex-1">
         <Text className="font-nunitoBold text-body text-text">{title}</Text>
-        <Text className="font-nunito text-small text-textSecondary">{subtitle}</Text>
+        <Text className="font-nunito text-small text-textSecondary">
+          {subtitle}
+        </Text>
       </View>
       {/* Закрытая игра — без награды: иначе бледная «+1» выглядит другим цветом */}
       {reward && !disabled && (
@@ -330,4 +342,3 @@ function formatWait(
   if (rest === 0) return t("play.hours", { count: hours });
   return `${t("play.hours", { count: hours })} ${t("play.minutes", { count: rest })}`;
 }
-
