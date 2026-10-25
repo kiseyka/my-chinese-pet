@@ -12,7 +12,7 @@
 //   - сетка слов этапа: под иероглифом две строки точек — перевод и письмо;
 //     тап по слову открывает панель слова (перевод, звук, «Повторение», наборы).
 
-import BookIcon from "@/assets/images/icons/book-open.svg";
+import LanguagesIcon from "@/assets/images/icons/languages.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { PathWordGrid } from "@/components/path/PathWordGrid";
 import { colors } from "@/theme/colors";
@@ -219,7 +219,7 @@ function TrackRow({
   highlighted: boolean;
   onStart: () => void;
 }) {
-  const Icon = track.id === "reading" ? BookIcon : PencilIcon;
+  const Icon = track.id === "reading" ? LanguagesIcon : PencilIcon;
   const status = track.mastered
     ? `все ${track.total} на 3 точках`
     : track.passed

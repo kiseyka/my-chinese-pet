@@ -11,6 +11,8 @@
 //   - При открытии карта прокручена к текущему этапу.
 //   - Фон — повторяющийся пейзаж (ScrollingBackground): едет за прокруткой медленнее
 //     тропинки. Рисунок по краям, середина пустая — там идёт тропинка.
+//   - Под шапкой — мягкое затухание фона (HeaderFade), чтобы «Путь» и стрелка
+//     не сливались с рисунком.
 
 import {
   PathNode,
@@ -38,12 +40,17 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 
 /** Отступы Screen по бокам. */
 const SCREEN_INSET = 32;
 /** Высота вехи «HSK 2» между разделами. */
 const MILESTONE_HEIGHT = 64;
+/** Высота шапки (стрелка + «Путь») — под ней затухание фона. */
+const HEADER_HEIGHT = 56;
+/** Насколько затухание заходит ниже шапки. */
+const HEADER_FADE = 28;
+
 /** Место под кнопкой внизу, чтобы последняя точка не пряталась за ней. */
 const BOTTOM_SPACE = 104;
 
@@ -181,6 +188,7 @@ export default function PathScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScrollingBackground scrollY={scrollY} />
+      <HeaderFade height={insets.top + HEADER_HEIGHT + HEADER_FADE} />
       <Screen>
         <View className="flex-row items-center justify-between">
           <BackButton href="/games" />
@@ -228,6 +236,28 @@ export default function PathScreen() {
         )}
       </Screen>
     </View>
+  );
+}
+
+// ── Затухание фона под шапкой ────────────────────────────────────────────────
+
+function HeaderFade({ height }: { height: number }) {
+  return (
+    <Svg
+      width="100%"
+      height={height}
+      style={{ position: "absolute", left: 0, right: 0, top: 0 }}
+      pointerEvents="none"
+    >
+      <Defs>
+        <LinearGradient id="pathHeaderFade" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={colors.background} stopOpacity={0.92} />
+          <Stop offset="0.65" stopColor={colors.background} stopOpacity={0.8} />
+          <Stop offset="1" stopColor={colors.background} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Rect width="100%" height={height} fill="url(#pathHeaderFade)" />
+    </Svg>
   );
 }
 

@@ -6,7 +6,7 @@
 // Слово попадает на экзамен навыка, когда у него 3 точки этого навыка и прошли сутки.
 // Сданный экзамен отмечается галочкой; два провала подряд снимают одну точку.
 
-import BookIcon from "@/assets/images/icons/book-open.svg";
+import LanguagesIcon from "@/assets/images/icons/languages.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { SealMark } from "@/components/writing/SealMark";
@@ -55,7 +55,7 @@ export function ExamHubSheet({
 
           <View className="mt-5 gap-2">
             <ExamRow
-              Icon={BookIcon}
+              Icon={LanguagesIcon}
               title="По переводу"
               hint="Видишь перевод — выбираешь иероглиф"
               summary={reading}
