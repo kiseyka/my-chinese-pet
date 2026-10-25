@@ -5,77 +5,63 @@
 //   меню    — «Чем займёмся?» в шторке разговора (PandaTalkSheet, поверх комнаты).
 //             Открывается любым тапом по панде (с облачком — после фразы дня).
 //             Сверху «Фраза дня» (если её сегодня уже читали — послушать ещё раз),
-//             затем «Угадай слово», «Послушай и угадай», «Допиши черту» (+1 опыт),
-//             «Напиши слово» (+1, без ошибок +2; только слова с 3 точками письма или
-//             сданным экзаменом). Выбор игры закрывает шторку и открывает её страницу;
-//   pick, listen, write — страница /panda-talk?game=… с пандой крупным планом
+//             затем «Угадай слово», «Послушай и угадай» (до +3 опыта за раунд) и
+//             «Допиши черту» (+1). Выбор игры закрывает шторку и открывает её страницу;
+//   pick, listen — страница /panda-talk?game=… с пандой крупным планом
 //             (PandaTalkStage, поза «думает»): раунд из ROUND_SIZE загадок («Загадка
-//             1 из 3», «Дальше»), в конце монеты за раунд (все верно — 2, с ошибками —
-//             1), «Ещё» (снова меню в шторке) и «Готово»; у write — вопрос и выбор «По
-//             контуру» / «По памяти», дальше экран письма;
+//             1 из 3», «Дальше»), за каждый верный ответ +1 опыт, в конце итог раунда
+//             (0–3 опыта), «Ещё» (снова меню в шторке) и «Готово»;
 //   stroke  — сразу экран письма /panda-riddle (mode=stroke);
 //   устала  — игры кончились (15 за 3 часа): «Давай отдохнём, приходи через …»;
 //   пусто   — слов ещё нет: «Сначала выучи пару слов на пути» и кнопка «К пути».
 // Позже сюда же: погладить, покормить (когда будут анимации).
 
-import type { Word } from "@/content/flashcards/types";
 import { usePandaStore } from "@/store/pandaStore";
 import {
   PICK_REWARD,
-  ROUND_PERFECT_COINS,
-  ROUND_COINS,
   ROUND_SIZE,
-  finishRound,
-  pickPlayWords,
-  roundCoins,
-  STROKE_PERFECT_REWARD,
   STROKE_REWARD,
-  WRITE_PERFECT_REWARD,
-  WRITE_REWARD,
   canPlay,
   finishPlay,
   getMinutesUntilPlay,
   getPlaysLeft,
-  pickPlayWord,
+  pickGuessRound,
+  pickStrokeWord,
+  type GuessRiddle,
   type PlayKind,
 } from "@/utils/panda/play";
 import { getTodayPhraseId } from "@/utils/panda/thoughts";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import ZapIcon from "@/assets/images/icons/zap.svg";
 import { colors } from "@/theme/colors";
-import { MainButton, PickRiddle, WriteRiddle } from "./PandaRiddles";
+import { MainButton, PickRiddle } from "./PandaRiddles";
 
 /** Игры, у которых своя страница с пандой (/panda-talk?game=…). */
-export type PageGame = "pick" | "listen" | "write";
+export type PageGame = "pick" | "listen";
 
 type Step =
   | { kind: "menu" }
   /** Страница игры, а загадать нечего. */
   | { kind: "none" }
   | {
-      kind: "pick" | "listen";
-      words: Word[];
+      kind: PageGame;
+      /** Загадки раунда: слово и уже подобранные варианты. */
+      riddles: GuessRiddle[];
       /** Какая загадка раунда сейчас. */
       index: number;
       /** Сколько верных ответов уже. */
       correct: number;
       variant: number;
-    }
-  | { kind: "write"; word: Word; variant: number };
+    };
 
-/** Первый шаг игры: слова для раунда или слово для письма; null — загадать нечего. */
+/** Первый шаг игры: загадки раунда; null — загадать нечего. */
 function buildGameStep(kind: PageGame): Step | null {
-  if (kind === "pick" || kind === "listen") {
-    const words = pickPlayWords(kind, ROUND_SIZE);
-    if (words.length === 0) return null;
-    return { kind, words, index: 0, correct: 0, variant: Date.now() };
-  }
-  const word = pickPlayWord(kind);
-  return word ? { kind: "write", word, variant: Date.now() } : null;
+  const riddles = pickGuessRound(kind, ROUND_SIZE);
+  if (riddles.length === 0) return null;
+  return { kind, riddles, index: 0, correct: 0, variant: Date.now() };
 }
 
 interface PlayContentProps {
@@ -128,37 +114,39 @@ export function PlayContent({
       if (next) setStep(next);
       return;
     }
-    const word = pickPlayWord(kind);
+    const word = pickStrokeWord();
     if (!word) return;
-    // «Допиши черту» — на экране письма
+    // «Допиши черту» — на экране письма; run — каждый заход начинается заново
     onClose();
     router.push({
       pathname: "/panda-riddle",
-      params: { wordId: word.vocabularyId, source: "play", mode: "stroke" },
+      params: { wordId: word.vocabularyId, run: String(Date.now()) },
     });
   };
 
   if (step.kind === "pick" || step.kind === "listen") {
-    const { words, index, correct } = step;
-    const word = words[index];
-    const isLast = index === words.length - 1;
+    const { riddles, index, correct } = step;
+    const { word, options } = riddles[index];
+    const total = riddles.length;
+    const isLast = index === total - 1;
     return (
       <View className="gap-4">
-        {words.length > 1 && (
+        {total > 1 && (
           <Text className="font-nunito text-small text-textSecondary">
-            {t("play.round", { n: index + 1, total: words.length })}
+            {t("play.round", { n: index + 1, total })}
           </Text>
         )}
         <PickRiddle
           key={`${step.variant}-${index}`}
           word={word}
+          options={options}
           variant={step.variant + index}
           listen={step.kind === "listen"}
           reward={PICK_REWARD}
           onAnswer={(right) => {
+            // Опыт сразу за каждый верный ответ: ушёл посреди раунда — заработанное остаётся
             finishPlay(word.vocabularyId, right ? PICK_REWARD : 0);
             const nextCorrect = correct + (right ? 1 : 0);
-            if (isLast) finishRound(roundCoins(nextCorrect, words.length));
             setStep({ ...step, correct: nextCorrect });
           }}
           actions={(answered) =>
@@ -176,9 +164,9 @@ export function PlayContent({
               <View className="gap-4">
                 {answered && (
                   <RoundResult
-                    coins={roundCoins(correct, words.length)}
+                    xp={correct * PICK_REWARD}
                     text={
-                      correct === words.length
+                      correct === total
                         ? t("play.roundPerfect")
                         : correct > 0
                           ? t("play.roundGood")
@@ -208,22 +196,8 @@ export function PlayContent({
     );
   }
 
-  if (step.kind === "write") {
-    return (
-      <View className="gap-5">
-        <WriteRiddle
-          word={step.word}
-          variant={step.variant}
-          source="play"
-          onClose={onClose}
-        />
-      </View>
-    );
-  }
-
   // Страница игры, а загадать нечего (слова успели кончиться) — как пустое меню
   const canPick = canPlay("pick");
-  const canWrite = canPlay("write");
   const canStroke = canPlay("stroke");
 
   if (!canPick || step.kind === "none") {
@@ -270,30 +244,21 @@ export function PlayContent({
         <PlayCard
           title={t("play.pick")}
           subtitle={t("play.pickHint")}
-          reward={rewardRange(ROUND_COINS, ROUND_PERFECT_COINS)}
-          coin
+          reward={t("play.upTo", { n: ROUND_SIZE * PICK_REWARD })}
           onPress={() => start("pick")}
         />
         <PlayCard
           title={t("play.listen")}
           subtitle={t("play.listenHint")}
-          reward={rewardRange(ROUND_COINS, ROUND_PERFECT_COINS)}
-          coin
+          reward={t("play.upTo", { n: ROUND_SIZE * PICK_REWARD })}
           onPress={() => start("listen")}
         />
         <PlayCard
           title={t("play.stroke")}
           subtitle={canStroke ? t("play.strokeHint") : t("play.writeLocked")}
-          reward={rewardRange(STROKE_REWARD, STROKE_PERFECT_REWARD)}
+          reward={`+${STROKE_REWARD}`}
           disabled={!canStroke}
           onPress={() => start("stroke")}
-        />
-        <PlayCard
-          title={t("play.write")}
-          subtitle={canWrite ? t("play.writeHint") : t("play.writeLockedMastered")}
-          reward={rewardRange(WRITE_REWARD, WRITE_PERFECT_REWARD)}
-          disabled={!canWrite}
-          onPress={() => start("write")}
         />
       </View>
 
@@ -308,16 +273,13 @@ function PlayCard({
   title,
   subtitle,
   reward,
-  coin = false,
   disabled = false,
   onPress,
 }: {
   title: string;
   subtitle: string;
-  /** Без награды (фраза дня) — справа ничего. */
+  /** Опыт за игру; без награды (фраза дня) — справа ничего. */
   reward?: string;
-  /** Награда — монеты (иначе опыт). */
-  coin?: boolean;
   disabled?: boolean;
   onPress: () => void;
 }) {
@@ -338,28 +300,22 @@ function PlayCard({
       {reward && (
         <View className="flex-row items-center gap-1">
           <Text className="font-nunitoBold text-body text-text">{reward}</Text>
-          {coin ? (
-            <Image source={COIN} style={{ width: 20, height: 20 }} />
-          ) : (
-            <ZapIcon width={18} height={18} color={colors.primary} />
-          )}
+          <ZapIcon width={18} height={18} color={colors.primary} />
         </View>
       )}
     </Pressable>
   );
 }
 
-const COIN = require("@/assets/images/paw-coin.png");
-
-/** Итог раунда: реплика панды и монеты (если заработаны). */
-function RoundResult({ coins, text }: { coins: number; text: string }) {
+/** Итог раунда: реплика панды и опыт за раунд (если заработан). */
+function RoundResult({ xp, text }: { xp: number; text: string }) {
   return (
     <View className="flex-row items-center justify-between gap-3 rounded-2xl bg-primary/10 px-4 py-3">
       <Text className="flex-1 font-nunitoBold text-body text-text">{text}</Text>
-      {coins > 0 && (
+      {xp > 0 && (
         <View className="flex-row items-center gap-1">
-          <Text className="font-nunitoBold text-body text-text">+{coins}</Text>
-          <Image source={COIN} style={{ width: 22, height: 22 }} />
+          <Text className="font-nunitoBold text-body text-text">+{xp}</Text>
+          <ZapIcon width={20} height={20} color={colors.primary} />
         </View>
       )}
     </View>
@@ -378,7 +334,3 @@ function formatWait(
   return `${t("play.hours", { count: hours })} ${t("play.minutes", { count: rest })}`;
 }
 
-/** «+1» или «+1–2». */
-function rewardRange(min: number, max: number) {
-  return min === max ? `+${min}` : `+${min}–${max}`;
-}

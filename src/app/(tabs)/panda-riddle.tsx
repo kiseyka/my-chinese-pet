@@ -1,22 +1,15 @@
 // app/(tabs)/panda-riddle.tsx
 //
-// Игра с пандой «Напиши слово» (utils/panda/play, source=play — с опытом за слово):
-// сверху пиньинь и перевод, слово пишется по памяти (логика — useRiddleWriting).
-// В конце — эталон и твоё написание (тап по своему — в галерею), «Готово» — к панде.
-// «Назад» — просто выйти, ничего не теряется.
+// Игра с пандой «Допиши черту» (utils/panda/play): иероглиф без одной черты, её нужно
+// дописать. +1 опыт. «Назад» — просто выйти.
+// «Напиши слово» отсюда убрано 25 октября: для игры слишком сложно, для письма есть
+// полноценные тренировки.
 //
-// wordId — id слова.
-// mode=stroke — «Допиши черту»: иероглиф без одной черты, дописать её (только игра).
+// wordId — id слова; run — номер захода (каждый заход начинается заново).
 
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
-import { HanziView } from "@/components/writing/canvas/HanziView";
 import { WritingCanvas } from "@/components/writing/canvas/WritingCanvas";
-import {
-  GallerySaveDialog,
-  type GalleryCandidate,
-} from "@/components/writing/gallery/GallerySaveDialog";
-import { SavableHanzi } from "@/components/writing/gallery/SavableHanzi";
 import {
   PillButton,
   TaskPill,
@@ -26,40 +19,20 @@ import {
 } from "@/components/writing/lesson/LessonParts";
 import type { Word } from "@/content/flashcards/types";
 import { findWord } from "@/content/words/vocabulary";
-import { useRiddleWriting } from "@/hooks/panda/useRiddleWriting";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
 import { useCanvasSize } from "@/hooks/writing/useCanvasSize";
 import { RewardBadge } from "@/components/panda/PandaRiddles";
-import {
-  STROKE_PERFECT_REWARD,
-  STROKE_REWARD,
-  WRITE_PERFECT_REWARD,
-  WRITE_REWARD,
-  finishPlay,
-} from "@/utils/panda/play";
+import { STROKE_REWARD, finishPlay } from "@/utils/panda/play";
 import { useMissingStroke } from "@/hooks/panda/useMissingStroke";
 import { syllableOf } from "@/utils/writing/words";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-const RESULT_SIZE = 96;
-
 export default function PandaRiddleRoute() {
-  const { wordId, source, mode, outline } = useLocalSearchParams<{
-    wordId?: string;
-    source?: string;
-    /** 1 — сразу писать по контуру («Не помню — по контуру»). */
-    outline?: string;
-    /** stroke — «Допиши черту» (игра по тапу), иначе — написать слово целиком. */
-    mode?: string;
-  }>();
-  // Экран остаётся смонтированным между заходами — каждый заход начинаем заново
-  const [visit, setVisit] = useState(0);
-  useFocusEffect(useCallback(() => setVisit((n) => n + 1), []));
-
+  const { wordId, run } = useLocalSearchParams<{ wordId?: string; run?: string }>();
   const word = wordId ? findWord(wordId) : undefined;
 
   return (
@@ -68,155 +41,9 @@ export default function PandaRiddleRoute() {
         <View className="flex-row items-center pb-3 pr-4">
           <BackButton href="/pet" />
         </View>
-        {word && mode === "stroke" && (
-          <MissingStroke key={`${word.vocabularyId}-${visit}`} word={word} />
-        )}
-        {word && mode !== "stroke" && (
-          <RiddleWriting
-            key={`${word.vocabularyId}-${visit}`}
-            word={word}
-            isPlay={source === "play"}
-            startWithOutline={outline === "1"}
-          />
-        )}
+        {word && <MissingStroke key={`${word.vocabularyId}-${run ?? ""}`} word={word} />}
       </Screen>
     </GestureHandlerRootView>
-  );
-}
-
-function RiddleWriting({
-  word,
-  isPlay,
-  startWithOutline,
-}: {
-  word: Word;
-  isPlay: boolean;
-  startWithOutline: boolean;
-}) {
-  const router = useRouter();
-  const { t } = useTranslation("pandaThoughts");
-  const size = useCanvasSize();
-  const { speakForced } = useSpeakHanzi();
-  const riddle = useRiddleWriting(word);
-  const [toSave, setToSave] = useState<GalleryCandidate | null>(null);
-  // Контур: не помнишь — пиши по контуру. Включить можно в любой момент, выключить — тоже
-  const [outline, setOutline] = useState(startWithOutline);
-  const [outlineUsed, setOutlineUsed] = useState(startWithOutline);
-  const toggleOutline = () => {
-    setOutline((on) => !on);
-    setOutlineUsed(true);
-  };
-
-  const { chars, charIndex, charData, phase } = riddle;
-
-  // Игра по тапу: опыт и привязанность — один раз, как только слово написано.
-  // По памяти без ошибок — больше; с контуром — обычный опыт
-  const reward =
-    riddle.mistakes === 0 && !outlineUsed ? WRITE_PERFECT_REWARD : WRITE_REWARD;
-  const rewarded = useRef(false);
-  useEffect(() => {
-    if (!isPlay || phase !== "done" || rewarded.current) return;
-    rewarded.current = true;
-    finishPlay(word.vocabularyId, reward);
-  }, [isPlay, phase, reward, word.vocabularyId]);
-
-  if (!chars || !charData) return null;
-
-  const hanziList = Array.from(word.hanzi);
-
-  const finish = () => router.replace("/pet");
-
-  if (phase === "done") {
-    return (
-      <View className="items-center gap-5 px-4">
-        <WordHeading word={word} onSpeak={() => speakForced(word.hanzi)} />
-
-        <View className="items-center gap-1">
-          <Text className="font-nunito text-small text-textSecondary">Эталон</Text>
-          <View className="flex-row gap-3">
-            {chars.map((data, i) => (
-              <HanziView key={i} size={RESULT_SIZE} strokes={data.strokes} />
-            ))}
-          </View>
-        </View>
-
-        <View className="items-center gap-1">
-          <Text className="font-nunito text-small text-textSecondary">Твоё</Text>
-          <View className="flex-row gap-3">
-            {chars.map((_, i) => (
-              <SavableHanzi
-                key={i}
-                hanzi={hanziList[i]}
-                strokes={riddle.raws[i] ?? []}
-                size={RESULT_SIZE}
-                onSave={(hanzi, strokes) => setToSave({ hanzi, strokes })}
-              />
-            ))}
-          </View>
-          <Text className="text-center font-nunito text-caption text-textSecondary">
-            {t("riddleWrite.saveHint")}
-          </Text>
-        </View>
-
-        <View className="items-center gap-2">
-          <Text className="text-center font-nunitoBold text-title text-text">
-            {outlineUsed
-              ? t("riddleWrite.withOutline")
-              : riddle.mistakes === 0
-                ? t("riddleWrite.clean")
-                : t("riddleWrite.mistakes", { count: riddle.mistakes })}
-          </Text>
-          {isPlay && <RewardBadge xp={reward} />}
-        </View>
-
-        <PillButton label={t("riddleWrite.done")} onPress={finish} />
-
-        <GallerySaveDialog candidate={toSave} onClose={() => setToSave(null)} />
-      </View>
-    );
-  }
-
-  const charHanzi = hanziList[charIndex] ?? word.hanzi;
-  const charPinyin = syllableOf(word.pinyin, hanziList.length, charIndex);
-
-  return (
-    <View className="items-center gap-3 px-4">
-      <WordHeading word={word} onSpeak={() => speakForced(word.hanzi)} />
-
-      <TaskPill action={t("riddleWrite.task")}>
-        <TaskPinyin pinyin={charPinyin} onSpeak={() => speakForced(charHanzi)} />
-      </TaskPill>
-
-      <WrittenChars items={riddle.completedRaws.map((raw) => ({ raw }))} />
-
-      <WritingCanvas
-        key={`${word.vocabularyId}-${charIndex}`}
-        size={size}
-        strokes={charData.strokes}
-        outlineIndices={
-          outline
-            ? charData.strokes.map((_, i) => i)
-            : riddle.hintIndex !== null
-              ? [riddle.hintIndex]
-              : []
-        }
-        snappedIndices={[]}
-        rawStrokes={riddle.rawStrokes}
-        hintIndex={riddle.hintIndex}
-        disabled={phase !== "active"}
-        onStroke={riddle.handleStroke}
-      />
-
-      <Text className="min-h-6 text-center font-nunito text-body text-textSecondary">
-        {riddle.isHinting && !outline ? t("riddleWrite.hint") : " "}
-      </Text>
-
-      <PillButton
-        label={outline ? t("riddleWrite.hideOutline") : t("riddleWrite.showOutline")}
-        variant="secondary"
-        onPress={toggleOutline}
-      />
-    </View>
   );
 }
 
@@ -230,7 +57,7 @@ function MissingStroke({ word }: { word: Word }) {
   const game = useMissingStroke(word);
   const { target } = game;
 
-  const reward = game.mistakes === 0 ? STROKE_PERFECT_REWARD : STROKE_REWARD;
+  const reward = STROKE_REWARD;
   const rewarded = useRef(false);
   useEffect(() => {
     if (!game.done || rewarded.current) return;
@@ -283,7 +110,7 @@ function MissingStroke({ word }: { word: Word }) {
             <RewardBadge xp={reward} />
           </View>
           <PillButton
-            label={t("riddleWrite.done")}
+            label={t("stroke.finish")}
             onPress={() => router.replace("/pet")}
           />
         </View>

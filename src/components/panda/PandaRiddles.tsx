@@ -5,9 +5,8 @@
 //   PickRiddle  — «Как по-китайски …?» и три похожих иероглифа; после ответа —
 //                 правильный с пиньинем; если за верный ответ есть опыт — «+N».
 //                 listen — вместо перевода панда произносит слово (сразу и по кнопке),
-//                 перевод появляется после ответа;
-//   WriteRiddle — «Покажешь, как пишется …?» → экран письма /panda-riddle: «Написать»
-//                 (по памяти) или «Не помню — по контуру».
+//                 перевод появляется после ответа. Варианты подбирает раунд
+//                 (utils/panda/play, pickGuessRound) — здесь их не считаем.
 // MainButton — главная кнопка панели (во всю ширину).
 
 import ZapIcon from "@/assets/images/icons/zap.svg";
@@ -16,17 +15,11 @@ import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
 import type { Word } from "@/content/flashcards/types";
 import { useSpeakHanzi } from "@/hooks/useSpeakHanzi";
-import { buildReadingExamQuestion } from "@/utils/readingExam";
-import { shuffle } from "@/utils/shuffle";
-import { useRouter } from "expo-router";
 import VolumeIcon from "@/assets/images/icons/volume.svg";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { usePandaMood, usePandaWaiting } from "./PandaMood";
-
-/** Сколько вариантов в загадке (правильный + неправильные). */
-const RIDDLE_OPTIONS = 3;
 
 /** Реплика из списка вариантов — одна и та же для одной мысли (variant). */
 export function useLine(key: string, variant: number, word: string): string {
@@ -38,6 +31,7 @@ export function useLine(key: string, variant: number, word: string): string {
 
 export function PickRiddle({
   word,
+  options,
   variant,
   reward,
   onAnswer,
@@ -45,6 +39,8 @@ export function PickRiddle({
   listen = false,
 }: {
   word: Word;
+  /** Варианты в случайном порядке, среди них word. */
+  options: Word[];
   variant: number;
   /** «Послушай и угадай»: вопрос — звук, а не перевод. */
   listen?: boolean;
@@ -72,15 +68,6 @@ export function PickRiddle({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const praise = useLine("riddle.correct", variant, translation);
-
-  // Похожие иероглифы, как на экзамене по переводу, но вариантов три
-  const options = useMemo(() => {
-    const { options: all } = buildReadingExamQuestion(word, t);
-    const others = all.filter((o) => o.vocabularyId !== word.vocabularyId);
-    return shuffle([word, ...others.slice(0, RIDDLE_OPTIONS - 1)]);
-    // Варианты собираются один раз на загадку
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [word.vocabularyId]);
 
   const [picked, setPicked] = useState<Word | null>(null);
   const answered = picked !== null;
@@ -172,47 +159,6 @@ export function PickRiddle({
       </View>
 
       {actions(answered)}
-    </View>
-  );
-}
-
-export function WriteRiddle({
-  word,
-  variant,
-  source,
-  onClose,
-}: {
-  word: Word;
-  variant: number;
-  /** play — игра из меню панды (с наградой). */
-  source: "play";
-  onClose: () => void;
-}) {
-  const router = useRouter();
-  const { t } = useTranslation();
-  const { t: tp } = useTranslation("pandaThoughts");
-  const question = useLine("riddle.write", variant, t(word.translation));
-
-  const write = (outline: boolean) => {
-    onClose();
-    router.push({
-      pathname: "/panda-riddle",
-      params: { wordId: word.vocabularyId, source, ...(outline && { outline: "1" }) },
-    });
-  };
-
-  return (
-    <View className="gap-5">
-      <Text className="font-nunito text-title text-text">{question}</Text>
-      {/* Не помнишь — можно написать по контуру */}
-      <View className="flex-row gap-3">
-        <MainButton
-          label={tp("writeOutline")}
-          variant="secondary"
-          onPress={() => write(true)}
-        />
-        <MainButton label={tp("write")} onPress={() => write(false)} />
-      </View>
     </View>
   );
 }

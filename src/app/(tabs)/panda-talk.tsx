@@ -5,14 +5,15 @@
 // анимации панды — целая страница, где нет (фраза дня, меню «Чем займёмся?») —
 // модальная шторка на экране панды (PandaTalkSheet).
 //   game=pick   — «Угадай слово», раунд из 3 загадок;
-//   game=listen — «Послушай и угадай», раунд из 3 загадок;
-//   game=write  — «Напиши слово»: вопрос и выбор «По контуру» / «По памяти», дальше
-//                 экран письма /panda-riddle.
+//   game=listen — «Послушай и угадай», раунд из 3 загадок.
 // Панда отзывается на игру через PandaMood (думает над загадкой, радуется, удивляется)
 // и «говорит», пока звучит озвучка (store/speechStore).
 //
 // «Назад» и «Готово» — к панде; «Ещё» — к панде со шторкой меню (параметр play).
-// Экран остаётся смонтированным между заходами (вкладка) — каждый заход начинаем заново.
+// Экран остаётся смонтированным между заходами (вкладка) — каждый заход начинаем заново:
+// у каждого перехода сюда свой параметр run, по нему игра монтируется с нуля ровно один
+// раз. (Раньше счётчик заходов менялся в useFocusEffect уже после первого рендера —
+// игра и Rive-панда собирались дважды, и страница открывалась с задержкой.)
 
 import BackIcon from "@/assets/images/icons/arrow-left.svg";
 import {
@@ -33,14 +34,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 /** Насколько панель диалога заходит на сцену (скруглённый верх поверх панды). */
 const PANEL_OVERLAP = 24;
 
-const GAMES: PageGame[] = ["pick", "listen", "write"];
+const GAMES: PageGame[] = ["pick", "listen"];
 
 export default function PandaTalkRoute() {
-  const { game } = useLocalSearchParams<{ game?: string }>();
-  const [visit, setVisit] = useState(0);
+  const { game, run } = useLocalSearchParams<{ game?: string; run?: string }>();
   useFocusEffect(
     useCallback(() => {
-      setVisit((n) => n + 1);
       // Ушли со сцены — панда замолкает
       return () => {
         Speech.stop();
@@ -49,7 +48,7 @@ export default function PandaTalkRoute() {
   );
 
   const kind = GAMES.find((g) => g === game) ?? "pick";
-  return <PandaTalk key={`${kind}-${visit}`} game={kind} />;
+  return <PandaTalk key={`${kind}-${run ?? ""}`} game={kind} />;
 }
 
 function PandaTalk({ game }: { game: PageGame }) {

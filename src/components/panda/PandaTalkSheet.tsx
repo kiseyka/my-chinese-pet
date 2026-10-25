@@ -66,7 +66,11 @@ function TalkContent({ onClose }: { onClose: () => void }) {
         onOpenPhrase={(phraseId) => setStep({ kind: "phrase", phraseId, again: true })}
         onStartGame={(game) => {
           onClose();
-          router.push({ pathname: "/panda-talk" as any, params: { game } });
+          // run — каждый заход на страницу игры начинается заново (новый раунд)
+          router.push({
+            pathname: "/panda-talk" as any,
+            params: { game, run: String(Date.now()) },
+          });
         }}
       />
     );

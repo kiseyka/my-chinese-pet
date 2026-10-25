@@ -8,9 +8,9 @@
 //   pick   — по переводу выбрать иероглиф из трёх;
 //   listen — панда произносит слово, выбрать иероглиф из трёх;
 //   stroke — у иероглифа не хватает одной черты, дописать её (любые слова, которые
-//            можно писать — это проще, чем писать целиком);
-//   write  — написать слово по памяти: только слова с 3 точками письма или сданным
-//            экзаменом по письму (остальные по памяти написать слишком сложно).
+//            можно писать).
+// «Напиши слово» убрано 25 октября: для игры слишком сложно, для письма есть
+// полноценные тренировки.
 // Слова: начатые (хотя бы 1 точка), «Повторение» не используется; начатых нет —
 // первые этапы пути. Для «угадай» и «послушай» — слова до 2 иероглифов.
 // Последние загаданные не повторяются.
@@ -18,9 +18,8 @@
 // «Угадай» и «послушай» — раунд из ROUND_SIZE загадок подряд (каждая загадка — одна
 // игра из лимита, так что за 3 часа выходит 5 раундов).
 //
-// Награды: опыт, как в тренировках — 1 за верный ответ, 2 за слово, написанное без
-// ошибок. Плюс монеты за раунд «угадай»/«послушай» (решено 24 октября): все загадки
-// верно — ROUND_PERFECT_COINS, с ошибками — ROUND_COINS, ни одной верной — ничего.
+// Награда — только опыт (решено 25 октября, монет за игры нет): 1 за каждый верный
+// ответ, за раунд «угадай»/«послушай» — 0–3; «Допиши черту» — 1.
 // Привязанность +1 за доигранную игру — внутренний счётчик, на экране её нет:
 // отношения с пандой = уровень опыта.
 // Точки слов игры не меняют.
@@ -36,30 +35,20 @@ import { useWordProgressStore } from "@/store/wordProgressStore";
 import { shuffle } from "@/utils/shuffle";
 import { getWritableWords } from "@/utils/writing/words";
 
-export type PlayKind = "pick" | "listen" | "stroke" | "write";
+export type PlayKind = "pick" | "listen" | "stroke";
+/** Игры-загадки с выбором иероглифа (раунд из ROUND_SIZE). */
+export type GuessKind = "pick" | "listen";
 
 export const PLAYS_PER_WINDOW = 15;
 export const PLAY_WINDOW_MS = 3 * 60 * 60 * 1000;
 
-// Награда — опыт, как в тренировках: 1 опыт за верный ответ (монеты здесь не дают —
-// иначе слово у панды стоило бы почти как целая тренировка)
+/** Опыт за верный ответ в «угадай» / «послушай» (за раунд — 0…ROUND_SIZE). */
 export const PICK_REWARD = 1;
+/** Опыт за «Допиши черту». */
 export const STROKE_REWARD = 1;
-export const STROKE_PERFECT_REWARD = 1;
-export const WRITE_REWARD = 1;
-export const WRITE_PERFECT_REWARD = 2;
 
 /** Загадок в раунде «угадай» / «послушай». */
 export const ROUND_SIZE = 3;
-/** Монеты за раунд: все верно / с ошибками (но хоть одна верная). */
-export const ROUND_PERFECT_COINS = 2;
-export const ROUND_COINS = 1;
-
-/** Сколько монет за раунд: correct верных из total. */
-export function roundCoins(correct: number, total: number): number {
-  if (correct === 0) return 0;
-  return correct === total ? ROUND_PERFECT_COINS : ROUND_COINS;
-}
 
 /** Сколько игр ещё можно сейчас (за последние 3 часа). */
 export function getPlaysLeft(playTimes: number[], now = Date.now()): number {
@@ -78,8 +67,6 @@ export function getMinutesUntilPlay(playTimes: number[], now = Date.now()): numb
   return Math.max(1, Math.ceil((oldest + PLAY_WINDOW_MS - now) / 60000));
 }
 
-/** Сколько точек письма нужно слову для «Напиши слово» (или сданный экзамен). */
-const WRITE_MIN_DOTS = 3;
 /** Самое длинное слово для «угадай» и «послушай»: длинным не хватает похожих вариантов. */
 const MAX_GUESS_CHARS = 2;
 /** Сколько первых этапов пути брать, если начатых слов ещё нет. */
@@ -93,13 +80,7 @@ function fitsKind(kind: PlayKind, word: Word): boolean {
   if (kind === "pick" || kind === "listen") {
     return hanCount(word) <= MAX_GUESS_CHARS;
   }
-  if (getWritableWords([word]).length === 0) return false;
-  if (kind === "stroke") return true;
-  const { flashcardWords, writingExams } = useWordProgressStore.getState();
-  return (
-    (flashcardWords[word.vocabularyId]?.writing.streak ?? 0) >= WRITE_MIN_DOTS ||
-    !!writingExams[word.vocabularyId]?.passedAt
-  );
+  return getWritableWords([word]).length > 0;
 }
 
 /**
@@ -136,35 +117,43 @@ export function canPlay(kind: PlayKind): boolean {
   return candidateWords(kind).length > 0;
 }
 
-/**
- * Слово для новой загадки или undefined, если загадать нечего.
- * Для «угадай» и «послушай» — только слово, к которому нашлись два похожих варианта
- * (иначе на экране был бы один вариант).
- */
-export function pickPlayWord(kind: PlayKind): Word | undefined {
-  const words = candidateWords(kind);
-  if (kind !== "pick" && kind !== "listen") return words[0];
-
-  const translate = (key: string) => i18n.t(key);
-  return words.find(
-    (word) => buildReadingExamQuestion(word, translate).options.length >= 3,
-  );
+/** Слово для «Допиши черту» или undefined, если загадать нечего. */
+export function pickStrokeWord(): Word | undefined {
+  return candidateWords("stroke")[0];
 }
 
-/**
- * Слова для раунда «угадай» / «послушай»: до count разных слов (меньше — если больше
- * загадать нечего). Как pickPlayWord: только слова с двумя похожими вариантами.
- */
-export function pickPlayWords(kind: "pick" | "listen", count: number): Word[] {
-  const translate = (key: string) => i18n.t(key);
-  return candidateWords(kind)
-    .filter((word) => buildReadingExamQuestion(word, translate).options.length >= 3)
-    .slice(0, count);
+export interface GuessRiddle {
+  word: Word;
+  /** Варианты в случайном порядке, среди них word. */
+  options: Word[];
 }
 
-/** Раунд доигран: монеты (если заработаны). */
-export function finishRound(coins: number) {
-  if (coins > 0) useProgressStore.getState().addCoins(coins);
+/** Вариантов в загадке «угадай» / «послушай» (правильный + похожие). */
+const GUESS_OPTIONS = 3;
+
+/**
+ * Загадки для раунда «угадай» / «послушай»: до count разных слов, у каждого —
+ * GUESS_OPTIONS похожих вариантов (меньше слов — если больше загадать нечего).
+ *
+ * Похожие варианты подбираются перебором всего словаря (buildReadingExamQuestion), это
+ * дорого. Поэтому варианты строим только для слов раунда и останавливаемся, как только
+ * набрали count, — раньше их строили для каждого начатого слова, и страница игры
+ * открывалась с задержкой.
+ */
+export function pickGuessRound(kind: GuessKind, count: number): GuessRiddle[] {
+  const translate = (key: string) => i18n.t(key);
+  const riddles: GuessRiddle[] = [];
+  for (const word of candidateWords(kind)) {
+    if (riddles.length >= count) break;
+    const { options } = buildReadingExamQuestion(word, translate);
+    const others = options.filter((o) => o.vocabularyId !== word.vocabularyId);
+    if (others.length < GUESS_OPTIONS - 1) continue;
+    riddles.push({
+      word,
+      options: shuffle([word, ...others.slice(0, GUESS_OPTIONS - 1)]),
+    });
+  }
+  return riddles;
 }
 
 /** Игра доиграна: опыт (если есть), привязанность, лимит. */
