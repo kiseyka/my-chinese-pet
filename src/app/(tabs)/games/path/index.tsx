@@ -23,7 +23,7 @@
 
 import ChevronIcon from "@/assets/images/icons/chevron-right.svg";
 import {
-  PATH_DASH,
+  evenDash,
   PATH_DASH_OPACITY,
   PathNode,
   PATH_ROW_HEIGHT,
@@ -392,7 +392,7 @@ function Milestone({
           stroke={reached ? colors.progress.active : colors.primary}
           strokeOpacity={reached ? 1 : PATH_DASH_OPACITY}
           strokeWidth={6}
-          strokeDasharray={reached ? undefined : PATH_DASH}
+          {...(reached ? {} : evenDash(MILESTONE_HEIGHT))}
           strokeLinecap="round"
         />
       </Svg>

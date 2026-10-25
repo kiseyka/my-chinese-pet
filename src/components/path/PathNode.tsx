@@ -5,19 +5,20 @@
 // и кусок тропинки от предыдущей точки к следующей.
 //
 // Состояния:
-//   пройден  — кружок залит primary, иероглиф белый;
-//   текущий  — крупнее, мягкий пульс вокруг;
-//   впереди  — светлый кружок с бледным иероглифом (открыть тоже можно);
+//   впереди  — белый кружок, серое кольцо (зелёная шкала — если слова уже начаты);
+//   текущий  — единственный зелёный: залит primary, иероглиф белый, кольцо белое
+//              с зелёной шкалой прогресса; чуть крупнее, мягкий пульс вокруг;
+//   пройден  — белый кружок, кольцо заполнено зелёным;
 //   освоен   — как пройден, плюс галочка в углу: у каждого слова 3 точки
 //              и в переводе, и в письме. Галочка — только за освоение.
 // Кольцо заполняется по всем дорожкам вместе (слова с хотя бы 1 точкой в каждом навыке).
 // Навыки различаются иконками (文A — перевод, карандаш — письмо), а не цветом:
 // цвет у всего пути один — primary.
 //
-// Навык на карточке — три вида, без двух разных счётчиков:
+// Навык на карточке — три вида, без плашек и заливок:
 //   не пройден — серая иконка и «начато / всего» (сколько слов с хотя бы 1 точкой);
-//   пройден    — плашка с обводкой: иконка и ✓;
-//   освоен     — залитая плашка: белая иконка и ✓.
+//   пройден    — зелёная иконка и ✓;
+//   освоен     — зелёная иконка и галочка в кружке.
 // Сколько слов уже освоено — на экране этапа.
 //
 // Название: « · » склеено неразрывными пробелами, чтобы «· 2» не отрывалось от темы.
@@ -26,6 +27,9 @@
 // через свою точку до середины между своей и следующей (низ строки) — соседние строки
 // стыкуются в одну змейку. Пройденный путь — сплошной, дальше — пунктир того же
 // зелёного (PATH_DASH_OPACITY): бледно-серый терялся на фоне.
+// Пунктир рисуется кусками (у каждой строки свои), поэтому каждый кусок подгоняется
+// под целое число черточек с полупромежутками на концах (evenDash): на стыках
+// всегда обычный промежуток, без слипшихся или пропавших черточек.
 // Подпись стоит с той стороны, где больше места.
 
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
@@ -65,7 +69,45 @@ const LABEL_GAP = 10;
 
 /** Пунктир непройденной тропинки: тот же зелёный, чуть прозрачнее сплошной. */
 export const PATH_DASH_OPACITY = 0.75;
-export const PATH_DASH = "2 12";
+/** Черточка (с круглыми концами становится точкой) и промежуток пунктира. */
+const DASH = 2;
+const DASH_GAP = 12;
+
+/**
+ * Пунктир, подогнанный под длину куска: целое число черточек, на обоих концах —
+ * половина промежутка. Тогда соседние куски стыкуются без сбоя ритма.
+ */
+export function evenDash(length: number): {
+  strokeDasharray: string;
+  strokeDashoffset: number;
+} {
+  const count = Math.max(1, Math.round(length / (DASH + DASH_GAP)));
+  const gap = length / count - DASH;
+  return {
+    strokeDasharray: `${DASH} ${gap}`,
+    // Начинаем с середины промежутка
+    strokeDashoffset: DASH + gap / 2,
+  };
+}
+
+/** Длина квадратичной кривой (численно, ломаной из 24 отрезков). */
+function quadLength(
+  x0: number, y0: number, cx: number, cy: number, x1: number, y1: number,
+): number {
+  let length = 0;
+  let px = x0;
+  let py = y0;
+  for (let i = 1; i <= 24; i++) {
+    const t = i / 24;
+    const u = 1 - t;
+    const qx = u * u * x0 + 2 * u * t * cx + t * t * x1;
+    const qy = u * u * y0 + 2 * u * t * cy + t * t * y1;
+    length += Math.hypot(qx - px, qy - py);
+    px = qx;
+    py = qy;
+  }
+  return length;
+}
 
 /** « · » в названии — неразрывными пробелами: «Я, ты, он · 2» не рвётся перед «· 2». */
 function keepPartTogether(title: string): string {
@@ -145,13 +187,17 @@ export const PathNode = memo(function PathNode({
       >
         {index > 0 && (
           <PathSegment
-            d={`M ${top} 0 Q ${top} ${y / 2} ${x} ${y}`}
+            from={[top, 0]}
+            control={[top, y / 2]}
+            to={[x, y]}
             active={reached}
           />
         )}
         {index < count - 1 && (
           <PathSegment
-            d={`M ${x} ${y} Q ${bottom} ${(y + PATH_ROW_HEIGHT) / 2} ${bottom} ${PATH_ROW_HEIGHT}`}
+            from={[x, y]}
+            control={[bottom, (y + PATH_ROW_HEIGHT) / 2]}
+            to={[bottom, PATH_ROW_HEIGHT]}
             active={nextReached}
           />
         )}
@@ -164,7 +210,9 @@ export const PathNode = memo(function PathNode({
           cx={x}
           cy={y}
           r={ringRadius}
-          stroke={colors.progress.inactive}
+          stroke={
+            state === "current" ? colors.surface : colors.progress.inactive
+          }
           strokeWidth={RING_WIDTH}
           fill="none"
         />
@@ -206,7 +254,7 @@ export const PathNode = memo(function PathNode({
         >
           <View
             className={`items-center justify-center rounded-full ${
-              state === "passed" ? "bg-primary" : "bg-surface"
+              state === "current" ? "bg-primary" : "bg-surface"
             }`}
             style={{ width: size, height: size }}
           >
@@ -214,9 +262,9 @@ export const PathNode = memo(function PathNode({
               size={state === "current" ? 30 : 26}
               weight={state === "upcoming" ? "regular" : "medium"}
               className={
-                state === "passed"
+                state === "current"
                   ? "text-white"
-                  : state === "current"
+                  : state === "passed"
                     ? "text-text"
                     : "text-textSecondary"
               }
@@ -251,11 +299,9 @@ export const PathNode = memo(function PathNode({
           <Text
               numberOfLines={2}
               className={`${labelOnRight ? "text-left" : "text-right"} ${
-                state === "current"
-                  ? "font-nunitoBold text-lead text-text"
-                  : state === "passed"
-                    ? "font-nunitoBold text-body text-text"
-                    : "font-nunito text-body text-text"
+                state === "upcoming"
+                  ? "font-nunito text-body text-text"
+                  : "font-nunitoBold text-body text-text"
               }`}
             >
               {keepPartTogether(title)}
@@ -275,54 +321,70 @@ export const PathNode = memo(function PathNode({
 });
 
 /**
- * Навык под названием, три вида:
+ * Навык под названием, три вида — без плашек и заливок:
  *   не пройден — серая иконка и «начато / всего»;
- *   пройден    — плашка с обводкой primary: иконка и ✓ (у каждого слова есть точка);
- *   освоен     — залитая плашка: белая иконка и ✓ (все слова на 3 точках).
- * Счётчик один и значит всегда одно: сколько слов начато. Освоение — плашками.
+ *   пройден    — зелёная иконка и ✓ (у каждого слова есть точка);
+ *   освоен     — зелёная иконка и галочка в кружке (все слова на 3 точках).
  */
 function SkillCount({ skill }: { skill: PathSkill }) {
   const Icon = skill.id === "reading" ? LanguagesIcon : PencilIcon;
   const mastered = skill.total > 0 && skill.learned === skill.total;
   const passed = skill.total > 0 && skill.started === skill.total;
 
-  if (mastered) {
-    return (
-      <View className="flex-row items-center gap-1 rounded-full bg-primary px-2 py-0.5">
-        <Icon width={13} height={13} color="#FFFFFF" />
-        <Text className="font-nunitoBold text-caption text-white">✓</Text>
-      </View>
-    );
-  }
-
-  if (passed) {
-    return (
-      <View className="flex-row items-center gap-1 rounded-full border-[1.5px] border-primary px-2 py-0.5">
-        <Icon width={13} height={13} color={colors.primary} />
-        <Text className="font-nunitoBold text-caption text-primary">✓</Text>
-      </View>
-    );
-  }
-
-  // Та же высота, что у плашек: в строке навыки стоят ровно
   return (
-    <View className="flex-row items-center gap-1 border-[1.5px] border-transparent py-0.5">
-      <Icon width={14} height={14} color={colors.textSecondary} />
-      <Text className="font-nunitoMedium text-caption text-textSecondary">
-        {skill.started}/{skill.total}
-      </Text>
+    <View className="flex-row items-center gap-1 py-0.5">
+      <Icon
+        width={14}
+        height={14}
+        color={passed ? colors.primary : colors.textSecondary}
+      />
+      {mastered ? (
+        <CheckIcon width={15} height={15} color={colors.primary} />
+      ) : passed ? (
+        <Text className="font-nunitoBold text-caption text-primary">✓</Text>
+      ) : (
+        <Text className="font-nunitoMedium text-caption text-textSecondary">
+          {skill.started}/{skill.total}
+        </Text>
+      )}
     </View>
   );
 }
 
-function PathSegment({ d, active }: { d: string; active: boolean }) {
+type Point = [number, number];
+
+function PathSegment({
+  from,
+  control,
+  to,
+  active,
+}: {
+  from: Point;
+  control: Point;
+  to: Point;
+  active: boolean;
+}) {
+  const d = `M ${from[0]} ${from[1]} Q ${control[0]} ${control[1]} ${to[0]} ${to[1]}`;
+  if (active) {
+    return (
+      <Path
+        d={d}
+        stroke={colors.progress.active}
+        strokeWidth={6}
+        strokeLinecap="round"
+        fill="none"
+      />
+    );
+  }
+  const dash = evenDash(quadLength(...from, ...control, ...to));
   return (
     <Path
       d={d}
-      stroke={active ? colors.progress.active : colors.primary}
-      strokeOpacity={active ? 1 : PATH_DASH_OPACITY}
+      stroke={colors.primary}
+      strokeOpacity={PATH_DASH_OPACITY}
       strokeWidth={6}
-      strokeDasharray={active ? undefined : PATH_DASH}
+      strokeDasharray={dash.strokeDasharray}
+      strokeDashoffset={dash.strokeDashoffset}
       strokeLinecap="round"
       fill="none"
     />

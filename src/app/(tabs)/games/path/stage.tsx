@@ -121,14 +121,13 @@ export default function PathStageScreen() {
       >
         <View className="mb-2 flex-row items-center gap-4">
           <View
-            className={`items-center justify-center rounded-full border-4 border-primary ${
-              item.passed ? "bg-primary" : "bg-surface"
-            }`}
+            // Как на карте: зелёной заливки нет (на карте ею отмечен только текущий этап)
+            className="items-center justify-center rounded-full border-4 border-primary bg-surface"
             style={{ width: 72, height: 72 }}
           >
             <Hanzi
               size={34}
-              className={item.passed ? "text-white" : "text-text"}
+              className="text-text"
               maxFontSizeMultiplier={1.2}
             >
               {stage.glyph}
