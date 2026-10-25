@@ -5,11 +5,12 @@
 // и кусок тропинки от предыдущей точки к следующей.
 //
 // Состояния:
-//   пройден  — кружок залит primary, иероглиф белый, галочка в углу;
+//   пройден  — кружок залит primary, иероглиф белый;
 //   текущий  — крупнее, обводка primary, мягкий пульс, значок панды в углу,
 //              карточка подписи с обводкой primary — сразу видно, где ты сейчас;
 //   впереди  — светлый кружок с бледным иероглифом (открыть тоже можно);
-//   освоен   — как пройден, но в углу печать 印 вместо галочки.
+//   освоен   — как пройден, плюс галочка в углу: у каждого слова 3 точки
+//              и в переводе, и в письме. Галочка — только за освоение.
 // Кольцо заполняется по всем дорожкам вместе (слова с хотя бы 1 точкой в каждом навыке).
 // Навыки различаются иконками (文A — перевод, карандаш — письмо), а не цветом:
 // цвет у всего пути один — primary.
@@ -24,7 +25,8 @@
 //
 // Тропинка: строка рисует линию от середины между прошлой и своей точкой (верх строки)
 // через свою точку до середины между своей и следующей (низ строки) — соседние строки
-// стыкуются в одну змейку. Пройденный путь — сплошной цветной, дальше — пунктир.
+// стыкуются в одну змейку. Пройденный путь — сплошной, дальше — пунктир того же
+// зелёного (PATH_DASH_OPACITY): бледно-серый терялся на фоне.
 // Подпись стоит с той стороны, где больше места.
 
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
@@ -62,6 +64,10 @@ const RING_GAP = 5;
 const RING_WIDTH = 4;
 /** Отступ подписи от колец. */
 const LABEL_GAP = 10;
+
+/** Пунктир непройденной тропинки: тот же зелёный, чуть прозрачнее сплошной. */
+export const PATH_DASH_OPACITY = 0.75;
+export const PATH_DASH = "2 12";
 
 /** Значок панды у текущего этапа. */
 const MARKER_SIZE = 24;
@@ -229,15 +235,8 @@ export const PathNode = memo(function PathNode({
             </Hanzi>
           </View>
 
-          {/* Угол: печать — освоен, галочка — пройден */}
+          {/* Угол: галочка — этап освоен (3 точки у каждого слова в обоих навыках) */}
           {mastered ? (
-            <View
-              className="absolute items-center justify-center rounded-md border-2 border-seal bg-surface"
-              style={{ right: 0, top: 0, width: 22, height: 22 }}
-            >
-              <Text className="font-nunitoBold text-caption text-seal">印</Text>
-            </View>
-          ) : state === "passed" ? (
             <View
               className="absolute rounded-full bg-background"
               style={{ right: 0, top: 0 }}
@@ -342,9 +341,10 @@ function PathSegment({ d, active }: { d: string; active: boolean }) {
   return (
     <Path
       d={d}
-      stroke={active ? colors.progress.active : colors.progress.inactive}
+      stroke={active ? colors.progress.active : colors.primary}
+      strokeOpacity={active ? 1 : PATH_DASH_OPACITY}
       strokeWidth={6}
-      strokeDasharray={active ? undefined : "2 12"}
+      strokeDasharray={active ? undefined : PATH_DASH}
       strokeLinecap="round"
       fill="none"
     />

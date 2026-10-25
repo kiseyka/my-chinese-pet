@@ -7,11 +7,12 @@
 //   - «Продолжить» — в первую непройденную дорожку (её строка выделена рамкой);
 //     освоенная дорожка (все слова на 3 точках) получает зелёную плашку «Освоено»,
 //     а её кнопка зовётся «Повторить»;
-//   - этап освоен целиком — печать 印 на кружке, а вместо «Продолжить» — «Повторить этап»:
+//   - этап освоен целиком — галочка на кружке, а вместо «Продолжить» — «Повторить этап»:
 //     он запускает навык, который тренировали меньше (по числу ответов);
 //   - сетка слов этапа: под иероглифом две строки точек — перевод и письмо;
 //     тап по слову открывает панель слова (перевод, звук, «Повторение», наборы).
 
+import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import LanguagesIcon from "@/assets/images/icons/languages.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { PathWordGrid } from "@/components/path/PathWordGrid";
@@ -134,10 +135,10 @@ export default function PathStageScreen() {
             </Hanzi>
             {item.mastered && (
               <View
-                className="absolute items-center justify-center rounded-md border-2 border-seal bg-surface"
-                style={{ right: -6, top: -6, width: 26, height: 26 }}
+                className="absolute rounded-full bg-background"
+                style={{ right: -6, top: -6 }}
               >
-                <Text className="font-nunitoBold text-small text-seal">印</Text>
+                <CheckIcon width={26} height={26} color={colors.primary} />
               </View>
             )}
           </View>

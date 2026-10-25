@@ -2,15 +2,15 @@
 //
 // Путь — одна карта изучения на всё приложение.
 //   - Тропинка из этапов (тем) всех разделов HSK подряд.
-//   - Раздел = уровень HSK. Перед первым этапом каждого раздела — шапка раздела
-//     прямо на тропинке: «HSK 2» и «пройдено 8 из 24»; раздел пройден — ✓,
-//     освоен целиком — печать 印. Других делений нет (темы — это сами этапы).
+//   - Раздел = уровень HSK. Между разделами на тропинке — веха «HSK 2», как раньше.
+//     Других делений нет (темы — это сами этапы).
 //   - В шапке экрана справа — «HSK 1 ▾»: показывает раздел, который сейчас на экране;
 //     тап открывает шторку с разделами и их прогрессом, выбор прокручивает карту
 //     к шапке раздела.
 //   - У каждой точки одно кольцо общего прогресса, рядом — название и навыки иконками
 //     (文A — перевод, карандаш — письмо). Пройденные этапы залиты и с галочкой,
-//     текущий крупнее, с обводкой и значком панды, освоенный целиком — с печатью 印.
+//     текущий крупнее, с обводкой и значком панды; галочка — только у освоенного
+//     этапа (3 точки у каждого слова в переводе и письме).
 //   - Ничего не закрыто: тап по любой точке открывает экран этапа (stage.tsx).
 //   - Внизу «Продолжить» (или «Начать») — сразу запускает нужную тренировку
 //     текущего этапа: сначала перевод, когда он пройден — письмо.
@@ -22,6 +22,8 @@
 
 import ChevronIcon from "@/assets/images/icons/chevron-right.svg";
 import {
+  PATH_DASH,
+  PATH_DASH_OPACITY,
   PathNode,
   PATH_ROW_HEIGHT,
   pathOffset,
@@ -31,7 +33,6 @@ import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Title } from "@/components/ui/Title";
-import { SealMark } from "@/components/writing/SealMark";
 import { usePath } from "@/hooks/usePath";
 import { colors } from "@/theme/colors";
 import {
@@ -63,10 +64,8 @@ import Svg, {
 
 /** Отступы Screen по бокам. */
 const SCREEN_INSET = 32;
-/** Высота шапки раздела на тропинке. */
-const SECTION_HEIGHT = 84;
-/** Ширина карточки шапки раздела. */
-const SECTION_CARD_WIDTH = 148;
+/** Высота вехи «HSK 2» между разделами. */
+const MILESTONE_HEIGHT = 64;
 /** Высота шапки экрана (стрелка + «Путь») — под ней затухание фона. */
 const HEADER_HEIGHT = 56;
 /** Насколько затухание заходит ниже шапки. */
@@ -77,12 +76,12 @@ const HEADER_SIDE = 84;
 const BOTTOM_SPACE = 104;
 
 type Row =
-  | { type: "section"; key: string; section: PathSection }
+  | { type: "milestone"; key: string; section: PathSection }
   | { type: "stage"; key: string; item: StageProgress };
 
 /** Раздел строки: для шапки — свой, для этапа — уровень этапа. */
 function rowLevel(row: Row): number {
-  return row.type === "section" ? row.section.level : row.item.stage.level;
+  return row.type === "milestone" ? row.section.level : row.item.stage.level;
 }
 
 export default function PathScreen() {
@@ -96,14 +95,14 @@ export default function PathScreen() {
   const { stages, currentIndex } = progress;
   const sections = useMemo(() => getPathSections(progress), [progress]);
 
-  // Строки карты: перед первым этапом каждого раздела — шапка раздела
+  // Строки карты: этапы и вехи разделов между ними (у первого раздела вехи нет)
   const rows = useMemo<Row[]>(() => {
     const result: Row[] = [];
     const byFirst = new Map(sections.map((s) => [s.firstIndex, s]));
     stages.forEach((item, i) => {
       const section = byFirst.get(i);
-      if (section) {
-        result.push({ type: "section", key: `hsk-${section.level}`, section });
+      if (section && i > 0) {
+        result.push({ type: "milestone", key: `hsk-${section.level}`, section });
       }
       result.push({ type: "stage", key: item.stage.id, item });
     });
@@ -114,7 +113,7 @@ export default function PathScreen() {
   const layout = useMemo(() => {
     let offset = 0;
     return rows.map((row) => {
-      const length = row.type === "section" ? SECTION_HEIGHT : PATH_ROW_HEIGHT;
+      const length = row.type === "milestone" ? MILESTONE_HEIGHT : PATH_ROW_HEIGHT;
       const item = { length, offset };
       offset += length;
       return item;
@@ -157,14 +156,18 @@ export default function PathScreen() {
   const jumpTo = useCallback(
     (level: number) => {
       setSheetOpen(false);
-      const index = rows.findIndex(
-        (row) => row.type === "section" && row.section.level === level,
-      );
+      // Первый раздел — с самого начала карты, остальные — к своей вехе
+      const index =
+        sections[0]?.level === level
+          ? 0
+          : rows.findIndex(
+              (row) => row.type === "milestone" && row.section.level === level,
+            );
       if (index < 0) return;
       setVisibleLevel(level);
       listRef.current?.scrollToIndex({ index, animated: true });
     },
-    [rows],
+    [rows, sections],
   );
 
   const open = useCallback(
@@ -183,22 +186,13 @@ export default function PathScreen() {
     currentIndex !== undefined ? stages[currentIndex]?.stage.level : undefined;
 
   const renderItem = ({ item: row }: { item: Row }) => {
-    if (row.type === "section") {
-      const { section } = row;
-      const first = section.firstIndex;
+    if (row.type === "milestone") {
+      const first = row.section.firstIndex;
       return (
-        <SectionHeader
-          section={section}
-          // Тропинка проходит между прошлой точкой и первой точкой раздела
-          x={
-            rowWidth / 2 +
-            (first === 0
-              ? pathOffset(0)
-              : (pathOffset(first - 1) + pathOffset(first)) / 2)
-          }
+        <Milestone
+          label={`HSK ${row.section.level}`}
+          x={rowWidth / 2 + (pathOffset(first - 1) + pathOffset(first)) / 2}
           width={rowWidth}
-          // У самого первого раздела тропинки сверху нет
-          hasPathAbove={first > 0}
           reached={currentIndex === undefined || first <= currentIndex}
         />
       );
@@ -350,17 +344,16 @@ function HeaderFade({ height }: { height: number }) {
 
 // ── Прогресс раздела одной строкой ───────────────────────────────────────────
 
-/** «освоен» / «пройден» / «пройдено 8 из 24». */
+/** «освоен» / «пройден» / «пройдено 8 из 24» — для шторки разделов. */
 function sectionStatus(section: PathSection): string {
   if (section.mastered === section.total) return "освоен";
   if (section.passed === section.total) return "пройден";
   return `пройдено ${section.passed} из ${section.total}`;
 }
 
-/** Значок в углу раздела: печать — освоен, ✓ — пройден. */
+/** Галочка у раздела — только когда освоены все его этапы. */
 function SectionMark({ section }: { section: PathSection }) {
-  if (section.mastered === section.total) return <SealMark size={20} />;
-  if (section.passed === section.total) {
+  if (section.mastered === section.total) {
     return (
       <View className="h-5 w-5 items-center justify-center rounded-full bg-primary">
         <Text className="font-nunitoBold text-caption text-white">✓</Text>
@@ -370,65 +363,44 @@ function SectionMark({ section }: { section: PathSection }) {
   return null;
 }
 
-// ── Шапка раздела на тропинке ────────────────────────────────────────────────
+// ── Веха раздела ─────────────────────────────────────────────────────────────
 
-function SectionHeader({
-  section,
+function Milestone({
+  label,
   x,
   width,
-  hasPathAbove,
   reached,
 }: {
-  section: PathSection;
-  /** Где проходит тропинка: шапка стоит прямо на ней. */
+  label: string;
+  /** Где проходит тропинка: веха стоит прямо на ней. */
   x: number;
   width: number;
-  hasPathAbove: boolean;
   reached: boolean;
 }) {
-  const left = Math.min(
-    Math.max(x - SECTION_CARD_WIDTH / 2, 0),
-    width - SECTION_CARD_WIDTH,
-  );
-
   return (
-    <View style={{ height: SECTION_HEIGHT, width }}>
-      {hasPathAbove && (
-        <Svg
-          width={width}
-          height={SECTION_HEIGHT}
-          style={{ position: "absolute" }}
-          pointerEvents="none"
-        >
-          <Path
-            d={`M ${x} 0 L ${x} ${SECTION_HEIGHT}`}
-            stroke={reached ? colors.progress.active : colors.progress.inactive}
-            strokeWidth={6}
-            strokeDasharray={reached ? undefined : "2 12"}
-            strokeLinecap="round"
-          />
-        </Svg>
-      )}
-      <View
-        className="absolute items-center rounded-2xl border-2 border-primary bg-surface px-3 py-1.5"
-        style={{
-          top: (SECTION_HEIGHT - 58) / 2,
-          height: 58,
-          left,
-          width: SECTION_CARD_WIDTH,
-        }}
-        accessible
-        accessibilityRole="header"
-        accessibilityLabel={`Раздел HSK ${section.level}, ${sectionStatus(section)}`}
+    <View style={{ height: MILESTONE_HEIGHT, width }}>
+      <Svg
+        width={width}
+        height={MILESTONE_HEIGHT}
+        style={{ position: "absolute" }}
+        pointerEvents="none"
       >
-        <View className="flex-row items-center gap-1.5">
-          <Text className="font-nunitoBold text-lead text-primary">
-            HSK {section.level}
-          </Text>
-          <SectionMark section={section} />
-        </View>
-        <Text className="font-nunitoMedium text-caption text-textSecondary">
-          {sectionStatus(section)}
+        <Path
+          d={`M ${x} 0 L ${x} ${MILESTONE_HEIGHT}`}
+          stroke={reached ? colors.progress.active : colors.primary}
+          strokeOpacity={reached ? 1 : PATH_DASH_OPACITY}
+          strokeWidth={6}
+          strokeDasharray={reached ? undefined : PATH_DASH}
+          strokeLinecap="round"
+        />
+      </Svg>
+      <View
+        className="absolute rounded-full border-2 border-primary bg-surface px-4 py-1"
+        style={{ top: MILESTONE_HEIGHT / 2 - 16, left: x - 44, width: 88 }}
+        accessibilityRole="header"
+      >
+        <Text className="text-center font-nunitoBold text-body text-primary">
+          {label}
         </Text>
       </View>
     </View>
