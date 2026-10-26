@@ -4,9 +4,13 @@
 // перевод (зелёные) и письмо (тёмные, как тушь; только у слов, которые можно писать).
 // 4 колонки. Слово из 1–2 иероглифов — одна ячейка (два знака чуть мельче),
 // из 3 и больше — две ячейки: иначе длинные слова съедают ряд.
+//
+// getStatus (в «Словаре»): слово в «Повторении» — зелёная рамка,
+// в «Изученном» — фон шалфея (не серый: серый читается как «выключено»).
 
 import { Hanzi } from "@/components/ui/Hanzi";
 import type { Word } from "@/content/flashcards/types";
+import type { WordStatus } from "@/store/gameStore";
 import type { TrackId } from "@/utils/path/stages";
 import { memo } from "react";
 import { Pressable, View, useWindowDimensions } from "react-native";
@@ -27,7 +31,15 @@ interface PathWordGridProps {
   onSelect: (word: Word) => void;
   /** Сколько ширины экрана не достаётся сетке (все отступы по бокам вместе). */
   horizontalInset: number;
+  /** Где слово: в «Повторении», «Изученном» или ещё учится. Без него — без отметок. */
+  getStatus?: (word: Word) => WordStatus;
 }
+
+const STATUS_CELL: Record<WordStatus, string> = {
+  learning: "border-transparent",
+  review: "border-primary",
+  learned: "border-learnedBorder bg-learned",
+};
 
 // memo: в «Словаре» сотни сеток — перерисовываются только те, у которых что-то поменялось
 export const PathWordGrid = memo(function PathWordGrid({
@@ -35,6 +47,7 @@ export const PathWordGrid = memo(function PathWordGrid({
   getDots,
   onSelect,
   horizontalInset,
+  getStatus,
 }: PathWordGridProps) {
   const { width } = useWindowDimensions();
   const unit = Math.floor(
@@ -60,7 +73,9 @@ export const PathWordGrid = memo(function PathWordGrid({
           <Pressable
             key={word.vocabularyId}
             onPress={() => onSelect(word)}
-            className="items-center gap-1 rounded-xl border border-transparent py-2 active:bg-primary/10"
+            className={`items-center gap-1 rounded-xl border py-2 active:bg-primary/10 ${
+              STATUS_CELL[getStatus?.(word) ?? "learning"]
+            }`}
             style={{ width: cellWidth }}
             accessibilityRole="button"
             accessibilityLabel={word.hanzi}

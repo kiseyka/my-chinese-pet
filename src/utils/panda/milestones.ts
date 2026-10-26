@@ -15,7 +15,8 @@
 import type { Word } from "@/content/flashcards/types";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { getPathProgress, type PathStage } from "@/utils/path/stages";
-import { getFullyLearnedWords } from "@/utils/profile/stats";
+import { allWords } from "@/content/words/vocabulary";
+import { findWordsWithAllDots } from "@/utils/learning";
 
 export interface MilestoneSnapshot {
   passedStages: string[];
@@ -40,7 +41,10 @@ export function takeMilestoneSnapshot(): MilestoneSnapshot & {
 } {
   const { flashcardWords } = useWordProgressStore.getState();
   const path = getPathProgress(flashcardWords);
-  const learned = getFullyLearnedWords(flashcardWords);
+  // Веха — первые 3/3 во всех навыках (не список «Изученное»: его пользователь
+  // меняет руками, а праздновать надо один раз)
+  const learnedIds = new Set(findWordsWithAllDots(flashcardWords));
+  const learned = allWords.filter((w) => learnedIds.has(w.vocabularyId));
 
   const levels = new Map<number, boolean>();
   for (const { stage, passed } of path.stages) {

@@ -3,6 +3,16 @@
 import type { Href } from "expo-router";
 import { create } from "zustand";
 
+/** Где слово: ещё учится, в «Изученном» или в «Повторении». */
+export type WordStatus = "learning" | "learned" | "review";
+
+/** Слово за тренировку перешло из одного состояния в другое. */
+export interface StatusChange {
+  wordId: string;
+  before: WordStatus;
+  after: WordStatus;
+}
+
 /** Ответ в самопроверке карточек. */
 export type SelfCheckAnswer = "know" | "unsure" | "dont";
 
@@ -63,6 +73,22 @@ interface GameStore {
   /** Награда за последнюю тренировку — экран итогов показывает её как есть. */
   rewards: TrainingRewards;
 
+  /**
+   * Где были слова до тренировки (только те, которых она коснулась).
+   * Экран итогов сравнивает с тем, где они сейчас: «Перешли в изученные»,
+   * «Вернулись в повторение». Заполняет utils/learning.ts.
+   */
+  statusBefore: Record<string, WordStatus>;
+  /** Запоминает, где было слово до тренировки (только в первый раз). */
+  rememberStatus: (wordId: string, status: WordStatus) => void;
+  /**
+   * Что поменялось за последнюю тренировку — снимок в момент её конца
+   * (finishTraining). Экран итогов показывает его как есть: экран остаётся
+   * смонтированным между тренировками, свой снимок он бы не обновил.
+   */
+  statusChanges: StatusChange[];
+  setStatusChanges: (changes: StatusChange[]) => void;
+
   startGame: () => void;
 
   answerQuestion: (result: FlashcardQuestionResult) => void;
@@ -104,8 +130,20 @@ export const useGameStore = create<GameStore>((set) => ({
 
   rewards: { xp: 0, coins: 0 },
 
+  statusBefore: {},
+  statusChanges: [],
+  setStatusChanges: (statusChanges) => set({ statusChanges }),
+  rememberStatus: (wordId, status) =>
+    set((state) =>
+      state.statusBefore[wordId]
+        ? state
+        : { statusBefore: { ...state.statusBefore, [wordId]: status } },
+    ),
+
   startGame: () =>
     set({
+      statusBefore: {},
+      statusChanges: [],
       score: 0,
       results: [],
       writingResults: [],
@@ -131,6 +169,8 @@ export const useGameStore = create<GameStore>((set) => ({
 
   resetGame: () =>
     set({
+      statusBefore: {},
+      statusChanges: [],
       rewards: { xp: 0, coins: 0 },
       score: 0,
       startTime: 0,

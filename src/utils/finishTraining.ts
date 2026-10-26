@@ -11,6 +11,7 @@ import { useActivityStore } from "@/store/activityStore";
 import { useGameStore, type TrainingRewards } from "@/store/gameStore";
 import { usePandaStore, type PandaTrainingResult } from "@/store/pandaStore";
 import { useProgressStore } from "@/store/userProgressStore";
+import { collectStatusChanges } from "@/utils/learning";
 import { reportTrainingToPanda } from "@/utils/panda/news";
 import { router } from "expo-router";
 
@@ -59,6 +60,8 @@ export function finishTraining({
 
   game.setDuration(Date.now() - game.startTime);
   game.setRewards(rewards);
+  // Переходы между «Повторением» и «Изученным» — снимок для экрана итогов
+  game.setStatusChanges(collectStatusChanges());
 
   grantRewards(rewards);
   logTraining(answers);
