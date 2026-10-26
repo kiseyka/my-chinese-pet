@@ -7,15 +7,15 @@
 // В строке: твоё написание, слово, перевод, точки «было → стало» (у слова
 // и у его иероглифов) и две кнопки справа (ResultActions): закладка —
 // «Повторение», значок наборов — панель слова (наборы, новый набор, озвучка).
-// Изученные слова (все точки), написанные с подсказками, идут не в «С подсказками»,
-// а в «Вернулись в повторение» (returnedIds): тренировка сама положила их в повторение.
+// Разделы свёрнуты (CollapsibleSection): выше них на экране итогов —
+// «Перешли в изученные» и «Вернулись в повторение»; слово может быть и там, и здесь.
 // Тап по написанию иероглифа — сохранить его в галерею (значок в углу превью).
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { Pinyin } from "@/components/ui/Pinyin";
-import { TransitionLine } from "@/components/learning/TransitionLine";
+import { CollapsibleSection } from "@/components/results/CollapsibleSection";
 import { ResultActions } from "@/components/results/ResultActions";
 import type { Word } from "@/content/flashcards/types";
 import type { WritingWordResult } from "@/store/gameStore";
@@ -64,15 +64,12 @@ function toWord(item: WritingWordResult): Word {
 
 interface WritingResultsListProps {
   results: WritingWordResult[];
-  /** Изученные слова, которые тренировка вернула в повторение (вместо «С подсказками»). */
-  returnedIds?: Set<string>;
   /** Панель слова (наборы, новый набор). */
   onOpenWord: (word: Word) => void;
 }
 
 export function WritingResultsList({
   results,
-  returnedIds,
   onOpenWord,
 }: WritingResultsListProps) {
   const { t } = useTranslation(["sets"]);
@@ -81,9 +78,7 @@ export function WritingResultsList({
     setToSave({ hanzi, strokes });
 
   const review = useWordProgressStore((s) => s.review);
-  const toggleReview = useWordProgressStore(
-    (s) => s.toggleReview,
-  );
+  const toggleReview = useWordProgressStore((s) => s.toggleReview);
 
   // Одно слово может встретиться дважды (например, 画画 в уроке) — показываем один раз;
   // «с подсказками», если хоть раз писалось с подсказками
@@ -95,13 +90,7 @@ export function WritingResultsList({
     }
   }
   const unique = Array.from(byId.values());
-  const isReturned = (item: WritingWordResult) =>
-    !!returnedIds?.has(item.vocabularyId);
-  // Вернувшиеся в повторение — своим разделом, в «С подсказками» не повторяем
-  const returned = unique.filter(isReturned);
-  const withHints = unique.filter(
-    (item) => !item.isCorrect && !isReturned(item),
-  );
+  const withHints = unique.filter((item) => !item.isCorrect);
   const clean = unique.filter((item) => item.isCorrect);
 
   const toAdd = withHints
@@ -182,29 +171,16 @@ export function WritingResultsList({
   };
 
   return (
-    <View className="gap-6">
+    <View className="gap-4">
       <GallerySaveDialog candidate={toSave} onClose={() => setToSave(null)} />
-
-      {returned.length > 0 && (
-        <View className="gap-2">
-          <View className="gap-1">
-            <Text className="font-nunitoBold text-lead text-text">
-              Вернулись в повторение · {returned.length}
-            </Text>
-            <TransitionLine from="Из изученного" to="В повторение" />
-          </View>
-          {returned.map(renderRow)}
-        </View>
-      )}
 
       {/* С подсказками или похвала */}
       {withHints.length > 0 ? (
-        <View className="gap-2">
-          <View className="min-h-10 flex-row items-center justify-between gap-3">
-            <Text className="font-nunitoBold text-lead text-text">
-              С подсказками · {withHints.length}
-            </Text>
-            {/* Ширина фиксирована: смена текста не сдвигает ничего вокруг */}
+        <CollapsibleSection
+          title="С подсказками"
+          count={withHints.length}
+          action={
+            // Ширина фиксирована: смена текста не сдвигает ничего вокруг
             <Pressable
               onPress={addAll}
               disabled={toAdd.length === 0}
@@ -221,10 +197,11 @@ export function WritingResultsList({
                 {toAdd.length > 0 ? "Все в повторение" : "Все в повторении"}
               </Text>
             </Pressable>
-          </View>
+          }
+        >
           {withHints.map(renderRow)}
-        </View>
-      ) : returned.length > 0 ? null : (
+        </CollapsibleSection>
+      ) : (
         <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
           <Text className="font-nunitoBold text-lead text-primary">
             Без подсказок!
@@ -236,17 +213,14 @@ export function WritingResultsList({
       )}
 
       {clean.length > 0 && (
-        <View className="gap-2">
-          <Text className="font-nunitoBold text-lead text-text">
-            Без подсказок · {clean.length}
-          </Text>
+        <CollapsibleSection title="Без подсказок" count={clean.length}>
           {clean.map(renderRow)}
-        </View>
+        </CollapsibleSection>
       )}
 
       <Text className="text-center font-nunito text-small text-textSecondary">
-        Закладка — в повторение, значок наборов — в любой набор.{"\n"}Тап по своему
-        написанию — сохранить его в галерею.
+        Закладка — в повторение, значок наборов — в любой набор.{"\n"}Тап по
+        своему написанию — сохранить его в галерею.
       </Text>
     </View>
   );

@@ -3,8 +3,8 @@
 // Экран итогов любой тренировки.
 //   - Заголовок и сводка: точность (круг), XP, монеты, время — в стиле новых экранов
 //     (шкала размеров из tailwind.config.js: title / lead / body).
-//   - «Перешли в изученные» (StatusChanges); изученные слова с ошибкой —
-//     «Вернулись в повторение» прямо в списках вместо «Ошибок» (без повторов).
+//   - «Перешли в изученные» и «Вернулись в повторение» (StatusChanges), ниже —
+//     свёрнутые «Ошибки» и «Верно» (слово может быть и там, и там).
 //     Изменения — снимок, сделанный в конце тренировки (gameStore.statusChanges):
 //     экран остаётся смонтированным между тренировками, свой снимок устарел бы.
 //   - Слова: у карточек — «Ошибки» и «Верно», у письма — «С подсказками» и
@@ -37,7 +37,7 @@ import {
   PATH_TRAINING_PREFIX,
 } from "@/utils/path/stages";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Title } from "@/components/ui/Title";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
@@ -79,15 +79,9 @@ export default function GeneralStatsScreen() {
 
   // Переносы между «Повторением» и «Изученным» за эту тренировку
   const statusChanges = useGameStore((s) => s.statusChanges);
-  const returnedIds = useMemo(
-    () =>
-      new Set(
-        statusChanges
-          .filter((c) => c.before === "learned" && c.after === "review")
-          .map((c) => c.wordId),
-      ),
-    [statusChanges],
-  );
+  // Экран остаётся смонтированным между тренировками: по startTime списки
+  // пересоздаются и снова открываются свёрнутыми
+  const startTime = useGameStore((s) => s.startTime);
 
   // Панель слова (карточки): перевод, озвучка, повторение, наборы
   const [opened, setOpened] = useState<Word | null>(null);
@@ -102,7 +96,9 @@ export default function GeneralStatsScreen() {
   const writeNext = (() => {
     if (gameId !== "flashcards" || isSelfCheck) return null;
     if (!lastSourceId?.startsWith(PATH_TRAINING_PREFIX)) return null;
-    const stage = findPathStage(lastSourceId.slice(PATH_TRAINING_PREFIX.length));
+    const stage = findPathStage(
+      lastSourceId.slice(PATH_TRAINING_PREFIX.length),
+    );
     if (!stage || stage.writable.length === 0) return null;
     const progress = getStageProgress(stage, flashcardWordsForPath);
     const reading = progress.tracks.find((t) => t.id === "reading");
@@ -181,14 +177,14 @@ export default function GeneralStatsScreen() {
         {isWriting ? (
           <WritingResultsList
             results={writingResults}
-            returnedIds={returnedIds}
+            key={startTime}
             onOpenWord={setOpened}
           />
         ) : isFlashcards ? (
           <FlashcardResultsList
             results={results}
             selfCheck={isSelfCheck}
-            returnedIds={returnedIds}
+            key={startTime}
             onOpenWord={setOpened}
           />
         ) : wrongAnswers.length > 0 ? (

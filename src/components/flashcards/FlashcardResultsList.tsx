@@ -7,10 +7,8 @@
 //   «Верно» — остальные слова.
 // У каждого слова: иероглиф, точки, пиньинь, перевод и две кнопки справа
 // (ResultActions): закладка — «Повторение», значок наборов — панель слова.
-//
-// Изученные слова (все точки), на которых была ошибка, идут не в «Ошибки», а в
-// «Вернулись в повторение» (returnedIds): тренировка сама положила их в повторение,
-// закладка уже стоит — снять её, если слово знакомо.
+// Разделы свёрнуты (CollapsibleSection): выше них на экране итогов —
+// «Перешли в изученные» и «Вернулись в повторение»; слово может быть и там, и здесь.
 // Тап по самому слову открывает ту же панель.
 //
 // Самопроверка (selfCheck): разделы «Не знаю», «Сомневаюсь» (у обоих —
@@ -23,7 +21,7 @@ import type { FlashcardQuestionResult } from "@/store/gameStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { Pressable, Text, View } from "react-native";
-import { TransitionLine } from "@/components/learning/TransitionLine";
+import { CollapsibleSection } from "@/components/results/CollapsibleSection";
 import { ResultActions } from "@/components/results/ResultActions";
 import { SetWordRow } from "./SetWordRow";
 
@@ -31,8 +29,6 @@ interface FlashcardResultsListProps {
   results: FlashcardQuestionResult[];
   /** Итоги самопроверки: разделы по ответам. */
   selfCheck?: boolean;
-  /** Изученные слова, которые тренировка вернула в повторение (вместо «Ошибок»). */
-  returnedIds?: Set<string>;
   onOpenWord: (word: Word) => void;
 }
 
@@ -50,7 +46,6 @@ function toWord(item: FlashcardQuestionResult): Word {
 export function FlashcardResultsList({
   results,
   selfCheck = false,
-  returnedIds,
   onOpenWord,
 }: FlashcardResultsListProps) {
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
@@ -67,11 +62,7 @@ export function FlashcardResultsList({
     }
   }
   const unique = Array.from(byId.values());
-  const isReturned = (item: FlashcardQuestionResult) =>
-    !!returnedIds?.has(item.vocabularyId);
-  // Вернувшиеся в повторение — своим разделом, в ошибках не повторяем
-  const returned = unique.filter(isReturned);
-  const mistakes = unique.filter((item) => !item.isCorrect && !isReturned(item));
+  const mistakes = unique.filter((item) => !item.isCorrect);
   const correct = unique.filter((item) => item.isCorrect);
 
   /** Слова раздела, которых ещё нет в «Повторении». */
@@ -99,17 +90,16 @@ export function FlashcardResultsList({
     );
   };
 
-  /** Заголовок раздела с «Все в повторение». */
+  /** Раздел с «Все в повторение» в заголовке. */
   const reviewSection = (title: string, items: FlashcardQuestionResult[]) => {
     const toAdd = notInReview(items);
 
     return (
-      <View className="gap-2">
-        <View className="min-h-10 flex-row items-center justify-between gap-3">
-          <Text className="font-nunitoBold text-lead text-text">
-            {title} · {items.length}
-          </Text>
-          {/* Ширина фиксирована: смена текста не сдвигает ничего вокруг */}
+      <CollapsibleSection
+        title={title}
+        count={items.length}
+        action={
+          // Ширина фиксирована: смена текста не сдвигает ничего вокруг
           <Pressable
             onPress={() => addToReview(toAdd)}
             disabled={toAdd.length === 0}
@@ -126,33 +116,19 @@ export function FlashcardResultsList({
               {toAdd.length > 0 ? "Все в повторение" : "Все в повторении"}
             </Text>
           </Pressable>
-        </View>
+        }
+      >
         {items.map(renderRow)}
-      </View>
+      </CollapsibleSection>
     );
   };
 
   const plainSection = (title: string, items: FlashcardQuestionResult[]) =>
     items.length > 0 && (
-      <View className="gap-2">
-        <Text className="font-nunitoBold text-lead text-text">
-          {title} · {items.length}
-        </Text>
+      <CollapsibleSection title={title} count={items.length}>
         {items.map(renderRow)}
-      </View>
+      </CollapsibleSection>
     );
-
-  const returnedSection = returned.length > 0 && (
-    <View className="gap-2">
-      <View className="gap-1">
-        <Text className="font-nunitoBold text-lead text-text">
-          Вернулись в повторение · {returned.length}
-        </Text>
-        <TransitionLine from="Из изученного" to="В повторение" />
-      </View>
-      {returned.map(renderRow)}
-    </View>
-  );
 
   const praise = (title: string, text: string) => (
     <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
@@ -170,18 +146,13 @@ export function FlashcardResultsList({
   );
 
   if (selfCheck) {
-    const dont = unique.filter(
-      (item) => item.selfCheck === "dont" && !isReturned(item),
-    );
-    const unsure = unique.filter(
-      (item) => item.selfCheck === "unsure" && !isReturned(item),
-    );
+    const dont = unique.filter((item) => item.selfCheck === "dont");
+    const unsure = unique.filter((item) => item.selfCheck === "unsure");
     const know = unique.filter((item) => item.selfCheck === "know");
 
     return (
-      <View className="gap-6">
-        {returnedSection}
-        {dont.length === 0 && unsure.length === 0 && returned.length === 0
+      <View className="gap-4">
+        {dont.length === 0 && unsure.length === 0
           ? praise("Всё знакомо!", "Ни одного сомнения.")
           : null}
         {dont.length > 0 && reviewSection("Не знаю", dont)}
@@ -193,14 +164,11 @@ export function FlashcardResultsList({
   }
 
   return (
-    <View className="gap-6">
-      {returnedSection}
-
+    <View className="gap-4">
       {/* Ошибки или похвала */}
       {mistakes.length > 0
         ? reviewSection("Ошибки", mistakes)
-        : returned.length === 0 &&
-          praise("Без ошибок!", "Все слова узнаны верно.")}
+        : praise("Без ошибок!", "Все слова узнаны верно.")}
 
       {/* Верно */}
       {plainSection("Верно", correct)}

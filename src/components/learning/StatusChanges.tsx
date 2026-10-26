@@ -6,8 +6,10 @@
 // («Из повторения → В изученное · 4»). Отменить — закладка (слово уходит
 // в повторение). Справа те же кнопки, что у остальных слов итогов.
 //
-// «Вернулись в повторение» (ошибка на изученном слове) показывает не этот блок,
-// а сами списки итогов — вместо «Ошибок» / «С подсказками», без повторов.
+// «Вернулись в повторение» — изученные слова с ошибкой (в письме — с подсказками):
+// тренировка положила их в повторение, закладка уже стоит; сняв её, слово
+// останется изученным.
+// Ниже на экране — свёрнутые «Ошибки» и «Верно»: слово может быть и там.
 // Изменения — снимок конца тренировки (gameStore.statusChanges): после отмены слово
 // остаётся в своём разделе, меняется только закладка (ничего не прыгает).
 
@@ -26,49 +28,72 @@ interface StatusChangesProps {
 }
 
 export function StatusChanges({ changes, onOpenWord }: StatusChangesProps) {
-  const { words, fromReview, fromLearning } = useMemo(() => {
+  const { words, returned, fromReview, fromLearning } = useMemo(() => {
     const learned = changes.filter((c) => c.after === "learned");
     return {
       words: findAnyWords(learned.map((c) => c.wordId)),
+      returned: findAnyWords(
+        changes
+          .filter((c) => c.before === "learned" && c.after === "review")
+          .map((c) => c.wordId),
+      ),
       fromReview: learned.filter((c) => c.before === "review").length,
       fromLearning: learned.filter((c) => c.before === "learning").length,
     };
   }, [changes]);
 
-  if (words.length === 0) return null;
+  if (words.length === 0 && returned.length === 0) return null;
+
+  const row = (word: Word) => (
+    <SetWordRow
+      key={word.vocabularyId}
+      word={word}
+      action="open"
+      compact
+      onPress={() => {}}
+      onOpenWord={onOpenWord}
+      trailing={<ResultActions word={word} onOpenWord={onOpenWord} />}
+    />
+  );
 
   return (
-    <View className="gap-2">
-      <View className="gap-1">
-        <Text className="font-nunitoBold text-lead text-text">
-          Перешли в изученные · {words.length}
-        </Text>
-        {fromReview > 0 && (
-          <TransitionLine
-            from="Из повторения"
-            to="В изученное"
-            count={fromReview}
-          />
-        )}
-        {fromLearning > 0 && (
-          <TransitionLine
-            from="Набрали все точки"
-            to="В изученное"
-            count={fromLearning}
-          />
-        )}
-      </View>
-      {words.map((word) => (
-        <SetWordRow
-          key={word.vocabularyId}
-          word={word}
-          action="open"
-          compact
-          onPress={() => {}}
-          onOpenWord={onOpenWord}
-          trailing={<ResultActions word={word} onOpenWord={onOpenWord} />}
-        />
-      ))}
+    <View className="gap-6">
+      {words.length > 0 && (
+        <View className="gap-2">
+          <View className="gap-1">
+            <Text className="font-nunitoBold text-lead text-text">
+              Перешли в изученные · {words.length}
+            </Text>
+            {fromReview > 0 && (
+              <TransitionLine
+                from="Из повторения"
+                to="В изученное"
+                count={fromReview}
+              />
+            )}
+            {fromLearning > 0 && (
+              <TransitionLine
+                from="Набрали все точки"
+                to="В изученное"
+                count={fromLearning}
+              />
+            )}
+          </View>
+          {words.map(row)}
+        </View>
+      )}
+
+      {returned.length > 0 && (
+        <View className="gap-2">
+          <View className="gap-1">
+            <Text className="font-nunitoBold text-lead text-text">
+              Вернулись в повторение · {returned.length}
+            </Text>
+            <TransitionLine from="Из изученного" to="В повторение" />
+          </View>
+          {returned.map(row)}
+        </View>
+      )}
     </View>
   );
 }
