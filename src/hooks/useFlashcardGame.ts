@@ -8,6 +8,8 @@
 //   обратное — перевод → выбрать иероглиф из похожих (utils/readingExam.ts).
 // Новое слово (0 точек перевода) спрашивается только прямо; у слова с точками
 // обратный вопрос выпадает в половине случаев. Оба дают точку перевода.
+// Неверные переводы в прямом вопросе — сначала из той же темы пути (по смыслу).
+// После ответа вопрос сам не уходит: следующий — по кнопке «Продолжить» (next).
 // Слова — из своего набора («Мои наборы») или ступени HSK (см. utils/flashcards/source.ts).
 
 import { generateQuiz } from "@/content/flashcards/generator";
@@ -22,6 +24,7 @@ import { resolveFlashcardSource } from "@/utils/flashcards/source";
 import { finishTraining, getAccuracy } from "@/utils/finishTraining";
 import { buildReadingExamQuestion } from "@/utils/readingExam";
 import { readWordLevel } from "@/utils/wordLevel";
+import { getThemeMates } from "@/utils/wordThemes";
 import { createWordChangeTracker } from "@/utils/wordChanges";
 import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,6 +48,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
 
   const session = useQuizSession<QuizQuestion, string>({
     sessionKey: setId,
+    autoAdvance: false,
 
     buildQuestions: () => {
       wordChanges.reset();
@@ -62,6 +66,7 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       return generateQuiz(words, {
         extraPool: allWords,
         translate,
+        related: getThemeMates,
         reverse: (word: Word) =>
           readWordLevel(word.vocabularyId, "reading") > 0 &&
           Math.random() < REVERSE_SHARE
@@ -115,6 +120,8 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
     selected: session.selected,
     isAnswered: session.isAnswered,
     progressPercent: session.progressPercent,
+    isLast: session.currentIndex >= session.totalQuestions - 1,
     handleSelect: session.select,
+    next: session.next,
   };
 }

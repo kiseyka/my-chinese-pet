@@ -4,7 +4,8 @@
 // из похожих (сетка 2×2). Пиньинь вариантов до ответа скрыт — иначе вопрос
 // решался бы по пиньиню, а не по иероглифу. После ответа у верного и выбранного
 // варианта появляется пиньинь (место под него зарезервировано: ничего не прыгает)
-// и звучит верный иероглиф.
+// и звучит верный иероглиф. После ответа тап по любому варианту озвучивает его
+// (до ответа нельзя: по звуку вопрос решался бы так же, как по пиньиню).
 
 import { getOptionState, type OptionState } from "@/components/game/AnswerOption";
 import { Hanzi } from "@/components/ui/Hanzi";
@@ -43,7 +44,7 @@ export function ReverseQuestion({
   onSelect,
 }: ReverseQuestionProps) {
   const { t } = useTranslation(["sets"]);
-  const { speak } = useSpeakHanzi();
+  const { speak, speakForced } = useSpeakHanzi();
 
   // После ответа — озвучить верный иероглиф
   const correct = options.find((o) => o.vocabularyId === correctId);
@@ -84,12 +85,16 @@ export function ReverseQuestion({
           return (
             <Pressable
               key={option.vocabularyId}
-              onPress={() => onSelect(option.vocabularyId)}
-              disabled={isAnswered}
+              onPress={() =>
+                isAnswered
+                  ? speakForced(option.hanzi)
+                  : onSelect(option.vocabularyId)
+              }
               className={`h-28 items-center justify-center gap-1 rounded-2xl border-2 px-2 ${CELL_STYLES[state]}`}
               style={{ width: "48%" }}
               accessibilityRole="button"
               accessibilityLabel={option.hanzi}
+              accessibilityHint={isAnswered ? "Послушать" : undefined}
             >
               <Hanzi
                 size={Array.from(option.hanzi).length > 2 ? 32 : 44}

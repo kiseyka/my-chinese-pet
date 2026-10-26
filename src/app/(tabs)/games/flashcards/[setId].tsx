@@ -7,6 +7,8 @@
 //   по умолчанию — выбор перевода (даёт точки чтения): вопрос прямой
 //     (иероглиф → перевод) или обратный (перевод → иероглиф из похожих,
 //     ReverseQuestion; только у слов, где уже есть точка перевода);
+//     после ответа следующий вопрос — по кнопке «Продолжить» внизу экрана;
+//     в обратном вопросе глаза пиньиня в шапке нет (пиньинь там до ответа скрыт);
 //   mode=self — самопроверка «Знаю / Сомневаюсь / Не знаю» (без точек).
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
@@ -26,7 +28,7 @@ import { useWordProgressStore } from "@/store/wordProgressStore";
 import type { FlashcardSource } from "@/utils/flashcards/source";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState, type ReactNode } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 export default function FlashcardTrainingScreen() {
   const { setId, mode } = useLocalSearchParams<{
@@ -52,7 +54,9 @@ function ChoiceTraining({ setId }: { setId: string }) {
     selected,
     isAnswered,
     progressPercent,
+    isLast,
     handleSelect,
+    next,
   } = useFlashcardGame({ setId });
 
   // Новое слово — ни одного ответа по переводу на момент показа вопроса.
@@ -88,9 +92,18 @@ function ChoiceTraining({ setId }: { setId: string }) {
     );
   }
 
+  // Кнопка всегда на месте (до ответа невидима): после ответа экран не прыгает
+  const continueButton = (
+    <ContinueButton visible={isAnswered} isLast={isLast} onPress={next} />
+  );
+
   if (currentQuestion.direction === "reverse" && currentQuestion.optionWords) {
     return (
-      <TrainingFrame progress={progressPercent}>
+      <TrainingFrame
+        progress={progressPercent}
+        showPinyinToggle={false}
+        footer={continueButton}
+      >
         <ReverseQuestion
           key={currentQuestion.id}
           translation={currentQuestion.translation}
@@ -105,7 +118,7 @@ function ChoiceTraining({ setId }: { setId: string }) {
   }
 
   return (
-    <TrainingFrame progress={progressPercent}>
+    <TrainingFrame progress={progressPercent} footer={continueButton}>
       <FlashcardQuestion
         hanzi={currentQuestion.hanzi}
         pinyin={currentQuestion.pinyin}
@@ -162,12 +175,19 @@ function SelfCheckTraining({ setId }: { setId: string }) {
 
 // ── Общее ────────────────────────────────────────────────────────────────────
 
-/** Экран тренировки: шкала прогресса, выход с подтверждением. */
+/**
+ * Экран тренировки: шкала прогресса, выход с подтверждением.
+ * footer — прижат к низу экрана (кнопка «Продолжить»).
+ */
 function TrainingFrame({
   progress,
+  showPinyinToggle = true,
+  footer,
   children,
 }: {
   progress: number;
+  showPinyinToggle?: boolean;
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -188,11 +208,44 @@ function TrainingFrame({
 
       <GameHeader
         progress={progress}
+        showPinyin={showPinyinToggle}
         onExit={() => setIsExitModalVisible(true)}
       />
 
-      {children}
+      <View className="flex-1">{children}</View>
+      {footer}
     </Screen>
+  );
+}
+
+/** «Продолжить» после ответа. До ответа занимает место, но не видна и не нажимается. */
+function ContinueButton({
+  visible,
+  isLast,
+  onPress,
+}: {
+  visible: boolean;
+  isLast: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <View
+      className="pb-2 pt-3"
+      style={{ opacity: visible ? 1 : 0 }}
+      pointerEvents={visible ? "auto" : "none"}
+    >
+      <Pressable
+        onPress={onPress}
+        disabled={!visible}
+        className="min-h-14 items-center justify-center rounded-2xl bg-primary px-5 active:opacity-80"
+        accessibilityRole="button"
+        accessibilityElementsHidden={!visible}
+      >
+        <Text className="font-nunitoBold text-body text-white">
+          {isLast ? "Завершить" : "Продолжить"}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 

@@ -27,6 +27,11 @@ interface GenerateQuizOptions {
    * тогда вопрос прямой. Решает, когда спрашивать наоборот, вызывающий.
    */
   reverse?: (word: Word) => Word[] | null;
+  /**
+   * Слова, близкие по смыслу (например, той же темы): из них неверные варианты
+   * берутся в первую очередь, остальное добирается как обычно.
+   */
+  related?: (word: Word) => Word[];
 }
 
 export function generateQuiz(
@@ -35,6 +40,7 @@ export function generateQuiz(
     extraPool = [],
     translate = (key) => key,
     reverse,
+    related,
   }: GenerateQuizOptions = {},
 ): QuizQuestion[] {
   if (words.length < 4) {
@@ -84,8 +90,12 @@ export function generateQuiz(
     const seenTexts = new Set([correctText]);
     const wrongAnswers: string[] = [];
 
-    // В маленьком наборе варианты перемешаны с базой, в большом — только свои
-    const candidates = useExtra ? shuffle([...fromSet, ...fromExtra]) : fromSet;
+    // Сначала близкие по смыслу, потом: в маленьком наборе — вперемешку с базой,
+    // в большом — только свои
+    const candidates = [
+      ...shuffle(related?.(word) ?? []),
+      ...(useExtra ? shuffle([...fromSet, ...fromExtra]) : fromSet),
+    ];
 
     for (const other of candidates) {
       if (wrongAnswers.length === 3) break;
