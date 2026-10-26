@@ -34,7 +34,7 @@ import {
   type PathSkill,
 } from "@/components/path/PathNode";
 import { ScrollingBackground } from "@/components/path/ScrollingBackground";
-import { Screen } from "@/components/layout/Screen";
+import { Screen, SCREEN_TOP_GAP } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Title } from "@/components/ui/Title";
@@ -312,7 +312,9 @@ export default function PathScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScrollingBackground scrollY={scrollY} />
-      <HeaderFade height={insets.top + HEADER_HEIGHT + HEADER_FADE} />
+      <HeaderFade
+        height={insets.top + SCREEN_TOP_GAP + HEADER_HEIGHT + HEADER_FADE}
+      />
       <Screen>
         <View className="flex-row items-center justify-between">
           <View style={{ width: HEADER_SIDE }} className="items-start">
