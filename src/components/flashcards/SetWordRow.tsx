@@ -46,7 +46,18 @@ interface SetWordRowProps {
   trailing?: ReactNode;
   /** Компактная строка (экран итогов). */
   compact?: boolean;
+  /**
+   * Для "open" с trailing: вид плашки, как у ячейки в «Словаре» —
+   * изучено (тёплый фон) или в повторении (зелёная рамка).
+   */
+  tone?: "plain" | "learned" | "review";
 }
+
+const TONE_CLASSES = {
+  plain: "border-transparent bg-surface",
+  learned: "border-transparent bg-learned",
+  review: "border-primary bg-surface",
+};
 
 /** Ширина колонки с иероглифами (w-28) и высота строки: одна для всех слов. */
 const SIZES = {
@@ -74,6 +85,7 @@ export const SetWordRow = memo(function SetWordRow({
   onOpenWord,
   trailing,
   compact = false,
+  tone = "plain",
 }: SetWordRowProps) {
   const { t } = useTranslation();
   const size = compact ? SIZES.compact : SIZES.normal;
@@ -148,7 +160,7 @@ export const SetWordRow = memo(function SetWordRow({
     if (trailing) {
       return (
         <View
-          className="flex-row items-center rounded-xl bg-surface pr-2"
+          className={`flex-row items-center rounded-xl border pr-2 ${TONE_CLASSES[tone]}`}
           style={{ height: ROW_HEIGHT }}
         >
           <Pressable
