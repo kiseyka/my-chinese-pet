@@ -15,6 +15,7 @@
 // раз. (Раньше счётчик заходов менялся в useFocusEffect уже после первого рендера —
 // игра и Rive-панда собирались дважды, и страница открывалась с задержкой.)
 
+import { SCREEN_TOP_GAP } from "@/components/layout/Screen";
 import {
   PandaMoodContext,
   type PandaMood,
@@ -76,7 +77,7 @@ function PandaTalk({ game }: { game: PageGame }) {
   return (
     <PandaMoodContext.Provider value={mood}>
       {/* Один фон на всю страницу: панда стоит прямо на нём (у артборда фон прозрачный) */}
-      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top + SCREEN_TOP_GAP }}>
         <View>
           <PandaTalkStage waiting={waiting} reaction={reaction} />
           {/* Стрелка «назад» — как везде в приложении, без подложки */}
