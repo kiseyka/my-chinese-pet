@@ -3,11 +3,13 @@
 // Экран этапа пути (id = «1:0»):
 //   - шапка в один ряд и закреплена: назад, кружок с иероглифом этапа,
 //     «HSK 1 · этап 3 · пройден / освоен» и название;
-//   - дорожки по порядку (перевод, письмо): «начато / пройден / освоен» и своя
-//     кнопка «Тренировать» — можно сразу писать, минуя перевод;
-//   - «Продолжить» — в первую непройденную дорожку (её строка выделена рамкой);
-//     освоенная дорожка (все слова на 3 точках) получает зелёную плашку «Освоено»,
-//     а её кнопка зовётся «Повторить»;
+//   - дорожки по порядку (перевод, письмо): «начато / пройден / освоен»; строки —
+//     переключатель: выбранная в рамке, кнопка под ними запускает её. Можно сразу
+//     писать, минуя перевод;
+//   - по умолчанию выбрана дорожка, куда советует «Продолжить»: первая непройденная
+//     (если пройдены обе — первая неосвоенная). Выбрал другую — кнопка зовётся
+//     «Тренировать» (у освоенной — «Повторить»). После тренировки снова совет;
+//     освоенная дорожка (все слова на 3 точках) получает зелёную плашку «Освоено»;
 //   - этап освоен целиком — галочка на кружке, а вместо «Продолжить» — «Повторить этап»:
 //     он запускает навык, который тренировали меньше (по числу ответов);
 //   - список слов этапа (PathWordList): иероглиф, пиньинь, перевод, справа точки
@@ -31,7 +33,7 @@ import {
   type TrackId,
   type TrackProgress,
 } from "@/utils/path/stages";
-import { useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
@@ -50,6 +52,13 @@ export default function PathStageScreen() {
   const stage = findPathStage(id ?? "");
   const { progress, flashcardWords, startTraining } = usePath();
   const [opened, setOpened] = useState<Word | null>(null);
+  // Дорожка, выбранная тапом по строке (undefined — как советует «Продолжить»)
+  const [picked, setPicked] = useState<TrackId | undefined>();
+  useFocusEffect(
+    useCallback(() => {
+      setPicked(undefined);
+    }, []),
+  );
 
   const item = stage ? progress.stages[stage.index] : undefined;
 
@@ -91,6 +100,23 @@ export default function PathStageScreen() {
   const repeatTrack = nextTrack
     ? undefined
     : [...item.tracks].sort((a, b) => answersOf(a.id) - answersOf(b.id))[0]?.id;
+
+  // Выбранная дорожка: по умолчанию — куда советует «Продолжить» (или «Повторить этап»),
+  // тап по строке выбирает другую. Выбор пользователя живёт, пока он на экране:
+  // после тренировки (возвращение на экран) снова совет по умолчанию
+  const suggested = nextTrack ?? repeatTrack;
+  const selectedTrack =
+    picked && item.tracks.some((t) => t.id === picked) ? picked : suggested;
+  const selected = item.tracks.find((t) => t.id === selectedTrack);
+  const mainLabel = !selected
+    ? ""
+    : selected.id === suggested
+      ? nextTrack
+        ? "Продолжить"
+        : "Повторить этап"
+      : selected.mastered
+        ? "Повторить"
+        : "Тренировать";
   const stageNumber =
     progress.stages.filter(
       (s) => s.stage.level === stage.level && s.stage.index <= stage.index,
@@ -142,39 +168,25 @@ export default function PathStageScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 16, gap: 12 }}
       >
-        {item.tracks.map((track) => (
-          <TrackRow
-            key={track.id}
-            track={track}
-            highlighted={track.id === nextTrack}
-            onStart={() => startTraining(stage, track.id, returnTo as any)}
-          />
-        ))}
+        <View className="gap-2" accessibilityRole="radiogroup">
+          {item.tracks.map((track) => (
+            <TrackRow
+              key={track.id}
+              track={track}
+              selected={track.id === selectedTrack}
+              onSelect={() => setPicked(track.id)}
+            />
+          ))}
+        </View>
 
-        {nextTrack && (
+        {selected && (
           <Pressable
-            onPress={() => startTraining(stage, nextTrack, returnTo as any)}
+            onPress={() => startTraining(stage, selected.id, returnTo as any)}
             className="items-center rounded-2xl bg-primary py-3.5 active:opacity-80"
             accessibilityRole="button"
           >
             <Text className="font-nunitoBold text-body text-white">
-              Продолжить ·{" "}
-              {item.tracks.find((t) => t.id === nextTrack)?.title.toLowerCase()}
-            </Text>
-          </Pressable>
-        )}
-
-        {repeatTrack && (
-          <Pressable
-            onPress={() => startTraining(stage, repeatTrack, returnTo as any)}
-            className="items-center rounded-2xl bg-primary py-3.5 active:opacity-80"
-            accessibilityRole="button"
-          >
-            <Text className="font-nunitoBold text-body text-white">
-              Повторить этап ·{" "}
-              {item.tracks
-                .find((t) => t.id === repeatTrack)
-                ?.title.toLowerCase()}
+              {mainLabel} · {selected.title.toLowerCase()}
             </Text>
           </Pressable>
         )}
@@ -195,12 +207,13 @@ export default function PathStageScreen() {
 
 function TrackRow({
   track,
-  highlighted,
-  onStart,
+  selected,
+  onSelect,
 }: {
   track: TrackProgress;
-  highlighted: boolean;
-  onStart: () => void;
+  /** Выбрана: рамка, её запускает кнопка под дорожками. */
+  selected: boolean;
+  onSelect: () => void;
 }) {
   const Icon = track.id === "reading" ? LanguagesIcon : PencilIcon;
   const status = track.mastered
@@ -210,10 +223,14 @@ function TrackRow({
       : `начато ${track.started} из ${track.total}`;
 
   return (
-    <View
-      className={`flex-row items-center gap-3 rounded-2xl bg-surface px-4 py-3 ${
-        highlighted ? "border-2 border-primary" : "border-2 border-transparent"
+    <Pressable
+      onPress={onSelect}
+      className={`flex-row items-center gap-3 rounded-2xl border-2 bg-surface px-4 py-3 active:opacity-80 ${
+        selected ? "border-primary" : "border-transparent"
       }`}
+      accessibilityRole="radio"
+      accessibilityState={{ selected, checked: selected }}
+      accessibilityLabel={`${track.title}, ${status}`}
     >
       <View
         className={`h-10 w-10 items-center justify-center rounded-xl ${
@@ -247,16 +264,14 @@ function TrackRow({
           {status}
         </Text>
       </View>
-      <Pressable
-        onPress={onStart}
-        className="min-h-10 justify-center rounded-full border border-primary px-4 active:opacity-70"
-        accessibilityRole="button"
-        accessibilityLabel={`${track.mastered ? "Повторить" : "Тренировать"}: ${track.title}`}
+      {/* Кружок выбора, как у переключателя */}
+      <View
+        className={`h-6 w-6 items-center justify-center rounded-full border-2 ${
+          selected ? "border-primary" : "border-border"
+        }`}
       >
-        <Text className="font-nunitoBold text-small text-primary">
-          {track.mastered ? "Повторить" : "Тренировать"}
-        </Text>
-      </Pressable>
-    </View>
+        {selected && <View className="h-3 w-3 rounded-full bg-primary" />}
+      </View>
+    </Pressable>
   );
 }
