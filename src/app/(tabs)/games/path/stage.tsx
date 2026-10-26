@@ -1,7 +1,8 @@
 // app/(tabs)/games/path/stage.tsx
 //
 // Экран этапа пути (id = «1:0»):
-//   - шапка: назад, иероглиф этапа, «HSK 1 · этап 3», название;
+//   - шапка в один ряд и закреплена: назад, кружок с иероглифом этапа,
+//     «HSK 1 · этап 3 · пройден / освоен» и название;
 //   - дорожки по порядку (перевод, письмо): «начато / пройден / освоен» и своя
 //     кнопка «Тренировать» — можно сразу писать, минуя перевод;
 //   - «Продолжить» — в первую непройденную дорожку (её строка выделена рамкой);
@@ -99,52 +100,48 @@ export default function PathStageScreen() {
     <Screen>
       <WordSheet word={opened} onClose={() => setOpened(null)} />
 
-      <View className="flex-row items-center">
+      {/* Шапка в один ряд: назад, кружок этапа, «HSK 1 · этап 3» и название.
+          Закреплена — дорожки и список слов прокручиваются под ней */}
+      <View className="flex-row items-center gap-3 pb-2">
         <BackButton href={backHref} />
+        <View
+          // Как на карте: зелёной заливки нет (на карте ею отмечен только текущий этап)
+          className="items-center justify-center rounded-full border-[3px] border-primary bg-surface"
+          style={{ width: 56, height: 56 }}
+        >
+          <Hanzi size={28} className="text-text" maxFontSizeMultiplier={1.2}>
+            {stage.glyph}
+          </Hanzi>
+          {item.mastered && (
+            <View
+              className="absolute rounded-full bg-background"
+              style={{ right: -6, top: -6 }}
+            >
+              <CheckIcon width={22} height={22} color={colors.primary} />
+            </View>
+          )}
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text
+            numberOfLines={1}
+            className="font-nunito text-caption text-textSecondary"
+          >
+            HSK {stage.level} · этап {stageNumber}
+            {item.mastered ? " · освоен" : item.passed ? " · пройден" : ""}
+          </Text>
+          <Text
+            numberOfLines={2}
+            className="font-nunitoBold text-lead text-text"
+          >
+            {stage.title.replace(/ · /g, "\u00A0·\u00A0")}
+          </Text>
+        </View>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: 16, gap: 12 }}
+        contentContainerStyle={{ paddingTop: 8, paddingBottom: 16, gap: 12 }}
       >
-        <View className="mb-2 flex-row items-center gap-4">
-          <View
-            // Как на карте: зелёной заливки нет (на карте ею отмечен только текущий этап)
-            className="items-center justify-center rounded-full border-4 border-primary bg-surface"
-            style={{ width: 72, height: 72 }}
-          >
-            <Hanzi
-              size={34}
-              className="text-text"
-              maxFontSizeMultiplier={1.2}
-            >
-              {stage.glyph}
-            </Hanzi>
-            {item.mastered && (
-              <View
-                className="absolute rounded-full bg-background"
-                style={{ right: -6, top: -6 }}
-              >
-                <CheckIcon width={26} height={26} color={colors.primary} />
-              </View>
-            )}
-          </View>
-          <View className="flex-1">
-            <Text className="font-nunito text-caption text-textSecondary">
-              HSK {stage.level} · этап {stageNumber}
-              {item.mastered ? " · освоен" : item.passed ? " · пройден" : ""}
-            </Text>
-            <Text className="font-nunitoBold text-title text-text">
-              {stage.title}
-            </Text>
-            {item.mastered && (
-              <Text className="font-nunitoMedium text-small text-primary">
-                Все слова освоены и в переводе, и в письме
-              </Text>
-            )}
-          </View>
-        </View>
-
         {item.tracks.map((track) => (
           <TrackRow
             key={track.id}
