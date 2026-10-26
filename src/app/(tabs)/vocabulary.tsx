@@ -301,7 +301,7 @@ export default function DictionaryScreen() {
             {learnedWords.length > 0 && (
               <EntryTile
                 icon={
-                  <View className="h-7 w-7 items-center justify-center rounded-lg bg-learned">
+                  <View className="h-7 w-7 items-center justify-center rounded-lg border border-learnedBorder bg-learned">
                     <LearnedIcon width={16} height={16} color={colors.primary} />
                   </View>
                 }

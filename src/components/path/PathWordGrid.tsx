@@ -38,7 +38,7 @@ interface PathWordGridProps {
 const STATUS_CELL: Record<WordStatus, string> = {
   learning: "border-transparent",
   review: "border-primary",
-  learned: "border-transparent bg-learned",
+  learned: "border-learnedBorder bg-learned",
 };
 
 // memo: в «Словаре» сотни сеток — перерисовываются только те, у которых что-то поменялось

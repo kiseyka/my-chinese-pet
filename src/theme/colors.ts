@@ -13,5 +13,6 @@ export const colors = tailwindConfig.theme.extend.colors as {
   accentOlive: string;
   accentBeige: string;
   learned: string;
+  learnedBorder: string;
   progress: { active: string; inactive: string };
 };

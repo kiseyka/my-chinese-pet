@@ -55,7 +55,7 @@ interface SetWordRowProps {
 
 const TONE_CLASSES = {
   plain: "border-transparent bg-surface",
-  learned: "border-transparent bg-learned",
+  learned: "border-learnedBorder bg-learned",
   review: "border-primary bg-surface",
 };
 
