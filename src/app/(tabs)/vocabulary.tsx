@@ -39,13 +39,13 @@ import {
   getDictionaryLevels,
   type DictionaryGroup,
 } from "@/utils/dictionary";
+import { getLearnedWords, statusOf } from "@/utils/learning";
 import { getTrackDots, type TrackId } from "@/utils/path/stages";
 import { searchWords } from "@/utils/searchWords";
 import { pluralWords } from "@/utils/writing/labels";
 import { colors } from "@/theme/colors";
 import {
   findAnyWords,
-  getLearnedIds,
   getReviewIds,
   LEARNED_SOURCE,
   REVIEW_SOURCE,
@@ -149,23 +149,18 @@ export default function DictionaryScreen() {
 
   // «Повторение» и «Изученное» — одни на все навыки
   const review = useWordProgressStore((s) => s.review);
-  const learned = useWordProgressStore((s) => s.learned);
   const reviewWords = useMemo(
     () => findAnyWords(getReviewIds(review)),
     [review],
   );
+  // «Изученное» вычисляется: все точки и не в «Повторении»
   const learnedWords = useMemo(
-    () => findAnyWords(getLearnedIds(learned)),
-    [learned],
+    () => getLearnedWords(flashcardWords, review),
+    [flashcardWords, review],
   );
   const getStatus = useCallback<GetStatus>(
-    (word) =>
-      review[word.vocabularyId]
-        ? "review"
-        : learned[word.vocabularyId]
-          ? "learned"
-          : "learning",
-    [review, learned],
+    (word) => statusOf(word.vocabularyId, flashcardWords, review),
+    [flashcardWords, review],
   );
   // Открытый список; пока панель уезжает, показываем тот, что был открыт
   const [listOpen, setListOpen] = useState<"review" | "learned" | null>(null);

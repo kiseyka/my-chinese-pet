@@ -1,8 +1,9 @@
 // src/components/learning/StatusChanges.tsx
 //
 // Экран итогов: какие слова тренировка перенесла между «Повторением» и «Изученным».
-//   «Перешли в изученные» — набрали все 3 точки, верно ответили на слово из
-//   «Повторения» или «знаю» в самопроверке. Кнопка «В повторение» отменяет.
+//   «Перешли в изученные» — набрали все точки (6, у слова без письма — 3) или,
+//   уже со всеми точками, ушли из «Повторения» после верного ответа или «знаю»
+//   в самопроверке. Кнопка «В повторение» отменяет.
 //   «Вернулись в повторение» — ошибка на изученном слове (в письме — подсказки).
 //   Кнопка «В изученные» отменяет: вдруг просто поспешил.
 // Список снимается один раз при открытии экрана: после отмены слово остаётся
@@ -14,7 +15,7 @@ import type { Word } from "@/content/flashcards/types";
 import { collectStatusChanges } from "@/utils/learning";
 import { findAnyWords } from "@/utils/wordSource";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 interface StatusChangesProps {
   onOpenWord: (word: Word) => void;

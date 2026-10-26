@@ -1,8 +1,9 @@
 // src/components/learning/MoveButton.tsx
 //
-// Кнопка переноса слова между «Изученным» и «Повторением». Что сделает нажатие,
-// зависит от того, где слово сейчас: в «Изученном» — «В повторение», иначе —
-// «В изученные». Ширина фиксирована: смена текста не сдвигает строку.
+// Кнопка на экране итогов у слова, которое перешло в «Изученное» или вернулось
+// в «Повторение»: отменить переход. Такие слова всегда со всеми точками, поэтому
+// «убрать из повторения» = «в изученные». Надпись — что сделает нажатие сейчас.
+// Ширина фиксирована: смена текста не сдвигает строку.
 
 import type { Word } from "@/content/flashcards/types";
 import { useWordProgressStore } from "@/store/wordProgressStore";
@@ -10,24 +11,20 @@ import { Pressable, Text } from "react-native";
 
 export function MoveButton({ word }: { word: Word }) {
   const id = word.vocabularyId;
-  const inLearned = useWordProgressStore((s) => !!s.learned[id]);
-  const addToReview = useWordProgressStore((s) => s.addToReview);
-  const markLearned = useWordProgressStore((s) => s.markLearned);
+  const inReview = useWordProgressStore((s) => !!s.review[id]);
+  const toggleReview = useWordProgressStore((s) => s.toggleReview);
 
-  const label = inLearned ? "В повторение" : "В изученные";
+  const label = inReview ? "В изученные" : "В повторение";
 
   return (
     <Pressable
-      onPress={() => (inLearned ? addToReview([id]) : markLearned([id]))}
+      onPress={() => toggleReview(id)}
       hitSlop={4}
       className="min-h-10 w-32 items-center justify-center rounded-full border border-primary px-2 active:bg-primary/10"
       accessibilityRole="button"
       accessibilityLabel={`${word.hanzi}: ${label.toLowerCase()}`}
     >
-      <Text
-        numberOfLines={1}
-        className="font-nunitoBold text-small text-primary"
-      >
+      <Text numberOfLines={1} className="font-nunitoBold text-small text-primary">
         {label}
       </Text>
     </Pressable>

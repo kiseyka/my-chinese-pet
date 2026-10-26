@@ -2,14 +2,13 @@
 //
 // Сводка для профиля — только из того, что уже хранится:
 //   - слова по навыкам: начато (≥1 точки) и освоено (3 точки);
-//   - «изучено» — слова в «Изученном» (wordProgressStore.learned);
+//   - «изучено» — все точки и не в «Повторении» (utils/learning.ts);
 //   - путь: этапы пройдены / освоены, текущий уровень HSK, разбивка по уровням.
 // Считаем по всем словам словаря, включая «Другие слова».
 
 import type { Word } from "@/content/flashcards/types";
 import { allWords } from "@/content/words/vocabulary";
-import { getWritableIds } from "@/utils/learning";
-import { findAnyWords } from "@/utils/wordSource";
+import { getLearnedWords, getWritableIds } from "@/utils/learning";
 import { getPathProgress, getTrackDots, type TrackId } from "@/utils/path/stages";
 import {
   LEARNED_DOTS,
@@ -60,25 +59,15 @@ function skillStats(
   return { started, learned };
 }
 
-/** Слова из «Изученного»: последние добавленные — первыми. */
-export function getLearnedWords(
-  learned: Record<string, { addedAt: number }>,
-): Word[] {
-  return findAnyWords(
-    Object.entries(learned)
-      .sort(([, a], [, b]) => b.addedAt - a.addedAt)
-      .map(([id]) => id),
-  );
-}
 
 export function getProfileStats(
   progress: ProgressMap,
-  learned: Record<string, { addedAt: number }>,
+  review: Record<string, unknown>,
 ): ProfileStats {
   const writable = getWritableIds();
   const writableWords = allWords.filter((w) => writable.has(w.vocabularyId));
 
-  const fullyLearned = Object.keys(learned).length;
+  const fullyLearned = getLearnedWords(progress, review).length;
 
   const path = getPathProgress(progress);
   const current =

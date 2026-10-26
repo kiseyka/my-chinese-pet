@@ -1,19 +1,26 @@
 // src/utils/learning.ts
 //
-// «Повторение» и «Изученное»: где слово и как оно переходит из списка в список.
-// У слова три состояния: учится → изучено ↔ повторение.
+// «Повторение» и «Изученное».
+// «Изученное» не хранится, а вычисляется: слово изучено, если у него все 3 точки
+// перевода и, если его можно писать, все 3 точки письма (6 точек), и его нет
+// в «Повторении». Значит, у слова три состояния:
+//   учится     — точек ещё не все и слова нет в «Повторении»;
+//   повторение — слово в «Повторении» (сколько бы ни было точек);
+//   изучено    — все точки и не в «Повторении».
+// Убрать слово из «Повторения» откуда угодно: со всеми точками оно станет изученным,
+// без них — просто учится. Положить изученное слово в «Повторение» — и оно вернётся
+// в «Изученное», когда его оттуда уберут.
 //
-// Автопереходы (после каждого ответа, сразу, без ожидания):
-//   - слово только что набрало 3 точки перевода и, если его можно писать,
-//     3 точки письма → «Изученное» (только в этот момент: убранное руками слово
-//     с тремя точками само не вернётся);
-//   - верный ответ на слово из «Повторения» → «Изученное»;
-//   - ошибка на изученном слове (в письме — написано с подсказками) → «Повторение».
-// Самопроверка: «знаю» → «Изученное», «сомневаюсь» и «не знаю» → «Повторение».
+// Автопереходы (после каждого ответа, сразу):
+//   - ошибка на изученном слове (в письме — написано с подсказками) → «Повторение»;
+//   - верный ответ на слово из «Повторения», у которого уже все точки, →
+//     слово уходит из «Повторения» (то есть в «Изученное»);
+//   - самопроверка: «сомневаюсь» и «не знаю» → «Повторение»; «знаю» убирает
+//     из «Повторения» только слово со всеми точками.
+// Слово, набравшее все точки, становится изученным само (если не в «Повторении»).
 //
-// Перед первым переходом за тренировку запоминаем, где слово было
-// (gameStore.statusBefore): экран итогов показывает, что изменилось, и даёт
-// отменить каждый переход.
+// Перед первым ответом на слово за тренировку запоминаем, где оно было
+// (gameStore.statusBefore): экран итогов показывает, что изменилось, и даёт отменить.
 
 import type { Word } from "@/content/flashcards/types";
 import { allWords } from "@/content/words/vocabulary";
@@ -27,6 +34,7 @@ import {
 } from "@/utils/writing/words";
 
 type Skill = "reading" | "writing";
+type ReviewMap = Record<string, unknown>;
 
 let writableCache: Set<string> | null = null;
 let wordsById: Map<string, Word> | null = null;
@@ -47,8 +55,8 @@ function findWord(wordId: string): Word | undefined {
 }
 
 /**
- * У слова все 3 точки: в переводе и, если слово можно писать, в письме.
- * Иероглифы вида «char:么» не слова базы — сами в «Изученное» не попадают.
+ * У слова все точки: 3 в переводе и, если слово можно писать, 3 в письме.
+ * Иероглифы вида «char:么» не слова базы — изученными не бывают.
  */
 export function hasAllDots(wordId: string, progress: ProgressMap): boolean {
   const word = findWord(wordId);
@@ -58,18 +66,41 @@ export function hasAllDots(wordId: string, progress: ProgressMap): boolean {
   return getTrackDots(word, "writing", progress) >= LEARNED_DOTS;
 }
 
-/** Слова базы, у которых все 3 точки (для первого заполнения «Изученного»). */
+/** id слов базы, у которых все точки (в «Повторении» они или нет). */
 export function findWordsWithAllDots(progress: ProgressMap): string[] {
   return allWords
     .map((word) => word.vocabularyId)
     .filter((id) => hasAllDots(id, progress));
 }
 
-export function getWordStatus(wordId: string): WordStatus {
-  const { review, learned } = useWordProgressStore.getState();
+/** Изученные слова: все точки и не в «Повторении». Последние отвеченные — первыми. */
+export function getLearnedWords(
+  progress: ProgressMap,
+  review: ReviewMap,
+): Word[] {
+  return allWords
+    .filter((word) => !review[word.vocabularyId])
+    .filter((word) => hasAllDots(word.vocabularyId, progress))
+    .sort(
+      (a, b) =>
+        (progress[b.vocabularyId]?.lastAnsweredAt ?? 0) -
+        (progress[a.vocabularyId]?.lastAnsweredAt ?? 0),
+    );
+}
+
+/** Где слово: по прогрессу и «Повторению» (можно передать явно — для экранов). */
+export function statusOf(
+  wordId: string,
+  progress: ProgressMap,
+  review: ReviewMap,
+): WordStatus {
   if (review[wordId]) return "review";
-  if (learned[wordId]) return "learned";
-  return "learning";
+  return hasAllDots(wordId, progress) ? "learned" : "learning";
+}
+
+export function getWordStatus(wordId: string): WordStatus {
+  const { flashcardWords, review } = useWordProgressStore.getState();
+  return statusOf(wordId, flashcardWords, review);
 }
 
 function remember(wordId: string) {
@@ -77,48 +108,51 @@ function remember(wordId: string) {
 }
 
 /**
- * Переход по итогу ответа.
- * @param gotAllDots этим ответом слово набрало все 3 точки
- *   (в письме ошибка — это подсказки, точки за них не снимаются и не даются).
+ * Переход по итогу ответа (точки уже начислены). В письме ошибка — это подсказки:
+ * точки за них не снимаются, но изученное слово уходит в «Повторение».
  */
-export function applyAnswerStatus(
-  wordId: string,
-  isCorrect: boolean,
-  gotAllDots = false,
-) {
+export function applyAnswerStatus(wordId: string, isCorrect: boolean) {
   remember(wordId);
   const store = useWordProgressStore.getState();
-  const status = getWordStatus(wordId);
+  const inReview = !!store.review[wordId];
+  const allDots = hasAllDots(wordId, store.flashcardWords);
 
-  if (isCorrect && status === "review") {
-    store.markLearned([wordId]);
-  } else if (!isCorrect && status === "learned") {
+  if (!isCorrect && !inReview && allDots) {
     store.addToReview([wordId]);
-  } else if (status === "learning" && gotAllDots) {
-    store.markLearned([wordId]);
+  } else if (isCorrect && inReview && allDots) {
+    store.removeFromReview(wordId);
   }
 }
 
 /** Ответ на слово: точка навыка и переход между списками. */
 export function answerWord(wordId: string, skill: Skill, isCorrect: boolean) {
-  // Статус запоминаем до точек: иначе третья точка уже бы его поменяла
+  // Состояние запоминаем до точек: иначе последняя точка уже сделала бы слово изученным
   remember(wordId);
-  const store = useWordProgressStore.getState();
-  const hadAllDots = hasAllDots(wordId, store.flashcardWords);
-  store.updateWordProgress({ wordId, skill, isCorrect });
-  const hasAllNow = hasAllDots(
-    wordId,
-    useWordProgressStore.getState().flashcardWords,
-  );
-  applyAnswerStatus(wordId, isCorrect, !hadAllDots && hasAllNow);
+  useWordProgressStore
+    .getState()
+    .updateWordProgress({ wordId, skill, isCorrect });
+  applyAnswerStatus(wordId, isCorrect);
 }
 
-/** Самопроверка: «знаю» → «Изученное», остальное → «Повторение». */
-export function applySelfCheck(results: { vocabularyId: string; know: boolean }[]) {
-  const store = useWordProgressStore.getState();
+/**
+ * Самопроверка: «сомневаюсь» и «не знаю» → «Повторение»; «знаю» убирает из
+ * «Повторения» только слово со всеми точками (точек самопроверка не даёт).
+ */
+export function applySelfCheck(
+  results: { vocabularyId: string; know: boolean }[],
+) {
   for (const { vocabularyId } of results) remember(vocabularyId);
-  store.markLearned(results.filter((r) => r.know).map((r) => r.vocabularyId));
+  const store = useWordProgressStore.getState();
   store.addToReview(results.filter((r) => !r.know).map((r) => r.vocabularyId));
+  for (const { vocabularyId, know } of results) {
+    if (
+      know &&
+      store.review[vocabularyId] &&
+      hasAllDots(vocabularyId, store.flashcardWords)
+    ) {
+      useWordProgressStore.getState().removeFromReview(vocabularyId);
+    }
+  }
 }
 
 export interface StatusChange {
@@ -131,6 +165,10 @@ export interface StatusChange {
 export function collectStatusChanges(): StatusChange[] {
   const { statusBefore } = useGameStore.getState();
   return Object.entries(statusBefore)
-    .map(([wordId, before]) => ({ wordId, before, after: getWordStatus(wordId) }))
+    .map(([wordId, before]) => ({
+      wordId,
+      before,
+      after: getWordStatus(wordId),
+    }))
     .filter((change) => change.before !== change.after);
 }
