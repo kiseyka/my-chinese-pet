@@ -10,8 +10,6 @@ export const colors = tailwindConfig.theme.extend.colors as {
   textSecondary: string;
   border: string;
   error: string;
-  seal: string;
-  gold: string;
   accentOlive: string;
   accentBeige: string;
   progress: { active: string; inactive: string };

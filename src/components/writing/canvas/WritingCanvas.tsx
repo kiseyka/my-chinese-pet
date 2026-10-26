@@ -1,7 +1,7 @@
 // src/components/writing/canvas/WritingCanvas.tsx
 //
 // Холст для письма пальцем: контуры-подсказки, принятые черты и текущая линия.
-// Проверку черт делает хук урока или экзамена через onStroke.
+// Проверку черт делает хук урока через onStroke.
 
 import { HANZI_BOX } from "@/content/writing/hanzi";
 import type { Point } from "@/utils/writing/strokeCheck";

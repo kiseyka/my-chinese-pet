@@ -1,15 +1,14 @@
 // src/utils/profile/stats.ts
 //
 // Сводка для профиля — только из того, что уже хранится:
-//   - слова по навыкам: начато (≥1 точки) и освоено (3 точки), сданные экзамены;
-//   - «полностью изучено» — сданы все экзамены слова: перевод и, если слово
-//     можно писать, письмо (то же правило, что у золотистой ячейки в «Словаре»);
+//   - слова по навыкам: начато (≥1 точки) и освоено (3 точки);
+//   - «изучено» — по 3 точки в переводе и, если слово можно писать, в письме
+//     (до появления списка «Изученное» считаем так);
 //   - путь: этапы пройдены / освоены, текущий уровень HSK, разбивка по уровням.
 // Считаем по всем словам словаря, включая «Другие слова».
 
 import type { Word } from "@/content/flashcards/types";
 import { allWords } from "@/content/words/vocabulary";
-import type { WritingExamEntry } from "@/store/wordProgressStore";
 import { getPathProgress, getTrackDots, type TrackId } from "@/utils/path/stages";
 import {
   getWritableWords,
@@ -17,15 +16,11 @@ import {
   type ProgressMap,
 } from "@/utils/writing/words";
 
-type ExamMap = Record<string, WritingExamEntry>;
-
 export interface SkillStats {
   /** Слов с хотя бы 1 точкой. */
   started: number;
   /** Слов с 3 точками. */
   learned: number;
-  /** Сданных экзаменов. */
-  examsPassed: number;
 }
 
 export interface LevelStats {
@@ -38,7 +33,7 @@ export interface LevelStats {
 export interface ProfileStats {
   reading: SkillStats;
   writing: SkillStats;
-  /** Слова, у которых сданы все экзамены. */
+  /** Изученные слова: 3 точки во всех навыках слова. */
   fullyLearned: number;
   stagesTotal: number;
   stagesPassed: number;
@@ -65,53 +60,44 @@ function skillStats(
   words: Word[],
   track: TrackId,
   progress: ProgressMap,
-  exams: ExamMap,
 ): SkillStats {
   let started = 0;
   let learned = 0;
-  let examsPassed = 0;
   for (const word of words) {
     const dots = getTrackDots(word, track, progress);
     if (dots > 0) started += 1;
     if (dots >= LEARNED_DOTS) learned += 1;
-    if (exams[word.vocabularyId]?.passedAt) examsPassed += 1;
   }
-  return { started, learned, examsPassed };
+  return { started, learned };
 }
 
 /**
- * Полностью изученные слова: сдан экзамен по переводу и, если слово можно
- * писать, по письму. Последние сданные — первыми.
+ * Изученные слова: 3 точки перевода и, если слово можно писать, 3 точки письма.
+ * Последние отвеченные — первыми.
  */
-export function getFullyLearnedWords(
-  readingExams: ExamMap,
-  writingExams: ExamMap,
-): Word[] {
+export function getFullyLearnedWords(progress: ProgressMap): Word[] {
   const writable = writableIds();
-  const learnedAt = (word: Word): number | null => {
-    const reading = readingExams[word.vocabularyId]?.passedAt;
-    if (!reading) return null;
-    if (!writable.has(word.vocabularyId)) return reading;
-    const writing = writingExams[word.vocabularyId]?.passedAt;
-    return writing ? Math.max(reading, writing) : null;
-  };
-
   return allWords
-    .map((word) => ({ word, at: learnedAt(word) }))
-    .filter((item): item is { word: Word; at: number } => item.at !== null)
+    .filter((word) => {
+      if (getTrackDots(word, "reading", progress) < LEARNED_DOTS) return false;
+      if (!writable.has(word.vocabularyId)) return true;
+      return getTrackDots(word, "writing", progress) >= LEARNED_DOTS;
+    })
+    .map((word) => ({
+      word,
+      at: progress[word.vocabularyId]?.lastAnsweredAt ?? 0,
+    }))
     .sort((a, b) => b.at - a.at)
     .map((item) => item.word);
 }
 
 export function getProfileStats(
   progress: ProgressMap,
-  readingExams: ExamMap,
-  writingExams: ExamMap,
 ): ProfileStats {
   const writable = writableIds();
   const writableWords = allWords.filter((w) => writable.has(w.vocabularyId));
 
-  const fullyLearned = getFullyLearnedWords(readingExams, writingExams).length;
+  const fullyLearned = getFullyLearnedWords(progress).length;
 
   const path = getPathProgress(progress);
   const current =
@@ -134,8 +120,8 @@ export function getProfileStats(
   const levelList = [...levels.values()].sort((a, b) => a.level - b.level);
 
   return {
-    reading: skillStats(allWords, "reading", progress, readingExams),
-    writing: skillStats(writableWords, "writing", progress, writingExams),
+    reading: skillStats(allWords, "reading", progress),
+    writing: skillStats(writableWords, "writing", progress),
     fullyLearned,
     stagesTotal: path.stages.length,
     stagesPassed: levelList.reduce((sum, l) => sum + l.stagesPassed, 0),

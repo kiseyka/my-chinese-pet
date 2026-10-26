@@ -20,10 +20,3 @@ export function pluralDays(n: number) {
   return "дней";
 }
 
-/** «через 9 ч», «через 40 мин» — сколько ждать до экзамена. */
-export function formatExamWait(availableAt: number, now: number): string {
-  const ms = Math.max(0, availableAt - now);
-  const minutes = Math.ceil(ms / 60000);
-  if (minutes < 60) return `через ${Math.max(1, minutes)} мин`;
-  return `через ${Math.ceil(minutes / 60)} ч`;
-}

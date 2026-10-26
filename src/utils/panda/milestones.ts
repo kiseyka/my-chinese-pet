@@ -2,9 +2,9 @@
 //
 // Вехи обучения, на которые реагирует панда:
 //   - этап пути пройден (у всех слов ≥1 точки во всех дорожках);
-//   - этап освоен (все слова на 3 точках) — печать 印;
+//   - этап освоен (все слова на 3 точках) — галочка;
 //   - раздел HSK пройден целиком (все его этапы пройдены);
-//   - слово изучено полностью (сданы все его экзамены).
+//   - слово изучено (3 точки во всех навыках).
 //
 // Как узнать, что веха новая: панда помнит «снимок» — что уже было отмечено
 // (pandaStore.milestones). После тренировки сравниваем текущее состояние со снимком,
@@ -38,10 +38,9 @@ export function takeMilestoneSnapshot(): MilestoneSnapshot & {
   stages: ReturnType<typeof getPathProgress>;
   learned: Word[];
 } {
-  const { flashcardWords, readingExams, writingExams } =
-    useWordProgressStore.getState();
+  const { flashcardWords } = useWordProgressStore.getState();
   const path = getPathProgress(flashcardWords);
-  const learned = getFullyLearnedWords(readingExams, writingExams);
+  const learned = getFullyLearnedWords(flashcardWords);
 
   const levels = new Map<number, boolean>();
   for (const { stage, passed } of path.stages) {
