@@ -2,8 +2,7 @@
 //
 // Итоги тренировки карточками: два раздела.
 //   «Ошибки» — слова, на которые хоть раз ответили неверно. Если ошибок нет —
-//   вместо раздела похвала. В шапке раздела — «Все в повторение» (кнопка
-//   не меняет размер и не сдвигает экран: только текст и вид).
+//   вместо раздела похвала.
 //   «Верно» — остальные слова.
 // У каждого слова: иероглиф, точки, пиньинь, перевод и две кнопки справа
 // (ResultActions): закладка — «Повторение», значок наборов — панель слова.
@@ -11,16 +10,13 @@
 // «Перешли в изученные» и «Вернулись в повторение»; слово может быть и там, и здесь.
 // Тап по самому слову открывает ту же панель.
 //
-// Самопроверка (selfCheck): разделы «Не знаю», «Сомневаюсь» (у обоих —
-// «Все в повторение») и «Знаю».
+// Самопроверка (selfCheck): разделы «Не знаю», «Сомневаюсь» и «Знаю».
 
-import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import type { WordLevel } from "@/components/ui/LevelDots";
 import type { Word } from "@/content/flashcards/types";
 import type { FlashcardQuestionResult } from "@/store/gameStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
-import { colors } from "@/theme/colors";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { CollapsibleSection } from "@/components/results/CollapsibleSection";
 import { ResultActions } from "@/components/results/ResultActions";
 import { SetWordRow } from "./SetWordRow";
@@ -50,8 +46,6 @@ export function FlashcardResultsList({
 }: FlashcardResultsListProps) {
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
   const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
-  const review = useWordProgressStore((s) => s.review);
-  const addToReview = useWordProgressStore((s) => s.addToReview);
 
   // Одно слово — одна строка; ошибка, если хоть раз ответили неверно
   const byId = new Map<string, FlashcardQuestionResult>();
@@ -65,9 +59,6 @@ export function FlashcardResultsList({
   const mistakes = unique.filter((item) => !item.isCorrect);
   const correct = unique.filter((item) => item.isCorrect);
 
-  /** Слова раздела, которых ещё нет в «Повторении». */
-  const notInReview = (items: FlashcardQuestionResult[]) =>
-    items.map((item) => item.vocabularyId).filter((id) => !review[id]);
 
   const renderRow = (item: FlashcardQuestionResult) => {
     const level = getWordLevel(
@@ -87,39 +78,6 @@ export function FlashcardResultsList({
         compact
         trailing={<ResultActions word={toWord(item)} onOpenWord={onOpenWord} />}
       />
-    );
-  };
-
-  /** Раздел с «Все в повторение» в заголовке. */
-  const reviewSection = (title: string, items: FlashcardQuestionResult[]) => {
-    const toAdd = notInReview(items);
-
-    return (
-      <CollapsibleSection
-        title={title}
-        count={items.length}
-        action={
-          // Ширина фиксирована: смена текста не сдвигает ничего вокруг
-          <Pressable
-            onPress={() => addToReview(toAdd)}
-            disabled={toAdd.length === 0}
-            className={`min-h-10 w-44 flex-row items-center justify-center gap-1.5 rounded-full px-3 ${
-              toAdd.length > 0
-                ? "border border-primary active:bg-primary/10"
-                : "border border-transparent bg-primary/15"
-            }`}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: toAdd.length === 0 }}
-          >
-            <ReviewIcon width={16} height={16} color={colors.primary} />
-            <Text className="font-nunitoBold text-small text-primary">
-              {toAdd.length > 0 ? "Все в повторение" : "Все в повторении"}
-            </Text>
-          </Pressable>
-        }
-      >
-        {items.map(renderRow)}
-      </CollapsibleSection>
     );
   };
 
@@ -155,8 +113,8 @@ export function FlashcardResultsList({
         {dont.length === 0 && unsure.length === 0
           ? praise("Всё знакомо!", "Ни одного сомнения.")
           : null}
-        {dont.length > 0 && reviewSection("Не знаю", dont)}
-        {unsure.length > 0 && reviewSection("Сомневаюсь", unsure)}
+        {dont.length > 0 && plainSection("Не знаю", dont)}
+        {unsure.length > 0 && plainSection("Сомневаюсь", unsure)}
         {plainSection("Знаю", know)}
         {footer}
       </View>
@@ -167,7 +125,7 @@ export function FlashcardResultsList({
     <View className="gap-4">
       {/* Ошибки или похвала */}
       {mistakes.length > 0
-        ? reviewSection("Ошибки", mistakes)
+        ? plainSection("Ошибки", mistakes)
         : praise("Без ошибок!", "Все слова узнаны верно.")}
 
       {/* Верно */}

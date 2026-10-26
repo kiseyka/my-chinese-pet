@@ -2,7 +2,7 @@
 //
 // Итоги тренировки письма — в том же виде, что у карточек: два раздела.
 //   «С подсказками» — слова, написанные с подсказками (как «Ошибки»);
-//   в шапке — «Все в повторение». Если таких нет — похвала.
+//   если таких нет — похвала.
 //   «Без подсказок» — остальные.
 // В строке: твоё написание, слово, перевод, точки «было → стало» (у слова
 // и у его иероглифов) и две кнопки справа (ResultActions): закладка —
@@ -11,7 +11,6 @@
 // «Перешли в изученные» и «Вернулись в повторение»; слово может быть и там, и здесь.
 // Тап по написанию иероглифа — сохранить его в галерею (значок в углу превью).
 
-import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { Pinyin } from "@/components/ui/Pinyin";
@@ -19,8 +18,6 @@ import { CollapsibleSection } from "@/components/results/CollapsibleSection";
 import { ResultActions } from "@/components/results/ResultActions";
 import type { Word } from "@/content/flashcards/types";
 import type { WritingWordResult } from "@/store/gameStore";
-import { useWordProgressStore } from "@/store/wordProgressStore";
-import { colors } from "@/theme/colors";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { useState } from "react";
@@ -77,9 +74,6 @@ export function WritingResultsList({
   const askSave = (hanzi: string, strokes: GalleryCandidate["strokes"]) =>
     setToSave({ hanzi, strokes });
 
-  const review = useWordProgressStore((s) => s.review);
-  const toggleReview = useWordProgressStore((s) => s.toggleReview);
-
   // Одно слово может встретиться дважды (например, 画画 в уроке) — показываем один раз;
   // «с подсказками», если хоть раз писалось с подсказками
   const byId = new Map<string, WritingWordResult>();
@@ -93,13 +87,6 @@ export function WritingResultsList({
   const withHints = unique.filter((item) => !item.isCorrect);
   const clean = unique.filter((item) => item.isCorrect);
 
-  const toAdd = withHints
-    .map((item) => item.vocabularyId)
-    .filter((id) => !review[id]);
-
-  const addAll = () => {
-    for (const id of toAdd) toggleReview(id);
-  };
 
   const renderRow = (item: WritingWordResult) => {
     return (
@@ -179,25 +166,6 @@ export function WritingResultsList({
         <CollapsibleSection
           title="С подсказками"
           count={withHints.length}
-          action={
-            // Ширина фиксирована: смена текста не сдвигает ничего вокруг
-            <Pressable
-              onPress={addAll}
-              disabled={toAdd.length === 0}
-              className={`min-h-10 w-44 flex-row items-center justify-center gap-1.5 rounded-full px-3 ${
-                toAdd.length > 0
-                  ? "border border-primary active:bg-primary/10"
-                  : "border border-transparent bg-primary/15"
-              }`}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: toAdd.length === 0 }}
-            >
-              <ReviewIcon width={16} height={16} color={colors.primary} />
-              <Text className="font-nunitoBold text-small text-primary">
-                {toAdd.length > 0 ? "Все в повторение" : "Все в повторении"}
-              </Text>
-            </Pressable>
-          }
         >
           {withHints.map(renderRow)}
         </CollapsibleSection>
