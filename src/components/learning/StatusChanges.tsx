@@ -1,84 +1,47 @@
 // src/components/learning/StatusChanges.tsx
 //
-// Экран итогов: какие слова тренировка перенесла между «Повторением» и «Изученным».
-//   «Перешли в изученные» — набрали все точки (6, у слова без письма — 3) или,
-//   уже со всеми точками, ушли из «Повторения» после верного ответа или «знаю»
-//   в самопроверке. Кнопка «В повторение» отменяет.
-//   «Вернулись в повторение» — ошибка на изученном слове (в письме — подсказки).
-//   Кнопка «В изученные» отменяет: вдруг просто поспешил.
-// Список снимается один раз при открытии экрана: после отмены слово остаётся
-// в своём разделе, меняется только кнопка (ничего не прыгает).
+// Экран итогов: «Перешли в изученные» — слова, которые за тренировку набрали все
+// точки (6, у слова без письма — 3) или, уже со всеми точками, ушли из «Повторения»
+// после верного ответа или «знаю» в самопроверке. Отменить — закладка
+// (слово уходит в повторение). Справа те же кнопки, что у остальных слов итогов.
+//
+// «Вернулись в повторение» (ошибка на изученном слове) показывает не этот блок,
+// а сами списки итогов — вместо «Ошибок» / «С подсказками», без повторов.
+// Изменения снимает экран итогов один раз при открытии: после отмены слово
+// остаётся в своём разделе, меняется только закладка (ничего не прыгает).
 
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
-import { MoveButton } from "@/components/learning/MoveButton";
+import { ResultActions } from "@/components/results/ResultActions";
 import type { Word } from "@/content/flashcards/types";
-import { collectStatusChanges } from "@/utils/learning";
+import type { StatusChange } from "@/utils/learning";
 import { findAnyWords } from "@/utils/wordSource";
-import { useState } from "react";
+import { useMemo } from "react";
 import { Text, View } from "react-native";
 
 interface StatusChangesProps {
+  changes: StatusChange[];
   onOpenWord: (word: Word) => void;
 }
 
-export function StatusChanges({ onOpenWord }: StatusChangesProps) {
-  const [changes] = useState(() => {
-    const list = collectStatusChanges();
-    return {
-      learned: findAnyWords(
-        list.filter((c) => c.after === "learned").map((c) => c.wordId),
+export function StatusChanges({ changes, onOpenWord }: StatusChangesProps) {
+  const words = useMemo(
+    () =>
+      findAnyWords(
+        changes.filter((c) => c.after === "learned").map((c) => c.wordId),
       ),
-      review: findAnyWords(
-        list
-          .filter((c) => c.before === "learned" && c.after === "review")
-          .map((c) => c.wordId),
-      ),
-    };
-  });
-
-  if (changes.learned.length === 0 && changes.review.length === 0) return null;
-
-  return (
-    <View className="gap-8">
-      {changes.learned.length > 0 && (
-        <Section
-          title="Перешли в изученные"
-          caption="Сомневаешься в слове — отправь его в повторение."
-          words={changes.learned}
-          onOpenWord={onOpenWord}
-        />
-      )}
-      {changes.review.length > 0 && (
-        <Section
-          title="Вернулись в повторение"
-          caption="В тренировке была ошибка. Если слово знакомо, верни его в изученные."
-          words={changes.review}
-          onOpenWord={onOpenWord}
-        />
-      )}
-    </View>
+    [changes],
   );
-}
 
-function Section({
-  title,
-  caption,
-  words,
-  onOpenWord,
-}: {
-  title: string;
-  caption: string;
-  words: Word[];
-  onOpenWord: (word: Word) => void;
-}) {
+  if (words.length === 0) return null;
+
   return (
-    <View className="gap-3">
+    <View className="gap-2">
       <View className="gap-1">
         <Text className="font-nunitoBold text-title text-text">
-          {title} · {words.length}
+          Перешли в изученные · {words.length}
         </Text>
         <Text className="font-nunito text-small text-textSecondary">
-          {caption}
+          Сомневаешься в слове — отметь закладкой, оно останется в повторении.
         </Text>
       </View>
       {words.map((word) => (
@@ -86,9 +49,10 @@ function Section({
           key={word.vocabularyId}
           word={word}
           action="open"
+          compact
           onPress={() => {}}
           onOpenWord={onOpenWord}
-          trailing={<MoveButton word={word} />}
+          trailing={<ResultActions word={word} onOpenWord={onOpenWord} />}
         />
       ))}
     </View>

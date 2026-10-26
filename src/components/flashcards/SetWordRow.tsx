@@ -10,6 +10,7 @@
 // в списке набора убирает только «✕» — чтобы не удалить слово случайно,
 // а тап по строке открывает панель слова.
 // Высота у всех строк одна; длинная фраза уменьшается и переносится на 2 строки.
+// compact — пониже и поуже (экран итогов: там слов много).
 
 import ArrowRight from "@/assets/images/icons/chevron-right.svg";
 import CheckIcon from "@/assets/images/icons/circle-check.svg";
@@ -43,12 +44,15 @@ interface SetWordRowProps {
   onOpenWord?: (word: Word) => void;
   /** Для "open": своя кнопка справа вместо стрелки (например, «Повторение»). */
   trailing?: ReactNode;
+  /** Компактная строка (экран итогов). */
+  compact?: boolean;
 }
 
-/** Ширина колонки с иероглифами (w-28). */
-const HANZI_COLUMN = 112;
-/** Высота строки: одна для всех слов, чтобы список был ровным. */
-const ROW_HEIGHT = 92;
+/** Ширина колонки с иероглифами (w-28) и высота строки: одна для всех слов. */
+const SIZES = {
+  normal: { column: 112, height: 92, scale: 1 },
+  compact: { column: 84, height: 68, scale: 0.85 },
+};
 
 /**
  * Размер иероглифов под колонку: короткие слова крупно в одну строку,
@@ -69,8 +73,12 @@ export const SetWordRow = memo(function SetWordRow({
   level,
   onOpenWord,
   trailing,
+  compact = false,
 }: SetWordRowProps) {
   const { t } = useTranslation();
+  const size = compact ? SIZES.compact : SIZES.normal;
+  const HANZI_COLUMN = size.column;
+  const ROW_HEIGHT = size.height;
   const isRemove = action === "remove";
 
   const content = (
@@ -80,7 +88,7 @@ export const SetWordRow = memo(function SetWordRow({
         style={{ width: HANZI_COLUMN }}
       >
         <Hanzi
-          size={hanziSizeFor(word.hanzi)}
+          size={Math.round(hanziSizeFor(word.hanzi) * size.scale)}
           numberOfLines={2}
           className="text-center"
         >

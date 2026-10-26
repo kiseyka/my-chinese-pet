@@ -3,8 +3,9 @@
 // Экран итогов любой тренировки.
 //   - Заголовок и сводка: точность (круг), XP, монеты, время — в стиле новых экранов
 //     (шкала размеров из tailwind.config.js: title / lead / body).
-//   - Переносы между «Повторением» и «Изученным» за эту тренировку — с отменой
-//     (StatusChanges).
+//   - «Перешли в изученные» (StatusChanges); изученные слова с ошибкой —
+//     «Вернулись в повторение» прямо в списках вместо «Ошибок» (без повторов).
+//     Изменения снимаются один раз при открытии экрана.
 //   - Слова: у карточек — «Ошибки» и «Верно», у письма — «С подсказками» и
 //     «Без подсказок» (с твоим написанием); у обоих — «Повторение» своего навыка
 //     и панель слова (наборы). У тонов — ошибки.
@@ -36,6 +37,7 @@ import {
 } from "@/utils/path/stages";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useState, type ReactNode } from "react";
+import { collectStatusChanges } from "@/utils/learning";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 /** Куда ведёт «Продолжить»: экран выбора, с которого запускали тренировку. */
@@ -73,6 +75,17 @@ export default function GeneralStatsScreen() {
   const wrongAnswers = results.filter((r) => !r.isCorrect);
   const accuracy =
     totalCount === 0 ? 0 : Math.round((score / totalCount) * 100);
+
+  // Переносы между «Повторением» и «Изученным» — один раз, при открытии
+  const [statusChanges] = useState(collectStatusChanges);
+  const [returnedIds] = useState(
+    () =>
+      new Set(
+        statusChanges
+          .filter((c) => c.before === "learned" && c.after === "review")
+          .map((c) => c.wordId),
+      ),
+  );
 
   // Панель слова (карточки): перевод, озвучка, повторение, наборы
   const [opened, setOpened] = useState<Word | null>(null);
@@ -113,7 +126,7 @@ export default function GeneralStatsScreen() {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 24, paddingBottom: 24, gap: 32 }}
+        contentContainerStyle={{ paddingTop: 24, paddingBottom: 24, gap: 24 }}
       >
         {/* Заголовок и сводка */}
         <View className="gap-5">
@@ -159,15 +172,20 @@ export default function GeneralStatsScreen() {
         </View>
 
         {/* Что перешло в «Изученное» и обратно в «Повторение» */}
-        <StatusChanges onOpenWord={setOpened} />
+        <StatusChanges changes={statusChanges} onOpenWord={setOpened} />
 
         {/* Слова */}
         {isWriting ? (
-          <WritingResultsList results={writingResults} onOpenWord={setOpened} />
+          <WritingResultsList
+            results={writingResults}
+            returnedIds={returnedIds}
+            onOpenWord={setOpened}
+          />
         ) : isFlashcards ? (
           <FlashcardResultsList
             results={results}
             selfCheck={isSelfCheck}
+            returnedIds={returnedIds}
             onOpenWord={setOpened}
           />
         ) : wrongAnswers.length > 0 ? (

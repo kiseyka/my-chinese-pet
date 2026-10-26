@@ -5,28 +5,33 @@
 //   вместо раздела похвала. В шапке раздела — «Все в повторение» (кнопка
 //   не меняет размер и не сдвигает экран: только текст и вид).
 //   «Верно» — остальные слова.
-// У каждого слова: иероглиф, точки, пиньинь, перевод и две кнопки справа:
-//   закладка — «Повторение» сразу, без панели;
-//   плюс — панель слова (onOpenWord): наборы, новый набор, озвучка.
+// У каждого слова: иероглиф, точки, пиньинь, перевод и две кнопки справа
+// (ResultActions): закладка — «Повторение», значок наборов — панель слова.
+//
+// Изученные слова (все точки), на которых была ошибка, идут не в «Ошибки», а в
+// «Вернулись в повторение» (returnedIds): тренировка сама положила их в повторение,
+// закладка уже стоит — снять её, если слово знакомо.
 // Тап по самому слову открывает ту же панель.
 //
 // Самопроверка (selfCheck): разделы «Не знаю», «Сомневаюсь» (у обоих —
 // «Все в повторение») и «Знаю».
 
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
-import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import type { WordLevel } from "@/components/ui/LevelDots";
 import type { Word } from "@/content/flashcards/types";
 import type { FlashcardQuestionResult } from "@/store/gameStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { Pressable, Text, View } from "react-native";
+import { ResultActions } from "@/components/results/ResultActions";
 import { SetWordRow } from "./SetWordRow";
 
 interface FlashcardResultsListProps {
   results: FlashcardQuestionResult[];
   /** Итоги самопроверки: разделы по ответам. */
   selfCheck?: boolean;
+  /** Изученные слова, которые тренировка вернула в повторение (вместо «Ошибок»). */
+  returnedIds?: Set<string>;
   onOpenWord: (word: Word) => void;
 }
 
@@ -44,14 +49,12 @@ function toWord(item: FlashcardQuestionResult): Word {
 export function FlashcardResultsList({
   results,
   selfCheck = false,
+  returnedIds,
   onOpenWord,
 }: FlashcardResultsListProps) {
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
   const vocabularyWords = useWordProgressStore((s) => s.vocabularyWords);
   const review = useWordProgressStore((s) => s.review);
-  const toggleReview = useWordProgressStore(
-    (s) => s.toggleReview,
-  );
   const addToReview = useWordProgressStore((s) => s.addToReview);
 
   // Одно слово — одна строка; ошибка, если хоть раз ответили неверно
@@ -63,7 +66,11 @@ export function FlashcardResultsList({
     }
   }
   const unique = Array.from(byId.values());
-  const mistakes = unique.filter((item) => !item.isCorrect);
+  const isReturned = (item: FlashcardQuestionResult) =>
+    !!returnedIds?.has(item.vocabularyId);
+  // Вернувшиеся в повторение — своим разделом, в ошибках не повторяем
+  const returned = unique.filter(isReturned);
+  const mistakes = unique.filter((item) => !item.isCorrect && !isReturned(item));
   const correct = unique.filter((item) => item.isCorrect);
 
   /** Слова раздела, которых ещё нет в «Повторении». */
@@ -71,7 +78,6 @@ export function FlashcardResultsList({
     items.map((item) => item.vocabularyId).filter((id) => !review[id]);
 
   const renderRow = (item: FlashcardQuestionResult) => {
-    const inReview = !!review[item.vocabularyId];
     const level = getWordLevel(
       flashcardWords[item.vocabularyId],
       vocabularyWords[item.vocabularyId]?.isKnown ?? false,
@@ -86,40 +92,8 @@ export function FlashcardResultsList({
         level={level}
         onPress={() => {}}
         onOpenWord={onOpenWord}
-        trailing={
-          <View className="flex-row items-center">
-            {/* Повторение — сразу, без панели */}
-            <Pressable
-              onPress={() => toggleReview(item.vocabularyId)}
-              hitSlop={4}
-              className={`h-11 w-11 items-center justify-center rounded-full ${
-                inReview ? "bg-primary/15" : "active:bg-text/10"
-              }`}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: inReview }}
-              accessibilityLabel={`${item.hanzi}: ${
-                inReview ? "убрать из повторения" : "добавить в повторение"
-              }`}
-            >
-              <ReviewIcon
-                width={22}
-                height={22}
-                color={inReview ? colors.primary : colors.textSecondary}
-              />
-            </Pressable>
-
-            {/* Плюс — панель слова: наборы, новый набор */}
-            <Pressable
-              onPress={() => onOpenWord(toWord(item))}
-              hitSlop={4}
-              className="h-11 w-11 items-center justify-center rounded-full active:bg-primary/10"
-              accessibilityRole="button"
-              accessibilityLabel={`${item.hanzi}: добавить в набор`}
-            >
-              <PlusIcon width={24} height={24} color={colors.primary} />
-            </Pressable>
-          </View>
-        }
+        compact
+        trailing={<ResultActions word={toWord(item)} onOpenWord={onOpenWord} />}
       />
     );
   };
@@ -129,7 +103,7 @@ export function FlashcardResultsList({
     const toAdd = notInReview(items);
 
     return (
-      <View className="gap-3">
+      <View className="gap-2">
         <View className="min-h-10 flex-row items-center justify-between gap-3">
           <Text className="font-nunitoBold text-title text-text">
             {title} · {items.length}
@@ -159,13 +133,28 @@ export function FlashcardResultsList({
 
   const plainSection = (title: string, items: FlashcardQuestionResult[]) =>
     items.length > 0 && (
-      <View className="gap-3">
+      <View className="gap-2">
         <Text className="font-nunitoBold text-title text-text">
           {title} · {items.length}
         </Text>
         {items.map(renderRow)}
       </View>
     );
+
+  const returnedSection = returned.length > 0 && (
+    <View className="gap-2">
+      <View className="gap-1">
+        <Text className="font-nunitoBold text-title text-text">
+          Вернулись в повторение · {returned.length}
+        </Text>
+        <Text className="font-nunito text-small text-textSecondary">
+          Изученные слова с ошибкой. Если слово знакомо, сними закладку — оно
+          останется изученным.
+        </Text>
+      </View>
+      {returned.map(renderRow)}
+    </View>
+  );
 
   const praise = (title: string, text: string) => (
     <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
@@ -178,18 +167,23 @@ export function FlashcardResultsList({
 
   const footer = (
     <Text className="text-center font-nunito text-small text-textSecondary">
-      Закладка — в повторение, плюс — в любой набор.
+      Закладка — в повторение, значок наборов — в любой набор.
     </Text>
   );
 
   if (selfCheck) {
-    const dont = unique.filter((item) => item.selfCheck === "dont");
-    const unsure = unique.filter((item) => item.selfCheck === "unsure");
+    const dont = unique.filter(
+      (item) => item.selfCheck === "dont" && !isReturned(item),
+    );
+    const unsure = unique.filter(
+      (item) => item.selfCheck === "unsure" && !isReturned(item),
+    );
     const know = unique.filter((item) => item.selfCheck === "know");
 
     return (
-      <View className="gap-8">
-        {dont.length === 0 && unsure.length === 0
+      <View className="gap-6">
+        {returnedSection}
+        {dont.length === 0 && unsure.length === 0 && returned.length === 0
           ? praise("Всё знакомо!", "Ни одного сомнения.")
           : null}
         {dont.length > 0 && reviewSection("Не знаю", dont)}
@@ -201,11 +195,14 @@ export function FlashcardResultsList({
   }
 
   return (
-    <View className="gap-8">
+    <View className="gap-6">
+      {returnedSection}
+
       {/* Ошибки или похвала */}
       {mistakes.length > 0
         ? reviewSection("Ошибки", mistakes)
-        : praise("Без ошибок!", "Все слова узнаны верно.")}
+        : returned.length === 0 &&
+          praise("Без ошибок!", "Все слова узнаны верно.")}
 
       {/* Верно */}
       {plainSection("Верно", correct)}
