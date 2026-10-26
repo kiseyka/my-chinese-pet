@@ -63,6 +63,7 @@ interface WordProgressActions {
 
 type WordProgressStore = WordProgressState & WordProgressActions;
 
+
 const createDefaultSkillProgress = (): SkillProgress => ({
   streak: 0,
   correctAnswers: 0,
@@ -215,17 +216,26 @@ export const useWordProgressStore = create<WordProgressStore>()(
       // Версия 1: склеены дубликаты слов (см. content/words/aliases.ts).
       // Версия 2: два «Повторения» (карточек и письма) слиты в одно — review.
       // Версия 3: экзамены убраны — их записи (readingExams, writingExams) удаляются.
-      version: 3,
+      // Версия 4: «Изученное» не хранится — оно вычисляется (все 3 точки во всех
+      // навыках и не в «Повторении»); записи learned, learnedBackfilled удаляются.
+      version: 4,
       migrate: (persisted, version) => {
         let state = persisted as any;
         if (version < 1) state = mergeAliasedProgress(state);
         if (version < 2) state = mergeReviewLists(state);
         if (version < 3) state = dropExams(state);
+        if (version < 4) state = dropStoredLearned(state);
         return state;
       },
     },
   ),
 );
+/** Версия 4: «Изученное» вычисляется, а не хранится. */
+function dropStoredLearned(state: any) {
+  const { learned: _l, learnedBackfilled: _b, ...rest } = state ?? {};
+  return rest;
+}
+
 /** Версия 3: экзаменов больше нет. */
 function dropExams(state: any) {
   const { readingExams: _r, writingExams: _w, ...rest } = state ?? {};

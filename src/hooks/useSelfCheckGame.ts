@@ -6,6 +6,8 @@
 //
 // Точек чтения не даёт (они только за выбор перевода), опыта и монет тоже:
 // ответ ничем не проверяется. Панде результат не передаём.
+// Зато раскладывает слова: «знаю» → «Изученное», остальное → «Повторение»
+// (на экране итогов каждый перенос можно отменить).
 
 import type { Word } from "@/content/flashcards/types";
 import { useQuizSession } from "@/hooks/game/useQuizSession";
@@ -13,6 +15,8 @@ import { MIN_SET_WORDS, useCustomSetsStore } from "@/store/customSetsStore";
 import type { SelfCheckAnswer } from "@/store/gameStore";
 import { resolveFlashcardSource } from "@/utils/flashcards/source";
 import { finishTraining } from "@/utils/finishTraining";
+import { applySelfCheck } from "@/utils/learning";
+import { useGameStore } from "@/store/gameStore";
 import { shuffle } from "@/utils/shuffle";
 import { useMemo } from "react";
 
@@ -47,6 +51,12 @@ export function useSelfCheckGame({ setId }: { setId: string }) {
     resultExtra: (_word, answer) => ({ selfCheck: answer }),
 
     onFinish: (words) => {
+      applySelfCheck(
+        useGameStore.getState().results.map((result) => ({
+          vocabularyId: result.vocabularyId,
+          know: result.selfCheck === "know",
+        })),
+      );
       finishTraining({
         gameId: "flashcards",
         answers: words.length,

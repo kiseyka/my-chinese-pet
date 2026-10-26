@@ -2,23 +2,22 @@
 //
 // Итоги тренировки письма — в том же виде, что у карточек: два раздела.
 //   «С подсказками» — слова, написанные с подсказками (как «Ошибки»);
-//   в шапке — «Все в повторение». Если таких нет — похвала.
+//   если таких нет — похвала.
 //   «Без подсказок» — остальные.
 // В строке: твоё написание, слово, перевод, точки «было → стало» (у слова
-// и у его иероглифов) и две кнопки справа:
-//   закладка — «Повторение» сразу, без панели;
-//   плюс — панель слова (onOpenWord): наборы, новый набор, озвучка.
+// и у его иероглифов) и две кнопки справа (ResultActions): закладка —
+// «Повторение», значок наборов — панель слова (наборы, новый набор, озвучка).
+// Разделы свёрнуты (CollapsibleSection): выше них на экране итогов —
+// «Перешли в изученные» и «Вернулись в повторение»; слово может быть и там, и здесь.
 // Тап по написанию иероглифа — сохранить его в галерею (значок в углу превью).
 
-import ReviewIcon from "@/assets/images/icons/bookmark.svg";
-import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { Pinyin } from "@/components/ui/Pinyin";
+import { CollapsibleSection } from "@/components/results/CollapsibleSection";
+import { ResultActions } from "@/components/results/ResultActions";
 import type { Word } from "@/content/flashcards/types";
 import type { WritingWordResult } from "@/store/gameStore";
-import { useWordProgressStore } from "@/store/wordProgressStore";
-import { colors } from "@/theme/colors";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { useState } from "react";
@@ -29,7 +28,7 @@ import {
 import { SavableHanzi } from "../gallery/SavableHanzi";
 
 /** Размер превью твоего написания одного иероглифа. */
-const PREVIEW_SIZE = 52;
+const PREVIEW_SIZE = 44;
 
 const toLevel = (value: number) =>
   Math.min(3, Math.max(0, Math.round(value))) as WordLevel;
@@ -75,14 +74,6 @@ export function WritingResultsList({
   const askSave = (hanzi: string, strokes: GalleryCandidate["strokes"]) =>
     setToSave({ hanzi, strokes });
 
-  const review = useWordProgressStore((s) => s.review);
-  const toggleReview = useWordProgressStore(
-    (s) => s.toggleReview,
-  );
-  const removeFromReview = useWordProgressStore(
-    (s) => s.removeFromReview,
-  );
-
   // Одно слово может встретиться дважды (например, 画画 в уроке) — показываем один раз;
   // «с подсказками», если хоть раз писалось с подсказками
   const byId = new Map<string, WritingWordResult>();
@@ -96,21 +87,12 @@ export function WritingResultsList({
   const withHints = unique.filter((item) => !item.isCorrect);
   const clean = unique.filter((item) => item.isCorrect);
 
-  const toAdd = withHints
-    .map((item) => item.vocabularyId)
-    .filter((id) => !review[id]);
-
-  const addAll = () => {
-    for (const id of toAdd) toggleReview(id);
-  };
 
   const renderRow = (item: WritingWordResult) => {
-    const inReview = !!review[item.vocabularyId];
-
     return (
       <View
         key={item.vocabularyId}
-        className="gap-2 rounded-2xl bg-surface py-3 pl-3 pr-2"
+        className="gap-1.5 rounded-xl bg-surface py-2 pl-2 pr-1"
       >
         <View className="flex-row items-center gap-3">
           {/* Твоё написание: тап по иероглифу — в галерею */}
@@ -149,39 +131,7 @@ export function WritingResultsList({
           </Pressable>
 
           {/* Повторение и наборы */}
-          <View className="flex-row items-center">
-            <Pressable
-              onPress={() =>
-                inReview
-                  ? removeFromReview(item.vocabularyId)
-                  : toggleReview(item.vocabularyId)
-              }
-              hitSlop={4}
-              className={`h-11 w-11 items-center justify-center rounded-full ${
-                inReview ? "bg-primary/15" : "active:bg-text/10"
-              }`}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: inReview }}
-              accessibilityLabel={`${item.hanzi}: ${
-                inReview ? "убрать из повторения" : "добавить в повторение"
-              }`}
-            >
-              <ReviewIcon
-                width={22}
-                height={22}
-                color={inReview ? colors.primary : colors.textSecondary}
-              />
-            </Pressable>
-            <Pressable
-              onPress={() => onOpenWord(toWord(item))}
-              hitSlop={4}
-              className="h-11 w-11 items-center justify-center rounded-full active:bg-primary/10"
-              accessibilityRole="button"
-              accessibilityLabel={`${item.hanzi}: добавить в набор`}
-            >
-              <PlusIcon width={24} height={24} color={colors.primary} />
-            </Pressable>
-          </View>
+          <ResultActions word={toWord(item)} onOpenWord={onOpenWord} />
         </View>
 
         {/* Иероглифы слова: каждый засчитывается как отдельное слово */}
@@ -208,39 +158,20 @@ export function WritingResultsList({
   };
 
   return (
-    <View className="gap-8">
+    <View className="gap-4">
       <GallerySaveDialog candidate={toSave} onClose={() => setToSave(null)} />
 
       {/* С подсказками или похвала */}
       {withHints.length > 0 ? (
-        <View className="gap-3">
-          <View className="min-h-10 flex-row items-center justify-between gap-3">
-            <Text className="font-nunitoBold text-title text-text">
-              С подсказками · {withHints.length}
-            </Text>
-            {/* Ширина фиксирована: смена текста не сдвигает ничего вокруг */}
-            <Pressable
-              onPress={addAll}
-              disabled={toAdd.length === 0}
-              className={`min-h-10 w-44 flex-row items-center justify-center gap-1.5 rounded-full px-3 ${
-                toAdd.length > 0
-                  ? "border border-primary active:bg-primary/10"
-                  : "border border-transparent bg-primary/15"
-              }`}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: toAdd.length === 0 }}
-            >
-              <ReviewIcon width={16} height={16} color={colors.primary} />
-              <Text className="font-nunitoBold text-small text-primary">
-                {toAdd.length > 0 ? "Все в повторение" : "Все в повторении"}
-              </Text>
-            </Pressable>
-          </View>
+        <CollapsibleSection
+          title="С подсказками"
+          count={withHints.length}
+        >
           {withHints.map(renderRow)}
-        </View>
+        </CollapsibleSection>
       ) : (
         <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
-          <Text className="font-nunitoBold text-title text-primary">
+          <Text className="font-nunitoBold text-lead text-primary">
             Без подсказок!
           </Text>
           <Text className="text-center font-nunito text-body text-text">
@@ -250,17 +181,14 @@ export function WritingResultsList({
       )}
 
       {clean.length > 0 && (
-        <View className="gap-3">
-          <Text className="font-nunitoBold text-title text-text">
-            Без подсказок · {clean.length}
-          </Text>
+        <CollapsibleSection title="Без подсказок" count={clean.length}>
           {clean.map(renderRow)}
-        </View>
+        </CollapsibleSection>
       )}
 
       <Text className="text-center font-nunito text-small text-textSecondary">
-        Закладка — в повторение, плюс — в любой набор.{"\n"}Тап по своему
-        написанию — сохранить его в галерею.
+        Закладка — в повторение, значок наборов — в любой набор.{"\n"}Тап по
+        своему написанию — сохранить его в галерею.
       </Text>
     </View>
   );
