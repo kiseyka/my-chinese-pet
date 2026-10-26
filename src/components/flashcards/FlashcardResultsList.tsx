@@ -23,6 +23,7 @@ import type { FlashcardQuestionResult } from "@/store/gameStore";
 import { getWordLevel, useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import { Pressable, Text, View } from "react-native";
+import { TransitionLine } from "@/components/learning/TransitionLine";
 import { ResultActions } from "@/components/results/ResultActions";
 import { SetWordRow } from "./SetWordRow";
 
@@ -105,7 +106,7 @@ export function FlashcardResultsList({
     return (
       <View className="gap-2">
         <View className="min-h-10 flex-row items-center justify-between gap-3">
-          <Text className="font-nunitoBold text-title text-text">
+          <Text className="font-nunitoBold text-lead text-text">
             {title} · {items.length}
           </Text>
           {/* Ширина фиксирована: смена текста не сдвигает ничего вокруг */}
@@ -134,7 +135,7 @@ export function FlashcardResultsList({
   const plainSection = (title: string, items: FlashcardQuestionResult[]) =>
     items.length > 0 && (
       <View className="gap-2">
-        <Text className="font-nunitoBold text-title text-text">
+        <Text className="font-nunitoBold text-lead text-text">
           {title} · {items.length}
         </Text>
         {items.map(renderRow)}
@@ -144,13 +145,10 @@ export function FlashcardResultsList({
   const returnedSection = returned.length > 0 && (
     <View className="gap-2">
       <View className="gap-1">
-        <Text className="font-nunitoBold text-title text-text">
+        <Text className="font-nunitoBold text-lead text-text">
           Вернулись в повторение · {returned.length}
         </Text>
-        <Text className="font-nunito text-small text-textSecondary">
-          Изученные слова с ошибкой. Если слово знакомо, сними закладку — оно
-          останется изученным.
-        </Text>
+        <TransitionLine from="Из изученного" to="В повторение" />
       </View>
       {returned.map(renderRow)}
     </View>
@@ -158,7 +156,7 @@ export function FlashcardResultsList({
 
   const praise = (title: string, text: string) => (
     <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
-      <Text className="font-nunitoBold text-title text-primary">{title}</Text>
+      <Text className="font-nunitoBold text-lead text-primary">{title}</Text>
       <Text className="text-center font-nunito text-body text-text">
         {text}
       </Text>

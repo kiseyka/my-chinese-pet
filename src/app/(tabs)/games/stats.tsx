@@ -5,7 +5,8 @@
 //     (шкала размеров из tailwind.config.js: title / lead / body).
 //   - «Перешли в изученные» (StatusChanges); изученные слова с ошибкой —
 //     «Вернулись в повторение» прямо в списках вместо «Ошибок» (без повторов).
-//     Изменения снимаются один раз при открытии экрана.
+//     Изменения — снимок, сделанный в конце тренировки (gameStore.statusChanges):
+//     экран остаётся смонтированным между тренировками, свой снимок устарел бы.
 //   - Слова: у карточек — «Ошибки» и «Верно», у письма — «С подсказками» и
 //     «Без подсказок» (с твоим написанием); у обоих — «Повторение» своего навыка
 //     и панель слова (наборы). У тонов — ошибки.
@@ -36,8 +37,8 @@ import {
   PATH_TRAINING_PREFIX,
 } from "@/utils/path/stages";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
-import { useState, type ReactNode } from "react";
-import { collectStatusChanges } from "@/utils/learning";
+import { useMemo, useState, type ReactNode } from "react";
+import { Title } from "@/components/ui/Title";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 /** Куда ведёт «Продолжить»: экран выбора, с которого запускали тренировку. */
@@ -76,15 +77,16 @@ export default function GeneralStatsScreen() {
   const accuracy =
     totalCount === 0 ? 0 : Math.round((score / totalCount) * 100);
 
-  // Переносы между «Повторением» и «Изученным» — один раз, при открытии
-  const [statusChanges] = useState(collectStatusChanges);
-  const [returnedIds] = useState(
+  // Переносы между «Повторением» и «Изученным» за эту тренировку
+  const statusChanges = useGameStore((s) => s.statusChanges);
+  const returnedIds = useMemo(
     () =>
       new Set(
         statusChanges
           .filter((c) => c.before === "learned" && c.after === "review")
           .map((c) => c.wordId),
       ),
+    [statusChanges],
   );
 
   // Панель слова (карточки): перевод, озвучка, повторение, наборы
@@ -123,17 +125,18 @@ export default function GeneralStatsScreen() {
         onClose={() => setOpened(null)}
       />
 
+      {/* Заголовок — как на остальных экранах */}
+      <Title>
+        {isSelfCheck ? "Самопроверка завершена" : "Тренировка завершена"}
+      </Title>
+
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 24, paddingBottom: 24, gap: 24 }}
+        contentContainerStyle={{ paddingTop: 16, paddingBottom: 24, gap: 24 }}
       >
-        {/* Заголовок и сводка */}
-        <View className="gap-5">
-          <Text className="text-center font-nunitoBold text-heading text-text">
-            {isSelfCheck ? "Самопроверка завершена" : "Тренировка завершена"}
-          </Text>
-
+        {/* Сводка */}
+        <View>
           <View className="flex-row items-center gap-5 rounded-2xl bg-surface p-4">
             <BrushProgressCircle
               percentage={accuracy}
@@ -190,7 +193,7 @@ export default function GeneralStatsScreen() {
           />
         ) : wrongAnswers.length > 0 ? (
           <View className="gap-3">
-            <Text className="font-nunitoBold text-title text-text">
+            <Text className="font-nunitoBold text-lead text-text">
               Ошибки · {wrongAnswers.length}
             </Text>
             {wrongAnswers.map((item) => (
@@ -206,7 +209,7 @@ export default function GeneralStatsScreen() {
           </View>
         ) : (
           <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
-            <Text className="font-nunitoBold text-title text-primary">
+            <Text className="font-nunitoBold text-lead text-primary">
               Без ошибок!
             </Text>
             <Text className="text-center font-nunito text-body text-text">

@@ -15,6 +15,7 @@ import ReviewIcon from "@/assets/images/icons/bookmark.svg";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { LevelDots, type WordLevel } from "@/components/ui/LevelDots";
 import { Pinyin } from "@/components/ui/Pinyin";
+import { TransitionLine } from "@/components/learning/TransitionLine";
 import { ResultActions } from "@/components/results/ResultActions";
 import type { Word } from "@/content/flashcards/types";
 import type { WritingWordResult } from "@/store/gameStore";
@@ -187,13 +188,10 @@ export function WritingResultsList({
       {returned.length > 0 && (
         <View className="gap-2">
           <View className="gap-1">
-            <Text className="font-nunitoBold text-title text-text">
+            <Text className="font-nunitoBold text-lead text-text">
               Вернулись в повторение · {returned.length}
             </Text>
-            <Text className="font-nunito text-small text-textSecondary">
-              Изученные слова, написанные с подсказками. Если слово знакомо,
-              сними закладку — оно останется изученным.
-            </Text>
+            <TransitionLine from="Из изученного" to="В повторение" />
           </View>
           {returned.map(renderRow)}
         </View>
@@ -203,7 +201,7 @@ export function WritingResultsList({
       {withHints.length > 0 ? (
         <View className="gap-2">
           <View className="min-h-10 flex-row items-center justify-between gap-3">
-            <Text className="font-nunitoBold text-title text-text">
+            <Text className="font-nunitoBold text-lead text-text">
               С подсказками · {withHints.length}
             </Text>
             {/* Ширина фиксирована: смена текста не сдвигает ничего вокруг */}
@@ -228,7 +226,7 @@ export function WritingResultsList({
         </View>
       ) : returned.length > 0 ? null : (
         <View className="items-center gap-1 rounded-2xl bg-surface px-5 py-5">
-          <Text className="font-nunitoBold text-title text-primary">
+          <Text className="font-nunitoBold text-lead text-primary">
             Без подсказок!
           </Text>
           <Text className="text-center font-nunito text-body text-text">
@@ -239,7 +237,7 @@ export function WritingResultsList({
 
       {clean.length > 0 && (
         <View className="gap-2">
-          <Text className="font-nunitoBold text-title text-text">
+          <Text className="font-nunitoBold text-lead text-text">
             Без подсказок · {clean.length}
           </Text>
           {clean.map(renderRow)}

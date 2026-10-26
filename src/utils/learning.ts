@@ -24,7 +24,11 @@
 
 import type { Word } from "@/content/flashcards/types";
 import { allWords } from "@/content/words/vocabulary";
-import { useGameStore, type WordStatus } from "@/store/gameStore";
+import {
+  useGameStore,
+  type StatusChange,
+  type WordStatus,
+} from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { getTrackDots } from "@/utils/path/stages";
 import {
@@ -155,11 +159,7 @@ export function applySelfCheck(
   }
 }
 
-export interface StatusChange {
-  wordId: string;
-  before: WordStatus;
-  after: WordStatus;
-}
+export type { StatusChange };
 
 /** Что поменялось за тренировку: слова, у которых состояние не такое, как до неё. */
 export function collectStatusChanges(): StatusChange[] {
