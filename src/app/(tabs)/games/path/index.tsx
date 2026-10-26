@@ -30,6 +30,8 @@ import {
   PathNode,
   PATH_ROW_HEIGHT,
   pathOffset,
+  type PathNodeState,
+  type PathSkill,
 } from "@/components/path/PathNode";
 import { ScrollingBackground } from "@/components/path/ScrollingBackground";
 import { Screen } from "@/components/layout/Screen";
@@ -46,7 +48,7 @@ import {
   type StageProgress,
 } from "@/utils/path/stages";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
   Animated,
   FlatList,
@@ -78,9 +80,34 @@ const HEADER_SIDE = 84;
 /** Место под кнопкой внизу, чтобы последняя точка не пряталась за ней. */
 const BOTTOM_SPACE = 104;
 
+/** Готовые props точки: считаются один раз вместе со строками (см. rows). */
+interface StageNodeProps {
+  index: number;
+  glyph: string;
+  title: string;
+  state: PathNodeState;
+  mastered: boolean;
+  nextReached: boolean;
+  share: number;
+  skills: PathSkill[];
+}
+
 type Row =
-  | { type: "milestone"; key: string; section: PathSection }
-  | { type: "stage"; key: string; item: StageProgress };
+  | {
+      type: "milestone";
+      key: string;
+      section: PathSection;
+      /** Тропинка до вехи уже пройдена. */
+      reached: boolean;
+    }
+  | { type: "stage"; key: string; item: StageProgress; node: StageNodeProps };
+
+/** Пустой список навыков: один и тот же массив, чтобы memo у точки не сбивался. */
+const NO_SKILLS: PathSkill[] = [];
+
+/** Дальше этого числа строк прыжок к разделу без анимации: иначе список
+ *  прорисовывает все строки по дороге, и это долго. */
+const ANIMATED_JUMP_ROWS = 20;
 
 /** Раздел строки: для шапки — свой, для этапа — уровень этапа. */
 function rowLevel(row: Row): number {
@@ -98,19 +125,59 @@ export default function PathScreen() {
   const { stages, currentIndex } = progress;
   const sections = useMemo(() => getPathSections(progress), [progress]);
 
-  // Строки карты: этапы и вехи разделов между ними (у первого раздела вехи нет)
+  // Строки карты: этапы и вехи разделов между ними (у первого раздела вехи нет).
+  // Props точек считаются здесь, один раз на изменение прогресса, а не в renderItem:
+  // тогда при перерисовке экрана (смена «HSK N ▾», открытие шторки) у точек те же
+  // props, и memo не даёт им перерисоваться
   const rows = useMemo<Row[]>(() => {
     const result: Row[] = [];
     const byFirst = new Map(sections.map((s) => [s.firstIndex, s]));
     stages.forEach((item, i) => {
       const section = byFirst.get(i);
       if (section && i > 0) {
-        result.push({ type: "milestone", key: `hsk-${section.level}`, section });
+        result.push({
+          type: "milestone",
+          key: `hsk-${section.level}`,
+          section,
+          reached: currentIndex === undefined || i <= currentIndex,
+        });
       }
-      result.push({ type: "stage", key: item.stage.id, item });
+
+      const state: PathNodeState =
+        i === currentIndex ? "current" : item.passed ? "passed" : "upcoming";
+      const next = stages[i + 1];
+      // Общий прогресс: начатые слова по всем дорожкам вместе
+      const done = item.tracks.reduce((sum, t) => sum + t.started, 0);
+      const all = item.tracks.reduce((sum, t) => sum + t.total, 0);
+      const share = all > 0 ? done / all : 0;
+
+      result.push({
+        type: "stage",
+        key: item.stage.id,
+        item,
+        node: {
+          index: i,
+          glyph: item.stage.glyph,
+          title: item.stage.title,
+          state,
+          mastered: item.mastered,
+          nextReached: !!next && (next.passed || i + 1 === currentIndex),
+          share,
+          // Навыки показываем, когда этап начат (или он текущий)
+          skills:
+            share > 0 || state === "current"
+              ? item.tracks.map((t) => ({
+                  id: t.id,
+                  started: t.started,
+                  learned: t.learned,
+                  total: t.total,
+                }))
+              : NO_SKILLS,
+        },
+      });
     });
     return result;
-  }, [stages, sections]);
+  }, [stages, sections, currentIndex]);
 
   // Строки разной высоты: считаем положение каждой, чтобы сразу открыть карту на текущем этапе
   const layout = useMemo(() => {
@@ -187,18 +254,27 @@ export default function PathScreen() {
             );
       if (index < 0) return;
       setVisibleLevel(level);
-      listRef.current?.scrollToIndex({ index, animated: true });
+      // Близко — плавно, далеко (HSK 1 → HSK 4) — сразу
+      const visibleRow = rows.findIndex((row) => rowLevel(row) === visibleLevel);
+      listRef.current?.scrollToIndex({
+        index,
+        animated: Math.abs(index - Math.max(visibleRow, 0)) <= ANIMATED_JUMP_ROWS,
+      });
     },
-    [rows, sections],
+    [rows, sections, visibleLevel],
   );
 
+  // Одна и та же функция на всё время жизни экрана (этапы — через ref): иначе
+  // после каждой тренировки менялся бы проп onPress у всех точек
+  const stagesRef = useRef(stages);
+  stagesRef.current = stages;
   const open = useCallback(
     (index: number) =>
       router.push({
         pathname: "/games/path/stage" as any,
-        params: { id: stages[index].stage.id },
+        params: { id: stagesRef.current[index].stage.id },
       }),
-    [router, stages],
+    [router],
   );
 
   const target = getContinueTarget(progress);
@@ -207,57 +283,31 @@ export default function PathScreen() {
   const currentLevel =
     currentIndex !== undefined ? stages[currentIndex]?.stage.level : undefined;
 
-  const renderItem = ({ item: row }: { item: Row }) => {
-    if (row.type === "milestone") {
-      const first = row.section.firstIndex;
+  const stageCount = stages.length;
+  const renderItem = useCallback(
+    ({ item: row }: { item: Row }) => {
+      if (row.type === "milestone") {
+        const first = row.section.firstIndex;
+        return (
+          <Milestone
+            label={`HSK ${row.section.level}`}
+            x={rowWidth / 2 + (pathOffset(first - 1) + pathOffset(first)) / 2}
+            width={rowWidth}
+            reached={row.reached}
+          />
+        );
+      }
       return (
-        <Milestone
-          label={`HSK ${row.section.level}`}
-          x={rowWidth / 2 + (pathOffset(first - 1) + pathOffset(first)) / 2}
+        <PathNode
+          {...row.node}
+          count={stageCount}
           width={rowWidth}
-          reached={currentIndex === undefined || first <= currentIndex}
+          onPress={open}
         />
       );
-    }
-
-    const { item } = row;
-    const index = item.stage.index;
-    const state =
-      index === currentIndex ? "current" : item.passed ? "passed" : "upcoming";
-    const next = stages[index + 1];
-    const nextReached =
-      !!next && (next.passed || next.stage.index === currentIndex);
-    // Общий прогресс: начатые слова по всем дорожкам вместе
-    const done = item.tracks.reduce((sum, t) => sum + t.started, 0);
-    const all = item.tracks.reduce((sum, t) => sum + t.total, 0);
-    const share = all > 0 ? done / all : 0;
-
-    return (
-      <PathNode
-        index={index}
-        count={stages.length}
-        width={rowWidth}
-        glyph={item.stage.glyph}
-        title={item.stage.title}
-        state={state}
-        mastered={item.mastered}
-        nextReached={nextReached}
-        share={share}
-        // Навыки показываем, когда этап начат (или он текущий)
-        skills={
-          share > 0 || state === "current"
-            ? item.tracks.map((t) => ({
-                id: t.id,
-                started: t.started,
-                learned: t.learned,
-                total: t.total,
-              }))
-            : []
-        }
-        onPress={open}
-      />
-    );
-  };
+    },
+    [rowWidth, stageCount, open],
+  );
 
   return (
     <View className="flex-1 bg-background">
@@ -388,7 +438,7 @@ function SectionMark({ section }: { section: PathSection }) {
 
 // ── Веха раздела ─────────────────────────────────────────────────────────────
 
-function Milestone({
+const Milestone = memo(function Milestone({
   label,
   x,
   width,
@@ -428,7 +478,7 @@ function Milestone({
       </View>
     </View>
   );
-}
+});
 
 // ── Шторка выбора раздела ────────────────────────────────────────────────────
 
