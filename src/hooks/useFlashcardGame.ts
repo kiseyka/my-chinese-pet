@@ -1,11 +1,17 @@
 // src/hooks/useFlashcardGame.ts
 //
-// Флешкарты: иероглиф → выбрать перевод. Ход сессии — в useQuizSession,
-// здесь только правила этой тренировки: вопросы, прогресс чтения, награда.
+// Выбор перевода. Ход сессии — в useQuizSession, здесь только правила этой
+// тренировки: вопросы, прогресс чтения, награда.
+//
+// Два направления вопроса:
+//   прямое — иероглиф → выбрать перевод;
+//   обратное — перевод → выбрать иероглиф из похожих (utils/readingExam.ts).
+// Новое слово (0 точек перевода) спрашивается только прямо; у слова с точками
+// обратный вопрос выпадает в половине случаев. Оба дают точку перевода.
 // Слова — из своего набора («Мои наборы») или ступени HSK (см. utils/flashcards/source.ts).
 
 import { generateQuiz } from "@/content/flashcards/generator";
-import type { QuizQuestion } from "@/content/flashcards/types";
+import type { QuizQuestion, Word } from "@/content/flashcards/types";
 import { allWords } from "@/content/words/vocabulary";
 import { useQuizSession } from "@/hooks/game/useQuizSession";
 import { MIN_SET_WORDS, useCustomSetsStore } from "@/store/customSetsStore";
@@ -14,9 +20,14 @@ import { useWordProgressStore } from "@/store/wordProgressStore";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
 import { resolveFlashcardSource } from "@/utils/flashcards/source";
 import { finishTraining, getAccuracy } from "@/utils/finishTraining";
+import { buildReadingExamQuestion } from "@/utils/readingExam";
+import { readWordLevel } from "@/utils/wordLevel";
 import { createWordChangeTracker } from "@/utils/wordChanges";
 import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+
+/** Какая доля вопросов по знакомым словам (≥1 точки перевода) — обратные. */
+const REVERSE_SHARE = 0.5;
 
 interface UseFlashcardGameProps {
   setId: string;
@@ -47,9 +58,15 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       if (words.length < MIN_SET_WORDS) return [];
 
       // Новый набор вопросов при каждом входе на экран
+      const translate = (key: string) => t(key);
       return generateQuiz(words, {
         extraPool: allWords,
-        translate: (key) => t(key),
+        translate,
+        reverse: (word: Word) =>
+          readWordLevel(word.vocabularyId, "reading") > 0 &&
+          Math.random() < REVERSE_SHARE
+            ? buildReadingExamQuestion(word, translate).options
+            : null,
       });
     },
 

@@ -4,11 +4,14 @@
 // Слово, которое человек видит впервые (ни одного ответа по переводу), сначала
 // показывается карточкой знакомства (WordIntroCard), потом сразу вопрос.
 // Режим (mode) выбирают в панели «Как будем тренироваться?»:
-//   по умолчанию — выбор перевода (даёт точки чтения);
+//   по умолчанию — выбор перевода (даёт точки чтения): вопрос прямой
+//     (иероглиф → перевод) или обратный (перевод → иероглиф из похожих,
+//     ReverseQuestion; только у слов, где уже есть точка перевода);
 //   mode=self — самопроверка «Знаю / Сомневаюсь / Не знаю» (без точек).
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
 import { GameHeader } from "@/components/game/GameHeader";
+import { ReverseQuestion } from "@/components/game/ReverseQuestion";
 import { WordIntroCard } from "@/components/game/WordIntroCard";
 import { SelfCheckQuestion } from "@/components/game/SelfCheckQuestion";
 import { Screen } from "@/components/layout/Screen";
@@ -80,6 +83,22 @@ function ChoiceTraining({ setId }: { setId: string }) {
               new Set(previous).add(currentQuestion.id),
             )
           }
+        />
+      </TrainingFrame>
+    );
+  }
+
+  if (currentQuestion.direction === "reverse" && currentQuestion.optionWords) {
+    return (
+      <TrainingFrame progress={progressPercent}>
+        <ReverseQuestion
+          key={currentQuestion.id}
+          translation={currentQuestion.translation}
+          options={currentQuestion.optionWords}
+          correctId={currentQuestion.correctAnswer}
+          selected={selected}
+          isAnswered={isAnswered}
+          onSelect={handleSelect}
         />
       </TrainingFrame>
     );

@@ -1,6 +1,10 @@
 import { shuffle } from "@/utils/shuffle";
 import { QuizQuestion, Word } from "./types";
 
+// Вопрос бывает прямым (иероглиф → выбрать перевод) и обратным
+// (перевод → выбрать иероглиф из похожих). Обратный строит вызывающий через
+// reverse: генератору не нужно знать ни прогресс слова, ни как подбирать похожие.
+
 const QUESTIONS_PER_SESSION = 10;
 
 /**
@@ -18,11 +22,20 @@ interface GenerateQuizOptions {
    * двух одинаковых переводов (например, 再见 и 拜拜 — оба «до свидания»).
    */
   translate?: (key: string) => string;
+  /**
+   * Обратный вопрос для слова: варианты-слова (среди них само слово) или null —
+   * тогда вопрос прямой. Решает, когда спрашивать наоборот, вызывающий.
+   */
+  reverse?: (word: Word) => Word[] | null;
 }
 
 export function generateQuiz(
   words: Word[],
-  { extraPool = [], translate = (key) => key }: GenerateQuizOptions = {},
+  {
+    extraPool = [],
+    translate = (key) => key,
+    reverse,
+  }: GenerateQuizOptions = {},
 ): QuizQuestion[] {
   if (words.length < 4) {
     throw new Error(
@@ -37,7 +50,26 @@ export function generateQuiz(
   const setIds = new Set(words.map((word) => word.id));
   const useExtra = words.length - 1 < MIN_SET_DISTRACTORS;
 
-  return selectedWords.map((word) => {
+  return selectedWords.map((word): QuizQuestion => {
+    const reverseOptions = reverse?.(word);
+    if (reverseOptions && reverseOptions.length >= 2) {
+      return {
+        vocabularyId: word.vocabularyId,
+        id: word.id,
+        hanzi: word.hanzi,
+        pinyin: word.pinyin,
+        translation: word.translation,
+        direction: "reverse",
+        correctAnswer: word.vocabularyId,
+        options: reverseOptions.map((option) => option.vocabularyId),
+        optionWords: reverseOptions.map((option) => ({
+          vocabularyId: option.vocabularyId,
+          hanzi: option.hanzi,
+          pinyin: option.pinyin,
+        })),
+      };
+    }
+
     const correctText = translate(word.translation);
 
     const fromSet = shuffle(words.filter((other) => other.id !== word.id));
@@ -73,6 +105,7 @@ export function generateQuiz(
       hanzi: word.hanzi,
       pinyin: word.pinyin,
       translation: word.translation,
+      direction: "forward",
       correctAnswer: word.translation,
       options,
     };
