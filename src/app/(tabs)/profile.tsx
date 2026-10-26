@@ -6,7 +6,7 @@
 //   - блок из четырёх чисел:
 //       дней занятий (дни с тренировками, не сбрасываются) — тап: календарь;
 //       опыт;
-//       изучено слов (3 точки и в переводе, и в письме) — тап: список этих слов;
+//       изучено слов (список «Изученное») — тап: эти слова;
 //       текущий этап пути — тап: экран этапа;
 //   - галерея лучших написаний (ProfileGallery);
 //   - фразы, которые рассказала панда (ProfilePandaPhrases);
@@ -39,7 +39,7 @@ import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { colors } from "@/theme/colors";
 import {
-  getFullyLearnedWords,
+  getLearnedWords,
   getProfileStats,
 } from "@/utils/profile/stats";
 import { pluralDays, pluralWords } from "@/utils/writing/labels";
@@ -54,6 +54,7 @@ const AVATAR_SIZE = 96;
 export default function ProfileScreen() {
   const router = useRouter();
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
+  const learned = useWordProgressStore((s) => s.learned);
   const days = useActivityStore((s) => s.days);
   const studyDays = Object.keys(days).length;
   const xp = useProgressStore((s) => s.xp);
@@ -70,12 +71,12 @@ export default function ProfileScreen() {
   const [privacyStub, setPrivacyStub] = useState(false);
 
   const stats = useMemo(
-    () => getProfileStats(flashcardWords),
-    [flashcardWords],
+    () => getProfileStats(flashcardWords, learned),
+    [flashcardWords, learned],
   );
   const learnedWords = useMemo(
-    () => (wordsOpen ? getFullyLearnedWords(flashcardWords) : []),
-    [wordsOpen, flashcardWords],
+    () => (wordsOpen ? getLearnedWords(learned) : []),
+    [wordsOpen, learned],
   );
 
   const openStage = () => {
@@ -152,12 +153,12 @@ export default function ProfileScreen() {
               Изученные слова
             </Text>
             <Text className="mb-4 mt-1 text-center font-nunito text-small text-textSecondary">
-              Три точки и в переводе, и в письме
+              Слова, которые ты считаешь выученными
             </Text>
             {learnedWords.length === 0 ? (
               <Text className="text-center font-nunito text-body text-text">
                 Пока пусто. Слово попадёт сюда, когда наберёт три точки и в
-                переводе, и в письме.
+                переводе, и в письме, или если перенести его сюда вручную.
               </Text>
             ) : (
               <View className="gap-2">

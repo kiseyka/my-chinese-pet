@@ -2,10 +2,11 @@
 //
 // «Словарь» — все слова приложения в одном месте:
 //   - поиск по иероглифу, пиньиню без тонов и переводу (результаты — списком);
-//   - сверху «Повторение» (если в нём есть слова);
+//   - сверху одной строкой «Повторение» и «Изученное» (если в них есть слова);
 //   - чипсы: «Наборы», разделы HSK, «Другие слова»;
 //   - слова раздела сгруппированы по темам — тем же, что этапы пути;
 //     у каждого слова две строки точек: перевод (зелёные) и письмо (тёмные);
+//     слово в «Повторении» — зелёная рамка, в «Изученном» — тёплый фон;
 //   - у темы, набора и «Повторения» — «Тренировать»: выбор режима
 //     (TrainingChoiceSheet); у набора ещё карандаш — редактор (общий с карточками);
 //   - тап по слову — панель слова (DictionaryWordSheet): точки навыков, «Повторение»,
@@ -15,7 +16,7 @@
 
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { DictionaryWordSheet } from "@/components/dictionary/DictionaryWordSheet";
-import { ReviewSheet } from "@/components/dictionary/ReviewSheet";
+import { WordListSheet } from "@/components/dictionary/WordListSheet";
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { LevelChips } from "@/components/flashcards/LevelChips";
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
@@ -26,10 +27,11 @@ import { BackButton } from "@/components/ui/BackButton";
 import { SearchField } from "@/components/ui/SearchField";
 import { Title } from "@/components/ui/Title";
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
+import LearnedIcon from "@/assets/images/icons/circle-check.svg";
 import type { Word } from "@/content/flashcards/types";
 import { allWords, findWords } from "@/content/words/vocabulary";
 import { useCustomSetsStore } from "@/store/customSetsStore";
-import { useGameStore } from "@/store/gameStore";
+import { useGameStore, type WordStatus } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import {
   describeDictionaryLevel,
@@ -43,7 +45,9 @@ import { pluralWords } from "@/utils/writing/labels";
 import { colors } from "@/theme/colors";
 import {
   findAnyWords,
+  getLearnedIds,
   getReviewIds,
+  LEARNED_SOURCE,
   REVIEW_SOURCE,
 } from "@/utils/wordSource";
 import {
@@ -74,6 +78,7 @@ const SETS = -2;
 const noop = () => {};
 
 type GetDots = (word: Word, track: TrackId) => number | undefined;
+type GetStatus = (word: Word) => WordStatus;
 
 export default function DictionaryScreen() {
   const router = useRouter();
@@ -142,14 +147,34 @@ export default function DictionaryScreen() {
   const [opened, setOpened] = useState<Word | null>(null);
   const [training, setTraining] = useState<string | null>(null);
 
-  // «Повторение» — одно на все навыки
+  // «Повторение» и «Изученное» — одни на все навыки
   const review = useWordProgressStore((s) => s.review);
+  const learned = useWordProgressStore((s) => s.learned);
   const reviewWords = useMemo(
     () => findAnyWords(getReviewIds(review)),
     [review],
   );
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const closeReview = useCallback(() => setReviewOpen(false), []);
+  const learnedWords = useMemo(
+    () => findAnyWords(getLearnedIds(learned)),
+    [learned],
+  );
+  const getStatus = useCallback<GetStatus>(
+    (word) =>
+      review[word.vocabularyId]
+        ? "review"
+        : learned[word.vocabularyId]
+          ? "learned"
+          : "learning",
+    [review, learned],
+  );
+  // Открытый список; пока панель уезжает, показываем тот, что был открыт
+  const [listOpen, setListOpen] = useState<"review" | "learned" | null>(null);
+  const [lastList, setLastList] = useState<"review" | "learned">("review");
+  const openList = (list: "review" | "learned") => {
+    setLastList(list);
+    setListOpen(list);
+  };
+  const closeList = useCallback(() => setListOpen(null), []);
 
   // Наборы: создание и редактор (общий с карточками; «назад» вернёт сюда)
   const createSet = useCustomSetsStore((state) => state.createSet);
@@ -194,18 +219,18 @@ export default function DictionaryScreen() {
         onClose={() => setTraining(null)}
       />
 
-      <ReviewSheet
-        open={reviewOpen}
-        words={reviewWords}
+      <WordListSheet
+        list={listOpen}
+        words={lastList === "learned" ? learnedWords : reviewWords}
         onSelectWord={(word) => {
-          setReviewOpen(false);
+          setListOpen(null);
           setOpened(word);
         }}
         onTrain={() => {
-          setReviewOpen(false);
-          setTraining(REVIEW_SOURCE);
+          setListOpen(null);
+          setTraining(lastList === "learned" ? LEARNED_SOURCE : REVIEW_SOURCE);
         }}
-        onClose={closeReview}
+        onClose={closeList}
       />
 
       <SetTitleModal
@@ -263,18 +288,33 @@ export default function DictionaryScreen() {
         className="flex-1"
         style={{ display: isSearching ? "none" : "flex" }}
       >
-        {reviewWords.length > 0 && (
-          <View className="mt-3 flex-row">
-            <EntryTile
-              icon={
-                <View className="h-7 w-7 items-center justify-center rounded-lg bg-primary/15">
-                  <ReviewIcon width={16} height={16} color={colors.primary} />
-                </View>
-              }
-              title="Повторение"
-              caption={`${reviewWords.length} ${pluralWords(reviewWords.length)}`}
-              onPress={() => setReviewOpen(true)}
-            />
+        {(reviewWords.length > 0 || learnedWords.length > 0) && (
+          // Одной строкой: слева повторение, справа изученное
+          <View className="mt-3 flex-row gap-2">
+            {reviewWords.length > 0 && (
+              <EntryTile
+                icon={
+                  <View className="h-7 w-7 items-center justify-center rounded-lg border border-primary bg-primary/15">
+                    <ReviewIcon width={16} height={16} color={colors.primary} />
+                  </View>
+                }
+                title="Повторение"
+                caption={`${reviewWords.length} ${pluralWords(reviewWords.length)}`}
+                onPress={() => openList("review")}
+              />
+            )}
+            {learnedWords.length > 0 && (
+              <EntryTile
+                icon={
+                  <View className="h-7 w-7 items-center justify-center rounded-lg bg-learned">
+                    <LearnedIcon width={16} height={16} color={colors.primary} />
+                  </View>
+                }
+                title="Изученное"
+                caption={`${learnedWords.length} ${pluralWords(learnedWords.length)}`}
+                onPress={() => openList("learned")}
+              />
+            )}
           </View>
         )}
 
@@ -288,6 +328,7 @@ export default function DictionaryScreen() {
             chip={item}
             visible={item === shownChip}
             getDots={getDots}
+            getStatus={getStatus}
             onSelect={setOpened}
             onTrain={setTraining}
             onEditSet={editSet}
@@ -307,6 +348,7 @@ const DictionarySection = memo(function DictionarySection({
   chip,
   visible,
   getDots,
+  getStatus,
   onSelect,
   onTrain,
   onEditSet,
@@ -315,6 +357,7 @@ const DictionarySection = memo(function DictionarySection({
   chip: number;
   visible: boolean;
   getDots: GetDots;
+  getStatus: GetStatus;
   onSelect: (word: Word) => void;
   onTrain: (sourceId: string) => void;
   onEditSet: (setId: string) => void;
@@ -340,12 +383,13 @@ const DictionarySection = memo(function DictionarySection({
       <GroupCard
         group={item}
         getDots={getDots}
+        getStatus={getStatus}
         onSelect={onSelect}
         onTrain={onTrain}
         onEdit={chip === SETS ? onEditSet : undefined}
       />
     ),
-    [getDots, onSelect, onTrain, onEditSet, chip],
+    [getDots, getStatus, onSelect, onTrain, onEditSet, chip],
   );
 
   const style = { display: visible ? ("flex" as const) : ("none" as const) };
@@ -394,12 +438,14 @@ const DictionarySection = memo(function DictionarySection({
 const GroupCard = memo(function GroupCard({
   group,
   getDots,
+  getStatus,
   onSelect,
   onTrain,
   onEdit,
 }: {
   group: DictionaryGroup;
   getDots: GetDots;
+  getStatus: GetStatus;
   onSelect: (word: Word) => void;
   onTrain: (sourceId: string) => void;
   /** Только у своего набора: карандаш — редактор набора. */
@@ -456,6 +502,7 @@ const GroupCard = memo(function GroupCard({
       <PathWordGrid
         words={group.words}
         getDots={getDots}
+        getStatus={getStatus}
         onSelect={onSelect}
         horizontalInset={GRID_INSET}
       />
@@ -463,7 +510,7 @@ const GroupCard = memo(function GroupCard({
   );
 });
 
-// ── Вход в повторение ─────────────────────────
+// ── Вход в повторение или изученное (половина строки) ─────────────────────────
 
 function EntryTile({
   icon,

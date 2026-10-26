@@ -11,9 +11,9 @@ import {
 } from "@/store/gameStore";
 import type { WordChange } from "@/store/pandaStore";
 import type { WordLevel } from "@/store/wordProgressStore";
-import { useWordProgressStore } from "@/store/wordProgressStore";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
 import { finishTraining, getAccuracy } from "@/utils/finishTraining";
+import { answerWord, applyAnswerStatus } from "@/utils/learning";
 import { readWordLevel } from "@/utils/wordLevel";
 import type { LessonItem } from "./plans";
 import type { Point } from "./strokeCheck";
@@ -81,7 +81,6 @@ export function finishWritingLesson(
   levelsBefore: Record<string, number>,
 ) {
   const game = useGameStore.getState();
-  const wordProgress = useWordProgressStore.getState();
   const before = { ...levelsBefore };
 
   // 0. Уровни иероглифов до начисления точек (у слов урока они уже записаны в начале)
@@ -103,11 +102,7 @@ export function finishWritingLesson(
   const credit = (wordId: string) => {
     if (credited.has(wordId)) return;
     credited.add(wordId);
-    wordProgress.updateWordProgress({
-      wordId,
-      skill: "writing",
-      isCorrect: true,
-    });
+    answerWord(wordId, "writing", true);
   };
 
   // Слова, написанные без подсказок
@@ -122,6 +117,13 @@ export function finishWritingLesson(
       const character = getCharacterWord(hanzi, word);
       if (character) credit(character.vocabularyId);
     }
+  }
+
+  // Написано с подсказками — для «Изученного» это ошибка: изученное слово
+  // возвращается в «Повторение» (точки не снимаются). После начисления точек:
+  // успех в работе над ошибками не отменяет провал в основном задании
+  for (const { word, success, deep } of outcomes) {
+    if (!deep && !success) applyAnswerStatus(word.vocabularyId, false);
   }
 
   /** Точки слова «было → стало». */

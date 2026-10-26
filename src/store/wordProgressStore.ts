@@ -33,6 +33,14 @@ interface WordProgressState {
    * при запуске тренировки. Отдельно от избранного: избранное — личная коллекция.
    */
   review: Record<string, WritingReviewEntry>;
+  /**
+   * «Изученное»: слова, которые пользователь считает выученными. Слово либо в
+   * «Повторении», либо в «Изученном» (или ни там, ни там — ещё учится).
+   * Автопереходы между списками — utils/learning.ts.
+   */
+  learned: Record<string, WritingReviewEntry>;
+  /** «Изученное» один раз заполнено словами, у которых уже были все 3 точки. */
+  learnedBackfilled: boolean;
 }
 
 interface WordProgressActions {
@@ -58,10 +66,24 @@ interface WordProgressActions {
   addToReview: (wordIds: string[]) => void;
   /** Убирает слово из «Повторения». */
   removeFromReview: (wordId: string) => void;
+  /** Переносит слова в «Изученное» (из «Повторения» они уходят). */
+  markLearned: (wordIds: string[]) => void;
+  /** Убирает слово из «Изученного» (в «Повторение» не кладёт). */
+  removeFromLearned: (wordId: string) => void;
+  /** Один раз: «Изученное» из слов, у которых уже были все 3 точки. */
+  backfillLearned: (wordIds: string[]) => void;
   reset: () => void;
 }
 
 type WordProgressStore = WordProgressState & WordProgressActions;
+
+/** Копия списка без этих слов (тот же объект, если убирать нечего). */
+function without<T>(list: Record<string, T>, ids: string[]): Record<string, T> {
+  if (!ids.some((id) => list[id])) return list;
+  const next = { ...list };
+  for (const id of ids) delete next[id];
+  return next;
+}
 
 const createDefaultSkillProgress = (): SkillProgress => ({
   streak: 0,
@@ -98,6 +120,8 @@ export const useWordProgressStore = create<WordProgressStore>()(
       flashcardWords: {},
       vocabularyWords: {},
       review: {},
+      learned: {},
+      learnedBackfilled: false,
 
       completeFlashcardSet: ({ setId, score, totalQuestions, duration }) => {
         const accuracy =
@@ -167,14 +191,18 @@ export const useWordProgressStore = create<WordProgressStore>()(
         });
       },
 
+      // Слово, попавшее в «Повторение», уходит из «Изученного»
       toggleReview: (wordId) => {
         set((state) => {
           const next = { ...state.review };
 
-          if (next[wordId]) delete next[wordId];
-          else next[wordId] = { addedAt: Date.now() };
+          if (next[wordId]) {
+            delete next[wordId];
+            return { review: next };
+          }
 
-          return { review: next };
+          next[wordId] = { addedAt: Date.now() };
+          return { review: next, learned: without(state.learned, [wordId]) };
         });
       },
 
@@ -186,7 +214,39 @@ export const useWordProgressStore = create<WordProgressStore>()(
             // +index: сохраняем порядок добавления
             if (!next[id]) next[id] = { addedAt: now + index };
           });
-          return { review: next };
+          return { review: next, learned: without(state.learned, wordIds) };
+        });
+      },
+
+      markLearned: (wordIds) => {
+        set((state) => {
+          const now = Date.now();
+          const next = { ...state.learned };
+          wordIds.forEach((id, index) => {
+            if (!next[id]) next[id] = { addedAt: now + index };
+          });
+          return { learned: next, review: without(state.review, wordIds) };
+        });
+      },
+
+      removeFromLearned: (wordId) => {
+        set((state) =>
+          state.learned[wordId]
+            ? { learned: without(state.learned, [wordId]) }
+            : state,
+        );
+      },
+
+      backfillLearned: (wordIds) => {
+        set((state) => {
+          if (state.learnedBackfilled) return state;
+          const now = Date.now();
+          const next = { ...state.learned };
+          for (const id of wordIds) {
+            // Слова из «Повторения» остаются там: пользователь сам их туда положил
+            if (!state.review[id] && !next[id]) next[id] = { addedAt: now };
+          }
+          return { learned: next, learnedBackfilled: true };
         });
       },
 
@@ -206,6 +266,8 @@ export const useWordProgressStore = create<WordProgressStore>()(
           flashcardWords: {},
           vocabularyWords: {},
           review: {},
+          learned: {},
+          learnedBackfilled: false,
         });
       },
     }),
@@ -215,6 +277,8 @@ export const useWordProgressStore = create<WordProgressStore>()(
       // Версия 1: склеены дубликаты слов (см. content/words/aliases.ts).
       // Версия 2: два «Повторения» (карточек и письма) слиты в одно — review.
       // Версия 3: экзамены убраны — их записи (readingExams, writingExams) удаляются.
+      // learned и learnedBackfilled добавлены без смены версии: у старых сохранений
+      // их нет, persist подставляет значения по умолчанию, дальше — backfillLearned.
       version: 3,
       migrate: (persisted, version) => {
         let state = persisted as any;

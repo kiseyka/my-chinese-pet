@@ -1,5 +1,6 @@
 import { useMilestoneBaseline } from "@/hooks/panda/useMilestoneBaseline";
 import { useActivityBackfill } from "@/hooks/useActivityBackfill";
+import { useLearnedBackfill } from "@/hooks/useLearnedBackfill";
 import { colors } from "@/theme/colors";
 import { useFonts } from "expo-font";
 import { Tabs, usePathname } from "expo-router";
@@ -13,6 +14,8 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   // Журнал занятий: один раз восстановить дни из старого прогресса
   useActivityBackfill();
+  // «Изученное»: один раз положить туда слова, у которых уже все 3 точки
+  useLearnedBackfill();
   // Панда: что уже пройдено до этого запуска, праздновать не нужно
   useMilestoneBaseline();
   const [loaded] = useFonts({

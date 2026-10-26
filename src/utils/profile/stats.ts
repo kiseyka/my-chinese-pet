@@ -2,16 +2,16 @@
 //
 // Сводка для профиля — только из того, что уже хранится:
 //   - слова по навыкам: начато (≥1 точки) и освоено (3 точки);
-//   - «изучено» — по 3 точки в переводе и, если слово можно писать, в письме
-//     (до появления списка «Изученное» считаем так);
+//   - «изучено» — слова в «Изученном» (wordProgressStore.learned);
 //   - путь: этапы пройдены / освоены, текущий уровень HSK, разбивка по уровням.
 // Считаем по всем словам словаря, включая «Другие слова».
 
 import type { Word } from "@/content/flashcards/types";
 import { allWords } from "@/content/words/vocabulary";
+import { getWritableIds } from "@/utils/learning";
+import { findAnyWords } from "@/utils/wordSource";
 import { getPathProgress, getTrackDots, type TrackId } from "@/utils/path/stages";
 import {
-  getWritableWords,
   LEARNED_DOTS,
   type ProgressMap,
 } from "@/utils/writing/words";
@@ -33,7 +33,7 @@ export interface LevelStats {
 export interface ProfileStats {
   reading: SkillStats;
   writing: SkillStats;
-  /** Изученные слова: 3 точки во всех навыках слова. */
+  /** Слов в «Изученном». */
   fullyLearned: number;
   stagesTotal: number;
   stagesPassed: number;
@@ -43,17 +43,6 @@ export interface ProfileStats {
   /** Текущий этап пути: первый непройденный (null — пройдены все). */
   currentStage: { id: string; title: string; level: number } | null;
   levels: LevelStats[];
-}
-
-let writableCache: Set<string> | null = null;
-
-function writableIds(): Set<string> {
-  if (!writableCache) {
-    writableCache = new Set(
-      getWritableWords(allWords).map((w) => w.vocabularyId),
-    );
-  }
-  return writableCache;
 }
 
 function skillStats(
@@ -71,33 +60,25 @@ function skillStats(
   return { started, learned };
 }
 
-/**
- * Изученные слова: 3 точки перевода и, если слово можно писать, 3 точки письма.
- * Последние отвеченные — первыми.
- */
-export function getFullyLearnedWords(progress: ProgressMap): Word[] {
-  const writable = writableIds();
-  return allWords
-    .filter((word) => {
-      if (getTrackDots(word, "reading", progress) < LEARNED_DOTS) return false;
-      if (!writable.has(word.vocabularyId)) return true;
-      return getTrackDots(word, "writing", progress) >= LEARNED_DOTS;
-    })
-    .map((word) => ({
-      word,
-      at: progress[word.vocabularyId]?.lastAnsweredAt ?? 0,
-    }))
-    .sort((a, b) => b.at - a.at)
-    .map((item) => item.word);
+/** Слова из «Изученного»: последние добавленные — первыми. */
+export function getLearnedWords(
+  learned: Record<string, { addedAt: number }>,
+): Word[] {
+  return findAnyWords(
+    Object.entries(learned)
+      .sort(([, a], [, b]) => b.addedAt - a.addedAt)
+      .map(([id]) => id),
+  );
 }
 
 export function getProfileStats(
   progress: ProgressMap,
+  learned: Record<string, { addedAt: number }>,
 ): ProfileStats {
-  const writable = writableIds();
+  const writable = getWritableIds();
   const writableWords = allWords.filter((w) => writable.has(w.vocabularyId));
 
-  const fullyLearned = getFullyLearnedWords(progress).length;
+  const fullyLearned = Object.keys(learned).length;
 
   const path = getPathProgress(progress);
   const current =

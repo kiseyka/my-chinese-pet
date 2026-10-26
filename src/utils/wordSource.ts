@@ -5,6 +5,7 @@
 //   «path:1:0»  — этап пути (тема);
 //   «dict:other» — «Другие слова» (без уровня HSK);
 //   «review»    — «Повторение» (вместе с иероглифами вида «char:么»);
+//   «learned»   — «Изученное»;
 //   «set-…»     — свой набор.
 // Карточки берут слова отсюда же (utils/flashcards/source.ts), письмо —
 // маршрут /games/writing/path?source=… (там остаются только слова, которые можно писать).
@@ -23,6 +24,7 @@ import {
 
 export const OTHER_WORDS_SOURCE = "dict:other";
 export const REVIEW_SOURCE = "review";
+export const LEARNED_SOURCE = "learned";
 
 /**
  * Слова по id из любого списка («Повторение», очередь): слова базы любой длины
@@ -45,6 +47,15 @@ export function getReviewIds(
     .map(([id]) => id);
 }
 
+/** id «Изученного» в порядке добавления. */
+export function getLearnedIds(
+  learned = useWordProgressStore.getState().learned,
+): string[] {
+  return Object.entries(learned)
+    .sort(([, a], [, b]) => a.addedAt - b.addedAt)
+    .map(([id]) => id);
+}
+
 export interface WordSource {
   title: string;
   words: Word[];
@@ -63,6 +74,10 @@ export function resolveWordSource(id: string): WordSource | null {
 
   if (id === REVIEW_SOURCE) {
     return { title: "Повторение", words: findAnyWords(getReviewIds()) };
+  }
+
+  if (id === LEARNED_SOURCE) {
+    return { title: "Изученное", words: findAnyWords(getLearnedIds()) };
   }
 
   const set = useCustomSetsStore.getState().sets.find((item) => item.id === id);

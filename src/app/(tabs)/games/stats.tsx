@@ -3,6 +3,8 @@
 // Экран итогов любой тренировки.
 //   - Заголовок и сводка: точность (круг), XP, монеты, время — в стиле новых экранов
 //     (шкала размеров из tailwind.config.js: title / lead / body).
+//   - Переносы между «Повторением» и «Изученным» за эту тренировку — с отменой
+//     (StatusChanges).
 //   - Слова: у карточек — «Ошибки» и «Верно», у письма — «С подсказками» и
 //     «Без подсказок» (с твоим написанием); у обоих — «Повторение» своего навыка
 //     и панель слова (наборы). У тонов — ошибки.
@@ -13,6 +15,7 @@
 
 import { FlashcardResultsList } from "@/components/flashcards/FlashcardResultsList";
 import { WordSheet } from "@/components/flashcards/WordSheet";
+import { StatusChanges } from "@/components/learning/StatusChanges";
 import { Screen } from "@/components/layout/Screen";
 import { BrushProgressCircle } from "@/components/ui/BrushProgressCircle";
 import { WordCard } from "@/components/ui/WordCard";
@@ -154,6 +157,9 @@ export default function GeneralStatsScreen() {
             </View>
           </View>
         </View>
+
+        {/* Что перешло в «Изученное» и обратно в «Повторение» */}
+        <StatusChanges onOpenWord={setOpened} />
 
         {/* Слова */}
         {isWriting ? (

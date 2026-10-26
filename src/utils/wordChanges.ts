@@ -5,7 +5,7 @@
 // Нужен панде (word_mastered / word_mistake) и экрану итогов.
 
 import type { WordChange } from "@/store/pandaStore";
-import { useWordProgressStore } from "@/store/wordProgressStore";
+import { answerWord } from "@/utils/learning";
 import { readWordLevel } from "@/utils/wordLevel";
 import type { QuizQuestionBase } from "@/hooks/game/useQuizSession";
 
@@ -24,9 +24,8 @@ export function createWordChangeTracker(skill: Skill) {
       const wordId = word.vocabularyId;
       const levelBefore = readWordLevel(wordId, skill);
 
-      useWordProgressStore
-        .getState()
-        .updateWordProgress({ wordId, skill, isCorrect });
+      // Точка и переход между «Повторением» и «Изученным»
+      answerWord(wordId, skill, isCorrect);
 
       const existing = changes[wordId];
       changes[wordId] = {

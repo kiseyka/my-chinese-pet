@@ -2,7 +2,8 @@
 //
 // Панель слова в «Словаре». Зачем её открывают — по убыванию важности:
 //   1. посмотреть слово: иероглиф, пиньинь и перевод (тап по иероглифу — озвучка);
-//   2. отложить: «Повторение», «В набор» — одна строка компактных кнопок;
+//   2. отложить: «Повторение», «Изучено», «В набор» — одна строка компактных кнопок
+//      (слово либо в «Повторении», либо в «Изученном»: одна кнопка снимает другую);
 //   3. потренировать письмо: «Написать» быстро или полностью.
 // Остальное — мелко внизу: точки перевода и письма, где слово на пути («Показать»).
 //
@@ -18,6 +19,7 @@
 
 import ArrowLeft from "@/assets/images/icons/arrow-left.svg";
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
+import LearnedIcon from "@/assets/images/icons/circle-check.svg";
 import LayersIcon from "@/assets/images/icons/layers.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -58,6 +60,11 @@ export function DictionaryWordSheet({
   const flashcardWords = useWordProgressStore((state) => state.flashcardWords);
   const review = useWordProgressStore((state) => state.review);
   const toggleReview = useWordProgressStore((state) => state.toggleReview);
+  const learned = useWordProgressStore((state) => state.learned);
+  const markLearned = useWordProgressStore((state) => state.markLearned);
+  const removeFromLearned = useWordProgressStore(
+    (state) => state.removeFromLearned,
+  );
   const sets = useCustomSetsStore((state) => state.sets);
 
   // Страница панели и что писать — сбрасываются при каждом открытии
@@ -107,6 +114,7 @@ export function DictionaryWordSheet({
         // повторять и писать: в наборы попадают слова базы
         const isCharOnly = target.vocabularyId.startsWith("char:");
         const inReview = !!review[target.vocabularyId];
+        const isLearned = !!learned[target.vocabularyId];
         const setCount = sets.filter((set) =>
           set.wordIds.includes(target.vocabularyId),
         ).length;
@@ -126,6 +134,16 @@ export function DictionaryWordSheet({
                 label="Повторение"
                 active={inReview}
                 onPress={() => toggleReview(target.vocabularyId)}
+              />
+              <ActionChip
+                Icon={LearnedIcon}
+                label="Изучено"
+                active={isLearned}
+                onPress={() =>
+                  isLearned
+                    ? removeFromLearned(target.vocabularyId)
+                    : markLearned([target.vocabularyId])
+                }
               />
               {!isCharOnly && (
                 <ActionChip
