@@ -1,17 +1,16 @@
 // src/utils/panda/news.ts
 //
 // Новости панды. Панда больше не выскакивает после каждой тренировки: важные события
-// (вехи пути и экзамены) копятся в pandaStore.news, у панды появляется значок,
+// (вехи пути) копятся в pandaStore.news, у панды появляется значок,
 // и по тапу она рассказывает всё одной репликой.
 //
 // Откуда новости:
-//   - после каждой тренировки (finishTraining) и экзамена — новые вехи пути
+//   - после каждой тренировки (finishTraining) — новые вехи пути
 //     (см. milestones.ts): раздел HSK пройден, этап освоен, этап пройден,
-//     слово изучено полностью;
-//   - после экзамена — его итог (сдано / не сдано по навыку).
+//     слово изучено.
 //
 // Как рассказывает (buildNewsText): одна новость — одна фраза; несколько — список,
-// важное сверху, повторы склеены (три экзамена → одна строка), не больше
+// важное сверху, повторы склеены, не больше
 // MAX_LINES строк, остальное — «и ещё немного хорошего». Тексты — i18n, раздел «panda».
 
 import type { Word } from "@/content/flashcards/types";
@@ -22,14 +21,11 @@ import { findPathStage, getPathProgress } from "@/utils/path/stages";
 import i18n from "i18next";
 import { collectNewMilestones } from "./milestones";
 
-export type ExamSkill = "reading" | "writing";
-
 export type PandaNews =
   | { kind: "level"; level: number }
   | { kind: "stageMastered"; stageId: string }
   | { kind: "stagePassed"; stageId: string }
-  | { kind: "wordLearned"; wordId: string }
-  | { kind: "exam"; skill: ExamSkill; passed: number; failed: number };
+  | { kind: "wordLearned"; wordId: string };
 
 /** Сколько строк в сводке, остальное — «и ещё немного хорошего». */
 const MAX_LINES = 5;
@@ -68,21 +64,6 @@ function collectMilestoneNews(): PandaNews[] {
 /** После любой тренировки: запомнить новые вехи пути. */
 export function reportTrainingToPanda() {
   usePandaStore.getState().addNews(collectMilestoneNews());
-}
-
-/** После экзамена: итог экзамена и новые вехи (например, слово изучено полностью). */
-export function reportExamToPanda(
-  skill: ExamSkill,
-  outcomes: Array<{ verdict: string }>,
-) {
-  const passed = outcomes.filter((o) => o.verdict === "passed").length;
-  const exam: PandaNews = {
-    kind: "exam",
-    skill,
-    passed,
-    failed: outcomes.length - passed,
-  };
-  usePandaStore.getState().addNews([exam, ...collectMilestoneNews()]);
 }
 
 // ── Рассказ ──────────────────────────────────────────────────────────────────
@@ -156,21 +137,6 @@ function buildLines(news: PandaNews[]): string[] {
     const more = learned.length > MAX_WORDS ? "…" : "";
     lines.push(
       t("news.wordsLearned", { count: learned.length, words: hanzi + more }),
-    );
-  }
-
-  for (const skill of ["writing", "reading"] as const) {
-    const exams = news.filter(
-      (n): n is Extract<PandaNews, { kind: "exam" }> =>
-        n.kind === "exam" && n.skill === skill,
-    );
-    if (exams.length === 0) continue;
-    const passedCount = exams.reduce((sum, e) => sum + e.passed, 0);
-    const skillName = t(skill === "writing" ? "news.skillWriting" : "news.skillReading");
-    lines.push(
-      passedCount > 0
-        ? t("news.examPassed", { count: passedCount, skill: skillName })
-        : t("news.examRetry", { skill: skillName }),
     );
   }
 

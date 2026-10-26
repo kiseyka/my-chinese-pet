@@ -1,7 +1,7 @@
 // src/hooks/useActivityBackfill.ts
 //
 // Один раз дополняет журнал занятий днями из старого прогресса слов
-// (когда отвечали на слова, проходили наборы, сдавали экзамены).
+// (когда отвечали на слова и проходили наборы).
 // Ждёт, пока оба стора загрузятся с диска: иначе загрузка затёрла бы запись.
 
 import { useActivityStore } from "@/store/activityStore";
@@ -11,13 +11,10 @@ import { useEffect } from "react";
 
 /** Когда пользователь занимался до появления журнала. */
 function collectOldProgressTimes(): number[] {
-  const { flashcardWords, flashcardSets, readingExams, writingExams } =
-    useWordProgressStore.getState();
+  const { flashcardWords, flashcardSets } = useWordProgressStore.getState();
   return [
     ...Object.values(flashcardWords).map((w) => w.lastAnsweredAt),
     ...Object.values(flashcardSets).map((s) => s.completedAt),
-    ...Object.values(readingExams).map((e) => e.passedAt ?? 0),
-    ...Object.values(writingExams).map((e) => e.passedAt ?? 0),
   ];
 }
 

@@ -6,7 +6,7 @@
 //   - блок из четырёх чисел:
 //       дней занятий (дни с тренировками, не сбрасываются) — тап: календарь;
 //       опыт;
-//       изучено слов (сданы все экзамены слова) — тап: список этих слов;
+//       изучено слов (3 точки и в переводе, и в письме) — тап: список этих слов;
 //       текущий этап пути — тап: экран этапа;
 //   - галерея лучших написаний (ProfileGallery);
 //   - фразы, которые рассказала панда (ProfilePandaPhrases);
@@ -54,8 +54,6 @@ const AVATAR_SIZE = 96;
 export default function ProfileScreen() {
   const router = useRouter();
   const flashcardWords = useWordProgressStore((s) => s.flashcardWords);
-  const readingExams = useWordProgressStore((s) => s.readingExams);
-  const writingExams = useWordProgressStore((s) => s.writingExams);
   const days = useActivityStore((s) => s.days);
   const studyDays = Object.keys(days).length;
   const xp = useProgressStore((s) => s.xp);
@@ -72,12 +70,12 @@ export default function ProfileScreen() {
   const [privacyStub, setPrivacyStub] = useState(false);
 
   const stats = useMemo(
-    () => getProfileStats(flashcardWords, readingExams, writingExams),
-    [flashcardWords, readingExams, writingExams],
+    () => getProfileStats(flashcardWords),
+    [flashcardWords],
   );
   const learnedWords = useMemo(
-    () => (wordsOpen ? getFullyLearnedWords(readingExams, writingExams) : []),
-    [wordsOpen, readingExams, writingExams],
+    () => (wordsOpen ? getFullyLearnedWords(flashcardWords) : []),
+    [wordsOpen, flashcardWords],
   );
 
   const openStage = () => {
@@ -154,12 +152,12 @@ export default function ProfileScreen() {
               Изученные слова
             </Text>
             <Text className="mb-4 mt-1 text-center font-nunito text-small text-textSecondary">
-              Сданы экзамены и по переводу, и по письму
+              Три точки и в переводе, и в письме
             </Text>
             {learnedWords.length === 0 ? (
               <Text className="text-center font-nunito text-body text-text">
-                Пока пусто. Слово попадёт сюда, когда ты сдашь по нему все
-                экзамены.
+                Пока пусто. Слово попадёт сюда, когда наберёт три точки и в
+                переводе, и в письме.
               </Text>
             ) : (
               <View className="gap-2">
@@ -235,7 +233,6 @@ export default function ProfileScreen() {
             Icon={CheckIcon}
             value={String(stats.fullyLearned)}
             label={`${pluralWords(stats.fullyLearned)} изучено`}
-            gold={stats.fullyLearned > 0}
             onPress={() => setWordsOpen(true)}
           />
           <Divider />
@@ -270,13 +267,11 @@ function StatCell({
   Icon,
   value,
   label,
-  gold = false,
   onPress,
 }: {
   Icon: ComponentType<SvgProps>;
   value: string;
   label: string;
-  gold?: boolean;
   onPress?: () => void;
 }) {
   return (
@@ -289,10 +284,10 @@ function StatCell({
       <Icon
         width={22}
         height={22}
-        color={gold ? colors.gold : colors.primary}
+        color={colors.primary}
       />
       <Text
-        className={`font-nunitoBold text-lead ${gold ? "text-gold" : "text-text"}`}
+        className="font-nunitoBold text-lead text-text"
         numberOfLines={1}
         adjustsFontSizeToFit
       >

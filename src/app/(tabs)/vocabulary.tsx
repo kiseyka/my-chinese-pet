@@ -2,9 +2,7 @@
 //
 // «Словарь» — все слова приложения в одном месте:
 //   - поиск по иероглифу, пиньиню без тонов и переводу (результаты — списком);
-//   - сверху одной строкой «Экзамен» (по переводу и по письму; если есть что сдавать
-//     или скоро будет) и «Повторение»
-//     (если в нём есть слова);
+//   - сверху «Повторение» (если в нём есть слова);
 //   - чипсы: «Наборы», разделы HSK, «Другие слова»;
 //   - слова раздела сгруппированы по темам — тем же, что этапы пути;
 //     у каждого слова две строки точек: перевод (зелёные) и письмо (тёмные);
@@ -17,7 +15,6 @@
 
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import { DictionaryWordSheet } from "@/components/dictionary/DictionaryWordSheet";
-import { ExamHubSheet } from "@/components/dictionary/ExamHubSheet";
 import { ReviewSheet } from "@/components/dictionary/ReviewSheet";
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { LevelChips } from "@/components/flashcards/LevelChips";
@@ -29,11 +26,8 @@ import { BackButton } from "@/components/ui/BackButton";
 import { SearchField } from "@/components/ui/SearchField";
 import { Title } from "@/components/ui/Title";
 import ReviewIcon from "@/assets/images/icons/bookmark.svg";
-import { SealMark } from "@/components/writing/SealMark";
-import { ExamModal } from "@/components/writing/modals/ExamModal";
 import type { Word } from "@/content/flashcards/types";
 import { allWords, findWords } from "@/content/words/vocabulary";
-import { useExamQueue } from "@/hooks/useExamQueue";
 import { useCustomSetsStore } from "@/store/customSetsStore";
 import { useGameStore } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
@@ -45,7 +39,7 @@ import {
 } from "@/utils/dictionary";
 import { getTrackDots, type TrackId } from "@/utils/path/stages";
 import { searchWords } from "@/utils/searchWords";
-import { formatExamWait, pluralWords } from "@/utils/writing/labels";
+import { pluralWords } from "@/utils/writing/labels";
 import { colors } from "@/theme/colors";
 import {
   findAnyWords,
@@ -80,7 +74,6 @@ const SETS = -2;
 const noop = () => {};
 
 type GetDots = (word: Word, track: TrackId) => number | undefined;
-type GetExams = (word: Word) => { reading: boolean; writing: boolean };
 
 export default function DictionaryScreen() {
   const router = useRouter();
@@ -146,17 +139,6 @@ export default function DictionaryScreen() {
     [writableIds, flashcardWords],
   );
 
-  // Сданные экзамены — для золотых точек и «парадных» ячеек
-  const readingExamEntries = useWordProgressStore((s) => s.readingExams);
-  const writingExamEntries = useWordProgressStore((s) => s.writingExams);
-  const getExams = useCallback<GetExams>(
-    (word) => ({
-      reading: !!readingExamEntries[word.vocabularyId]?.passedAt,
-      writing: !!writingExamEntries[word.vocabularyId]?.passedAt,
-    }),
-    [readingExamEntries, writingExamEntries],
-  );
-
   const [opened, setOpened] = useState<Word | null>(null);
   const [training, setTraining] = useState<string | null>(null);
 
@@ -168,44 +150,6 @@ export default function DictionaryScreen() {
   );
   const [reviewOpen, setReviewOpen] = useState(false);
   const closeReview = useCallback(() => setReviewOpen(false), []);
-
-  // Экзамены: по переводу и по письму — слова с 3 точками своего навыка.
-  // «Экзамен» открывает панель с обоими; письмо — дальше окно выбора слов.
-  const exams = useExamQueue("writing");
-  const readingExams = useExamQueue("reading");
-  const [examHubOpen, setExamHubOpen] = useState(false);
-  const [examOpen, setExamOpen] = useState(false);
-  const hasExams =
-    exams.ready.length +
-      exams.upcoming.length +
-      readingExams.ready.length +
-      readingExams.upcoming.length >
-    0;
-  const examReady = exams.ready.length + readingExams.ready.length;
-  const nextExamAt = Math.min(
-    exams.upcoming[0]?.availableAt ?? Infinity,
-    readingExams.upcoming[0]?.availableAt ?? Infinity,
-  );
-  const startReadingExam = () => {
-    if (readingExams.ready.length === 0) return;
-    setExamHubOpen(false);
-    useGameStore.getState().setReturnTo("/vocabulary");
-    router.push({
-      pathname: "/games/reading-exam" as any,
-      params: {
-        wordIds: readingExams.ready.map((w) => w.vocabularyId).join(","),
-      },
-    });
-  };
-  const startExam = (words: Word[]) => {
-    if (words.length === 0) return;
-    setExamOpen(false);
-    useGameStore.getState().setReturnTo("/vocabulary");
-    router.push({
-      pathname: "/games/writing/exam" as any,
-      params: { wordIds: words.map((w) => w.vocabularyId).join(",") },
-    });
-  };
 
   // Наборы: создание и редактор (общий с карточками; «назад» вернёт сюда)
   const createSet = useCustomSetsStore((state) => state.createSet);
@@ -264,34 +208,6 @@ export default function DictionaryScreen() {
         onClose={closeReview}
       />
 
-      <ExamHubSheet
-        open={examHubOpen}
-        reading={{
-          ready: readingExams.ready.length,
-          nextAt: readingExams.upcoming[0]?.availableAt,
-        }}
-        writing={{
-          ready: exams.ready.length,
-          nextAt: exams.upcoming[0]?.availableAt,
-        }}
-        now={exams.now}
-        onStartReading={startReadingExam}
-        onStartWriting={() => {
-          setExamHubOpen(false);
-          setExamOpen(true);
-        }}
-        onClose={() => setExamHubOpen(false)}
-      />
-
-      <ExamModal
-        open={examOpen}
-        ready={exams.ready}
-        upcoming={exams.upcoming}
-        now={exams.now}
-        onStart={startExam}
-        onClose={() => setExamOpen(false)}
-      />
-
       <SetTitleModal
         visible={isCreating}
         heading="Новый набор"
@@ -347,33 +263,18 @@ export default function DictionaryScreen() {
         className="flex-1"
         style={{ display: isSearching ? "none" : "flex" }}
       >
-        {(reviewWords.length > 0 || hasExams) && (
-          // Одной строкой: слева экзамен, справа повторение
-          <View className="mt-3 flex-row gap-2">
-            {hasExams && (
-              <EntryTile
-                icon={<SealMark size={26} />}
-                title="Экзамен"
-                caption={
-                  examReady > 0
-                    ? `готово ${examReady} ${pluralWords(examReady)}`
-                    : formatExamWait(nextExamAt, exams.now)
-                }
-                onPress={() => setExamHubOpen(true)}
-              />
-            )}
-            {reviewWords.length > 0 && (
-              <EntryTile
-                icon={
-                  <View className="h-7 w-7 items-center justify-center rounded-lg bg-primary/15">
-                    <ReviewIcon width={16} height={16} color={colors.primary} />
-                  </View>
-                }
-                title="Повторение"
-                caption={`${reviewWords.length} ${pluralWords(reviewWords.length)}`}
-                onPress={() => setReviewOpen(true)}
-              />
-            )}
+        {reviewWords.length > 0 && (
+          <View className="mt-3 flex-row">
+            <EntryTile
+              icon={
+                <View className="h-7 w-7 items-center justify-center rounded-lg bg-primary/15">
+                  <ReviewIcon width={16} height={16} color={colors.primary} />
+                </View>
+              }
+              title="Повторение"
+              caption={`${reviewWords.length} ${pluralWords(reviewWords.length)}`}
+              onPress={() => setReviewOpen(true)}
+            />
           </View>
         )}
 
@@ -387,7 +288,6 @@ export default function DictionaryScreen() {
             chip={item}
             visible={item === shownChip}
             getDots={getDots}
-            getExams={getExams}
             onSelect={setOpened}
             onTrain={setTraining}
             onEditSet={editSet}
@@ -407,7 +307,6 @@ const DictionarySection = memo(function DictionarySection({
   chip,
   visible,
   getDots,
-  getExams,
   onSelect,
   onTrain,
   onEditSet,
@@ -416,7 +315,6 @@ const DictionarySection = memo(function DictionarySection({
   chip: number;
   visible: boolean;
   getDots: GetDots;
-  getExams: GetExams;
   onSelect: (word: Word) => void;
   onTrain: (sourceId: string) => void;
   onEditSet: (setId: string) => void;
@@ -442,13 +340,12 @@ const DictionarySection = memo(function DictionarySection({
       <GroupCard
         group={item}
         getDots={getDots}
-        getExams={getExams}
         onSelect={onSelect}
         onTrain={onTrain}
         onEdit={chip === SETS ? onEditSet : undefined}
       />
     ),
-    [getDots, getExams, onSelect, onTrain, onEditSet, chip],
+    [getDots, onSelect, onTrain, onEditSet, chip],
   );
 
   const style = { display: visible ? ("flex" as const) : ("none" as const) };
@@ -497,14 +394,12 @@ const DictionarySection = memo(function DictionarySection({
 const GroupCard = memo(function GroupCard({
   group,
   getDots,
-  getExams,
   onSelect,
   onTrain,
   onEdit,
 }: {
   group: DictionaryGroup;
   getDots: GetDots;
-  getExams: GetExams;
   onSelect: (word: Word) => void;
   onTrain: (sourceId: string) => void;
   /** Только у своего набора: карандаш — редактор набора. */
@@ -561,7 +456,6 @@ const GroupCard = memo(function GroupCard({
       <PathWordGrid
         words={group.words}
         getDots={getDots}
-        getExams={getExams}
         onSelect={onSelect}
         horizontalInset={GRID_INSET}
       />
@@ -569,7 +463,7 @@ const GroupCard = memo(function GroupCard({
   );
 });
 
-// ── Вход в экзамен или повторение (половина строки) ─────────────────────────
+// ── Вход в повторение ─────────────────────────
 
 function EntryTile({
   icon,
