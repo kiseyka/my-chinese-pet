@@ -1,20 +1,17 @@
 // app/(tabs)/games/flashcards/[setId].tsx
 //
 // Тренировка карточками: свой набор, ступень HSK или «Повторение».
-// Слово, которое человек видит впервые (ни одного ответа по переводу), сначала
-// показывается карточкой знакомства (WordIntroCard), потом сразу вопрос.
 // Режим (mode) выбирают в панели «Как будем тренироваться?»:
 //   по умолчанию — выбор перевода (даёт точки чтения): вопрос прямой
 //     (иероглиф → перевод) или обратный (перевод → иероглиф из похожих,
 //     ReverseQuestion; только у слов, где уже есть точка перевода);
-//     после ответа следующий вопрос — по кнопке «Продолжить» внизу экрана;
+//     следующий вопрос — по кнопке «Продолжить» внизу (до ответа неактивна);
 //     в обратном вопросе глаза пиньиня в шапке нет (пиньинь там до ответа скрыт);
 //   mode=self — самопроверка «Знаю / Сомневаюсь / Не знаю» (без точек).
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
 import { GameHeader } from "@/components/game/GameHeader";
 import { ReverseQuestion } from "@/components/game/ReverseQuestion";
-import { WordIntroCard } from "@/components/game/WordIntroCard";
 import { SelfCheckQuestion } from "@/components/game/SelfCheckQuestion";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
@@ -27,7 +24,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import type { FlashcardSource } from "@/utils/flashcards/source";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 
 export default function FlashcardTrainingScreen() {
@@ -59,42 +56,13 @@ function ChoiceTraining({ setId }: { setId: string }) {
     next,
   } = useFlashcardGame({ setId });
 
-  // Новое слово — ни одного ответа по переводу на момент показа вопроса.
-  // Считаем один раз на вопрос: после ответа слово уже не новое, а карточка не нужна
-  const [introduced, setIntroduced] = useState<Set<string>>(() => new Set());
-  const questionId = currentQuestion?.id;
-  const isNew = useMemo(() => {
-    if (!currentQuestion) return false;
-    const reading =
-      useWordProgressStore.getState().flashcardWords[
-        currentQuestion.vocabularyId
-      ]?.reading;
-    return !reading || reading.correctAnswers + reading.incorrectAnswers === 0;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questionId]);
 
   if (!source || !currentQuestion) return <NoWords source={source} />;
 
-  if (isNew && !introduced.has(currentQuestion.id)) {
-    return (
-      <TrainingFrame progress={progressPercent}>
-        <WordIntroCard
-          hanzi={currentQuestion.hanzi}
-          pinyin={currentQuestion.pinyin}
-          translation={currentQuestion.translation}
-          onContinue={() =>
-            setIntroduced((previous) =>
-              new Set(previous).add(currentQuestion.id),
-            )
-          }
-        />
-      </TrainingFrame>
-    );
-  }
 
-  // Кнопка всегда на месте (до ответа невидима): после ответа экран не прыгает
+  // Кнопка видна всегда, до ответа неактивна: после ответа экран не прыгает
   const continueButton = (
-    <ContinueButton visible={isAnswered} isLast={isLast} onPress={next} />
+    <ContinueButton enabled={isAnswered} isLast={isLast} onPress={next} />
   );
 
   if (currentQuestion.direction === "reverse" && currentQuestion.optionWords) {
@@ -218,28 +186,26 @@ function TrainingFrame({
   );
 }
 
-/** «Продолжить» после ответа. До ответа занимает место, но не видна и не нажимается. */
+/** «Продолжить»: видна всегда, до ответа неактивна (приглушена и не нажимается). */
 function ContinueButton({
-  visible,
+  enabled,
   isLast,
   onPress,
 }: {
-  visible: boolean;
+  enabled: boolean;
   isLast: boolean;
   onPress: () => void;
 }) {
   return (
-    <View
-      className="pb-2 pt-3"
-      style={{ opacity: visible ? 1 : 0 }}
-      pointerEvents={visible ? "auto" : "none"}
-    >
+    <View className="pb-2 pt-3">
       <Pressable
         onPress={onPress}
-        disabled={!visible}
-        className="min-h-14 items-center justify-center rounded-2xl bg-primary px-5 active:opacity-80"
+        disabled={!enabled}
+        className={`min-h-14 items-center justify-center rounded-2xl px-5 ${
+          enabled ? "bg-primary active:opacity-80" : "bg-primary/30"
+        }`}
         accessibilityRole="button"
-        accessibilityElementsHidden={!visible}
+        accessibilityState={{ disabled: !enabled }}
       >
         <Text className="font-nunitoBold text-body text-white">
           {isLast ? "Завершить" : "Продолжить"}
