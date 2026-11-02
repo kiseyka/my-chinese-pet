@@ -11,8 +11,8 @@
 import { SetTitleModal } from "@/components/flashcards/SetTitleModal";
 import { SetWordRow } from "@/components/flashcards/SetWordRow";
 import { StepPickerSheet } from "@/components/flashcards/StepPickerSheet";
-import { TrainingModeSheet } from "@/components/flashcards/TrainingModeSheet";
 import { WordSheet } from "@/components/flashcards/WordSheet";
+import { TrainingChoiceSheet } from "@/components/training/TrainingChoiceSheet";
 import type { Word } from "@/content/flashcards/types";
 import PlusIcon from "@/assets/images/icons/circle-plus.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
@@ -150,8 +150,13 @@ export default function EditSetScreen() {
         onClose={() => setOpenedWord(null)}
       />
 
-      <TrainingModeSheet
-        setId={modeFor}
+      {/* Тот же выбор, что в «Словаре»: перевод или письмо; вернёмся сюда же */}
+      <TrainingChoiceSheet
+        sourceId={modeFor}
+        returnTo={{
+          pathname: "/games/flashcards/edit/[setId]",
+          params: { setId: set.id },
+        }}
         onClose={() => setModeFor(null)}
       />
 
