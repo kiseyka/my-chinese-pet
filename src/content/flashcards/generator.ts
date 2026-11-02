@@ -1,9 +1,10 @@
 import { shuffle } from "@/utils/shuffle";
 import { QuizQuestion, Word } from "./types";
 
-// Вопрос бывает прямым (иероглиф → выбрать перевод) и обратным
-// (перевод → выбрать иероглиф из похожих). Обратный строит вызывающий через
-// reverse: генератору не нужно знать ни прогресс слова, ни как подбирать похожие.
+// Вопрос бывает прямым (иероглиф → выбрать перевод), обратным (перевод → выбрать
+// иероглиф из похожих) и про чтение (иероглиф → выбрать пиньинь с верным тоном).
+// Обратный и про чтение строит вызывающий через ask: генератору не нужно знать
+// ни прогресс слова, ни как подбирать похожие.
 
 const QUESTIONS_PER_SESSION = 10;
 
@@ -23,10 +24,11 @@ interface GenerateQuizOptions {
    */
   translate?: (key: string) => string;
   /**
-   * Обратный вопрос для слова: варианты-слова (среди них само слово) или null —
-   * тогда вопрос прямой. Решает, когда спрашивать наоборот, вызывающий.
+   * Не прямой вопрос для слова или null — тогда прямой. Решает вызывающий:
+   *   reverse — варианты-слова (среди них само слово);
+   *   pinyin — неверные чтения (верное добавит генератор).
    */
-  reverse?: (word: Word) => Word[] | null;
+  ask?: (word: Word) => QuizAsk | null;
   /**
    * Слова, близкие по смыслу (например, той же темы): из них неверные варианты
    * берутся в первую очередь, остальное добирается как обычно.
@@ -34,12 +36,16 @@ interface GenerateQuizOptions {
   related?: (word: Word) => Word[];
 }
 
+export type QuizAsk =
+  | { direction: "reverse"; options: Word[] }
+  | { direction: "pinyin"; wrong: string[] };
+
 export function generateQuiz(
   words: Word[],
   {
     extraPool = [],
     translate = (key) => key,
-    reverse,
+    ask,
     related,
   }: GenerateQuizOptions = {},
 ): QuizQuestion[] {
@@ -57,7 +63,23 @@ export function generateQuiz(
   const useExtra = words.length - 1 < MIN_SET_DISTRACTORS;
 
   return selectedWords.map((word): QuizQuestion => {
-    const reverseOptions = reverse?.(word);
+    const special = ask?.(word);
+
+    if (special?.direction === "pinyin" && special.wrong.length >= 2) {
+      return {
+        vocabularyId: word.vocabularyId,
+        id: word.id,
+        hanzi: word.hanzi,
+        pinyin: word.pinyin,
+        translation: word.translation,
+        direction: "pinyin",
+        correctAnswer: word.pinyin,
+        options: shuffle([word.pinyin, ...special.wrong]),
+      };
+    }
+
+    const reverseOptions =
+      special?.direction === "reverse" ? special.options : null;
     if (reverseOptions && reverseOptions.length >= 2) {
       return {
         vocabularyId: word.vocabularyId,

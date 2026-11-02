@@ -27,9 +27,11 @@ export type QuizQuestion = {
   translation: string;
   /**
    * forward — показан иероглиф, выбрать перевод (варианты — ключи переводов);
-   * reverse — показан перевод, выбрать иероглиф из похожих (варианты — id слов).
+   * reverse — показан перевод, выбрать иероглиф из похожих (варианты — id слов);
+   * pinyin — показан иероглиф, выбрать чтение из вариантов с другими тонами
+   *   (варианты — строки пиньиня).
    */
-  direction: "forward" | "reverse";
+  direction: "forward" | "reverse" | "pinyin";
   correctAnswer: string;
   options: string[];
   /** Только у reverse: иероглифы вариантов в том же порядке, что options. */

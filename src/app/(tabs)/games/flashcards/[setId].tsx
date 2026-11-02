@@ -4,13 +4,16 @@
 // Режим (mode) выбирают в панели «Как будем тренироваться?»:
 //   по умолчанию — выбор перевода (даёт точки чтения): вопрос прямой
 //     (иероглиф → перевод) или обратный (перевод → иероглиф из похожих,
-//     ReverseQuestion; только у слов, где уже есть точка перевода);
+//     ReverseQuestion) или про чтение (иероглиф → пиньинь, варианты отличаются
+//     тоном, PinyinQuestion); обратный и чтение — только у слов, где уже есть
+//     точка перевода;
 //     следующий вопрос — по кнопке «Продолжить» внизу (до ответа неактивна);
-//     в обратном вопросе глаза пиньиня в шапке нет (пиньинь там до ответа скрыт);
+//     в обратном вопросе и вопросе про чтение глаза пиньиня в шапке нет;
 //   mode=self — самопроверка «Знаю / Сомневаюсь / Не знаю» (без точек).
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
 import { GameHeader } from "@/components/game/GameHeader";
+import { PinyinQuestion } from "@/components/game/PinyinQuestion";
 import { ReverseQuestion } from "@/components/game/ReverseQuestion";
 import { SelfCheckQuestion } from "@/components/game/SelfCheckQuestion";
 import { Screen } from "@/components/layout/Screen";
@@ -64,6 +67,26 @@ function ChoiceTraining({ setId }: { setId: string }) {
   const continueButton = (
     <ContinueButton enabled={isAnswered} isLast={isLast} onPress={next} />
   );
+
+  if (currentQuestion.direction === "pinyin") {
+    return (
+      <TrainingFrame
+        progress={progressPercent}
+        showPinyinToggle={false}
+        footer={continueButton}
+      >
+        <PinyinQuestion
+          key={currentQuestion.id}
+          hanzi={currentQuestion.hanzi}
+          options={currentQuestion.options}
+          correctAnswer={currentQuestion.correctAnswer}
+          selected={selected}
+          isAnswered={isAnswered}
+          onSelect={handleSelect}
+        />
+      </TrainingFrame>
+    );
+  }
 
   if (currentQuestion.direction === "reverse" && currentQuestion.optionWords) {
     return (
