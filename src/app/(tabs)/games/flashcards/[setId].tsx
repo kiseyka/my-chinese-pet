@@ -1,15 +1,20 @@
 // app/(tabs)/games/flashcards/[setId].tsx
 //
 // Тренировка карточками: свой набор, ступень HSK или «Повторение».
-// Слово, которое человек видит впервые (ни одного ответа по переводу), сначала
-// показывается карточкой знакомства (WordIntroCard), потом сразу вопрос.
 // Режим (mode) выбирают в панели «Как будем тренироваться?»:
-//   по умолчанию — выбор перевода (даёт точки чтения);
+//   по умолчанию — выбор перевода (даёт точки чтения): вопрос прямой
+//     (иероглиф → перевод) или обратный (перевод → иероглиф из похожих,
+//     ReverseQuestion) или про чтение (иероглиф → пиньинь, варианты отличаются
+//     тоном, PinyinQuestion); обратный и чтение — только у слов, где уже есть
+//     точка перевода;
+//     следующий вопрос — по кнопке «Продолжить» внизу (до ответа неактивна);
+//     в обратном вопросе и вопросе про чтение глаза пиньиня в шапке нет;
 //   mode=self — самопроверка «Знаю / Сомневаюсь / Не знаю» (без точек).
 
 import { FlashcardQuestion } from "@/components/game/FlashcardQuestion";
 import { GameHeader } from "@/components/game/GameHeader";
-import { WordIntroCard } from "@/components/game/WordIntroCard";
+import { PinyinQuestion } from "@/components/game/PinyinQuestion";
+import { ReverseQuestion } from "@/components/game/ReverseQuestion";
 import { SelfCheckQuestion } from "@/components/game/SelfCheckQuestion";
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
@@ -22,8 +27,8 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import type { FlashcardSource } from "@/utils/flashcards/source";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState, type ReactNode } from "react";
-import { Text, View } from "react-native";
+import { useState, type ReactNode } from "react";
+import { Pressable, Text, View } from "react-native";
 
 export default function FlashcardTrainingScreen() {
   const { setId, mode } = useLocalSearchParams<{
@@ -49,44 +54,62 @@ function ChoiceTraining({ setId }: { setId: string }) {
     selected,
     isAnswered,
     progressPercent,
+    isLast,
     handleSelect,
+    next,
   } = useFlashcardGame({ setId });
 
-  // Новое слово — ни одного ответа по переводу на момент показа вопроса.
-  // Считаем один раз на вопрос: после ответа слово уже не новое, а карточка не нужна
-  const [introduced, setIntroduced] = useState<Set<string>>(() => new Set());
-  const questionId = currentQuestion?.id;
-  const isNew = useMemo(() => {
-    if (!currentQuestion) return false;
-    const reading =
-      useWordProgressStore.getState().flashcardWords[
-        currentQuestion.vocabularyId
-      ]?.reading;
-    return !reading || reading.correctAnswers + reading.incorrectAnswers === 0;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questionId]);
 
   if (!source || !currentQuestion) return <NoWords source={source} />;
 
-  if (isNew && !introduced.has(currentQuestion.id)) {
+
+  // Кнопка видна всегда, до ответа неактивна: после ответа экран не прыгает
+  const continueButton = (
+    <ContinueButton enabled={isAnswered} isLast={isLast} onPress={next} />
+  );
+
+  if (currentQuestion.direction === "pinyin") {
     return (
-      <TrainingFrame progress={progressPercent}>
-        <WordIntroCard
+      <TrainingFrame
+        progress={progressPercent}
+        showPinyinToggle={false}
+        footer={continueButton}
+      >
+        <PinyinQuestion
+          key={currentQuestion.id}
           hanzi={currentQuestion.hanzi}
-          pinyin={currentQuestion.pinyin}
+          options={currentQuestion.options}
+          correctAnswer={currentQuestion.correctAnswer}
+          selected={selected}
+          isAnswered={isAnswered}
+          onSelect={handleSelect}
+        />
+      </TrainingFrame>
+    );
+  }
+
+  if (currentQuestion.direction === "reverse" && currentQuestion.optionWords) {
+    return (
+      <TrainingFrame
+        progress={progressPercent}
+        showPinyinToggle={false}
+        footer={continueButton}
+      >
+        <ReverseQuestion
+          key={currentQuestion.id}
           translation={currentQuestion.translation}
-          onContinue={() =>
-            setIntroduced((previous) =>
-              new Set(previous).add(currentQuestion.id),
-            )
-          }
+          options={currentQuestion.optionWords}
+          correctId={currentQuestion.correctAnswer}
+          selected={selected}
+          isAnswered={isAnswered}
+          onSelect={handleSelect}
         />
       </TrainingFrame>
     );
   }
 
   return (
-    <TrainingFrame progress={progressPercent}>
+    <TrainingFrame progress={progressPercent} footer={continueButton}>
       <FlashcardQuestion
         hanzi={currentQuestion.hanzi}
         pinyin={currentQuestion.pinyin}
@@ -143,12 +166,19 @@ function SelfCheckTraining({ setId }: { setId: string }) {
 
 // ── Общее ────────────────────────────────────────────────────────────────────
 
-/** Экран тренировки: шкала прогресса, выход с подтверждением. */
+/**
+ * Экран тренировки: шкала прогресса, выход с подтверждением.
+ * footer — прижат к низу экрана (кнопка «Продолжить»).
+ */
 function TrainingFrame({
   progress,
+  showPinyinToggle = true,
+  footer,
   children,
 }: {
   progress: number;
+  showPinyinToggle?: boolean;
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -169,11 +199,42 @@ function TrainingFrame({
 
       <GameHeader
         progress={progress}
+        showPinyin={showPinyinToggle}
         onExit={() => setIsExitModalVisible(true)}
       />
 
-      {children}
+      <View className="flex-1">{children}</View>
+      {footer}
     </Screen>
+  );
+}
+
+/** «Продолжить»: видна всегда, до ответа неактивна (приглушена и не нажимается). */
+function ContinueButton({
+  enabled,
+  isLast,
+  onPress,
+}: {
+  enabled: boolean;
+  isLast: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <View className="pb-2 pt-3">
+      <Pressable
+        onPress={onPress}
+        disabled={!enabled}
+        className={`min-h-14 items-center justify-center rounded-2xl px-5 ${
+          enabled ? "bg-primary active:opacity-80" : "bg-primary/30"
+        }`}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !enabled }}
+      >
+        <Text className="font-nunitoBold text-body text-white">
+          {isLast ? "Завершить" : "Продолжить"}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 

@@ -1,8 +1,8 @@
 // src/utils/readingExam.ts
 //
 // «Обратный перевод»: показываем перевод, нужно выбрать иероглиф из EXAM_OPTIONS
-// вариантов. Остался от экзамена по переводу (экзамены убраны); сейчас им пользуются
-// игры панды, дальше он войдёт в обычную тренировку перевода. Сложнее обычных карточек: нужно вспомнить
+// вариантов. Остался от экзамена по переводу (экзамены убраны); им пользуются
+// обратные вопросы в тренировке перевода (useFlashcardGame) и игры панды. Сложнее обычных карточек: нужно вспомнить
 // сам знак, а не узнать знакомое слово. Поэтому неправильные варианты подбираются
 // похожими:
 //   - слово из одного знака — знаки с тем же ключом, общими частями и близким
@@ -29,8 +29,13 @@ export interface ReadingExamQuestion {
   options: Word[];
 }
 
+/** Части уже разобранных иероглифов: подбор похожих перебирает весь словарь. */
+const partsCache = new Map<string, Set<string>>();
+
 /** Знаки-части иероглифа: ключ и всё, что есть в разложении (без служебных ⿰⿱…). */
 function partsOf(char: string): Set<string> {
+  const cached = partsCache.get(char);
+  if (cached) return cached;
   const data = getHanzi(char);
   const parts = new Set<string>();
   if (data?.radical) parts.add(data.radical);
@@ -40,6 +45,7 @@ function partsOf(char: string): Set<string> {
   for (const part of data?.parts ?? []) {
     for (const symbol of Array.from(part.label)) parts.add(symbol);
   }
+  partsCache.set(char, parts);
   return parts;
 }
 

@@ -2,9 +2,12 @@
 //
 // «Как будем тренироваться?» — один выбор режима для любого списка слов
 // (тема в «Словаре», избранное, «Другие слова»):
-//   «Выбор перевода» — иероглиф → один из четырёх переводов, даёт точки перевода;
-//   «Самопроверка»   — «Знаю / Сомневаюсь / Не знаю», без точек;
+//   «Выбор перевода» — прямые, обратные вопросы и чтение; даёт точки перевода;
 //   «Письмо»         — урок письма по словам, которые можно писать; даёт точки письма.
+// Только у «Изученного» первым идёт «Быстрая проверка» (самопроверка «Знаю /
+// Сомневаюсь / Не знаю», без точек): быстро понять, что подзабылось, — такие слова
+// уходят в «Повторение». У остальных списков её нет: на новых словах «не знаю»
+// отправляло бы в «Повторение» всю тему.
 // Режим, для которого слов не хватает, показан бледным с причиной.
 // returnTo — куда вернёт «Продолжить» на экране итогов (и «назад» из тренировки).
 // Письмо по «Повторению» и по набору идёт своими уроками (как раньше в «Написании»),
@@ -21,7 +24,11 @@ import { MIN_SET_WORDS } from "@/store/customSetsStore";
 import { useGameStore } from "@/store/gameStore";
 import { pluralWords } from "@/utils/writing/labels";
 import { getWritableWords } from "@/utils/writing/words";
-import { resolveWordSource, REVIEW_SOURCE } from "@/utils/wordSource";
+import {
+  LEARNED_SOURCE,
+  resolveWordSource,
+  REVIEW_SOURCE,
+} from "@/utils/wordSource";
 import { useRouter, type Href } from "expo-router";
 import type { ComponentType } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -56,6 +63,7 @@ export function TrainingChoiceSheet({
         const writable = getWritableWords(source?.words ?? []).length;
         const canRead = total >= MIN_SET_WORDS;
         const readReason = `Нужно хотя бы ${MIN_SET_WORDS} слова`;
+        const isLearned = id === LEARNED_SOURCE;
 
         return (
           <>
@@ -72,8 +80,27 @@ export function TrainingChoiceSheet({
             </Text>
 
             <View className="mt-5 gap-2">
+              {isLearned && (
+                <ModeButton
+                  primary
+                  Icon={SelfCheckIcon}
+                  title="Быстрая проверка"
+                  hint={
+                    canRead
+                      ? "Что подзабылось — в повторение"
+                      : readReason
+                  }
+                  enabled={canRead}
+                  onPress={() =>
+                    go({
+                      pathname: "/games/flashcards/[setId]",
+                      params: { setId: id, mode: SELF_CHECK_MODE },
+                    })
+                  }
+                />
+              )}
               <ModeButton
-                primary
+                primary={!isLearned}
                 Icon={ChoiceIcon}
                 title="Выбор перевода"
                 hint={canRead ? "Даёт точки перевода" : readReason}
@@ -82,18 +109,6 @@ export function TrainingChoiceSheet({
                   go({
                     pathname: "/games/flashcards/[setId]",
                     params: { setId: id },
-                  })
-                }
-              />
-              <ModeButton
-                Icon={SelfCheckIcon}
-                title="Самопроверка"
-                hint={canRead ? "Быстро пройтись по словам, без точек" : readReason}
-                enabled={canRead}
-                onPress={() =>
-                  go({
-                    pathname: "/games/flashcards/[setId]",
-                    params: { setId: id, mode: SELF_CHECK_MODE },
                   })
                 }
               />

@@ -123,7 +123,7 @@ export default function GeneralStatsScreen() {
 
       {/* Заголовок — как на остальных экранах */}
       <Title>
-        {isSelfCheck ? "Самопроверка завершена" : "Тренировка завершена"}
+        {isSelfCheck ? "Проверка завершена" : "Тренировка завершена"}
       </Title>
 
       <ScrollView
