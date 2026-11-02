@@ -4,11 +4,15 @@ import UserIcon from "@/assets/images/icons/user-round.svg";
 import practiceImg from "@/assets/images/practice.png";
 import shopImg from "@/assets/images/shop.png";
 import { CoinBalance } from "@/components/CoinBalance";
+import { DailyCard } from "@/components/daily/DailyCard";
+import { DailySetupSheet } from "@/components/daily/DailySetupSheet";
 import { Screen } from "@/components/layout/Screen";
 import { PandaScene } from "@/components/panda/PandaScene";
 import { PandaTalkSheet } from "@/components/panda/PandaTalkSheet";
 import { ThoughtTestPanel } from "@/components/panda/ThoughtTestPanel";
 import { usePandaThought } from "@/hooks/panda/usePandaThought";
+import { useDaily } from "@/hooks/useDaily";
+import { useDailyStore } from "@/store/dailyStore";
 import { NavIconButton } from "@/components/ui/NavIconButton";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { colors } from "@/theme/colors";
@@ -41,6 +45,20 @@ const PandaScreen = () => {
   useEffect(() => {
     if (play) setTalkId(Date.now());
   }, [play]);
+
+  // Слова дня (utils/daily): при первом заходе сами спрашиваем, сколько новых в день
+  const daily = useDaily();
+  const [setupOpen, setSetupOpen] = useState<{
+    current: typeof daily.perDay;
+  } | null>(null);
+  useEffect(() => {
+    const { perDay, setupOffered } = useDailyStore.getState();
+    if (!perDay && !setupOffered) setSetupOpen({ current: null });
+  }, []);
+  const closeSetup = () => {
+    setSetupOpen(null);
+    useDailyStore.getState().setSetupOffered();
+  };
 
   return (
     <Screen className="bg-[#EDE0CE]">
@@ -121,6 +139,17 @@ const PandaScreen = () => {
           Тап по панде — шторка разговора: фраза дня и игры, см. PandaTalkSheet */}
       <View className="flex-1" />
 
+      {/* Слова дня: что учить и писать сегодня, без выбора этапа */}
+      <View className="px-2 pb-3">
+        <DailyCard
+          configured={!!daily.perDay}
+          reading={daily.reading}
+          writing={daily.writing}
+          onStart={daily.start}
+          onSettings={() => setSetupOpen({ current: daily.perDay })}
+        />
+      </View>
+
       {/* Ряд навигационных иконок — обе просто переводят на отдельный
           экран, никакого локального state/анимации тут больше нет. */}
       <View className="flex-row justify-between pb-2">
@@ -138,6 +167,14 @@ const PandaScreen = () => {
       </View>
 
       <PandaTalkSheet openId={talkId} onClose={closeTalk} />
+      <DailySetupSheet
+        open={setupOpen}
+        onClose={closeSetup}
+        onSave={(perDay) => {
+          daily.saveSettings(perDay);
+          setSetupOpen(null);
+        }}
+      />
     </Screen>
   );
 };

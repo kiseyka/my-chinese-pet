@@ -280,6 +280,7 @@ export function useWritingLesson(buildPlan: () => LessonItem[]) {
         chars: charOutcomesOf(current.word.hanzi, assistedChars),
         deep: current.isDeep === true,
         retryDeep: current.retryDeep === true,
+        memoryCheck: current.memoryCheck === true,
       },
     ];
     setOutcomes(nextOutcomes);

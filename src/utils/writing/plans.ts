@@ -30,6 +30,11 @@ export interface LessonItem {
   retryDeep?: boolean;
   /** Это задание — работа над ошибками (не входит в счёт урока). */
   isDeep?: boolean;
+  /**
+   * Проверка по памяти («знаю, как пишется» в словах дня): написано без подсказок —
+   * сразу 3 точки письма.
+   */
+  memoryCheck?: boolean;
 }
 
 // ── Свободная тренировка (одно слово из сетки) ───────────────────────────────
@@ -117,6 +122,34 @@ export function createSetPlan(setId: string): LessonItem[] {
       roleLabel: "Набор",
       retryDeep: true,
     }));
+}
+
+// ── Слова дня (маршрут /games/daily/writing) ─────────────────────────────────
+
+/**
+ * Письмо слов дня. known — слова, про которые ответили «знаю, как пишется»:
+ * они сразу пишутся по памяти (без подсказок — 3 точки), с подсказками — в конце
+ * работа над ошибками. Остальные — как обычно: новое — полный цикл, начатое — быстрый.
+ */
+export function createDailyPlan(words: Word[], known: Set<string>): LessonItem[] {
+  return words.map((word) => {
+    if (known.has(word.vocabularyId)) {
+      return {
+        word,
+        format: "memory" as const,
+        roleLabel: "По памяти",
+        retryDeep: true,
+        memoryCheck: true,
+      };
+    }
+    const isNew = getWordWritingDots(word) === 0;
+    return {
+      word,
+      format: isNew ? ("full" as const) : ("quick" as const),
+      roleLabel: isNew ? "Новое слово" : "Учим дальше",
+      retryDeep: !isNew,
+    };
+  });
 }
 
 // ── Работа над ошибками ──────────────────────────────────────────────────────

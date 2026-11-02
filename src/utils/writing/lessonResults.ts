@@ -12,6 +12,8 @@ import {
 import type { WordChange } from "@/store/pandaStore";
 import type { WordLevel } from "@/store/wordProgressStore";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
+import { useWordProgressStore } from "@/store/wordProgressStore";
+import { markDailyDone } from "@/utils/daily";
 import { finishTraining, getAccuracy } from "@/utils/finishTraining";
 import { answerWord, applyAnswerStatus } from "@/utils/learning";
 import { readWordLevel } from "@/utils/wordLevel";
@@ -41,6 +43,8 @@ export interface WordOutcome {
   deep: boolean;
   /** Слово нужно отправить на работу над ошибками, если не получилось. */
   retryDeep: boolean;
+  /** Проверка по памяти (слова дня): без подсказок — сразу 3 точки. */
+  memoryCheck?: boolean;
 }
 
 /** Результаты отдельных иероглифов слова по тому, где на итоговом этапе были подсказки. */
@@ -110,6 +114,14 @@ export function finishWritingLesson(
     if (success) credit(word.vocabularyId);
   }
 
+  // Проверка по памяти без подсказок — слово пишется: сразу все 3 точки
+  for (const { word, success, memoryCheck } of outcomes) {
+    if (success && memoryCheck) {
+      useWordProgressStore.getState().masterSkill(word.vocabularyId, "writing");
+      applyAnswerStatus(word.vocabularyId, true);
+    }
+  }
+
   // Иероглифы внутри слов, написанные без подсказок
   for (const { word, chars } of outcomes) {
     for (const { hanzi, success } of chars) {
@@ -162,6 +174,12 @@ export function finishWritingLesson(
     }),
   );
   game.setWritingResults(writingResults);
+
+  // Слова дня: эти слова сегодня писали
+  markDailyDone(
+    "writing",
+    scored.map(({ word }) => word.vocabularyId),
+  );
 
   const results: FlashcardQuestionResult[] = [];
   const wordChanges: WordChange[] = [];
