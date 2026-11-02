@@ -8,6 +8,9 @@
 // - текущий вопрос, выбранный ответ, блокировка двойных нажатий;
 // - пауза после ответа и переход к следующему вопросу;
 // - запись ответа в gameStore (для экрана итогов);
+// - запись ответа идёт ПОСЛЕ того, как экран показал верный/неверный вариант:
+//   точки слова меняют сторы, а на них подписаны другие смонтированные экраны
+//   («Словарь», путь) — если писать сразу, подсветка ответа ждёт их перерисовку;
 // - вызов onFinish после последнего вопроса.
 //
 // Что считать правильным, что делать с прогрессом слова и какую давать награду,
@@ -71,6 +74,15 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
   /** Последний вопрос пройден, onFinish уже вызван — повторные next() не нужны. */
   const isFinished = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Запись ответа, отложенная до отрисовки подсветки (см. flushAnswer). */
+  const pendingAnswer = useRef<(() => void) | null>(null);
+
+  /** Записать отложенный ответ сейчас (перед следующим вопросом, концом, уходом). */
+  const flushAnswer = () => {
+    const work = pendingAnswer.current;
+    pendingAnswer.current = null;
+    work?.();
+  };
 
   // Колбэки держим в ref, чтобы сессия не пересобиралась на каждом рендере,
   // а таймер всегда вызывал свежие версии.
@@ -108,8 +120,12 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
       isProcessingAnswer.current = false;
       isFinished.current = false;
 
-      // Ушли с экрана посреди паузы — не переходим к следующему вопросу за кадром
-      return clearTimer;
+      // Ушли с экрана посреди паузы — не переходим к следующему вопросу за кадром,
+      // но ответ, который уже дали, записываем
+      return () => {
+        clearTimer();
+        flushAnswer();
+      };
     }, [sessionKey]),
   );
 
@@ -119,6 +135,7 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
 
   const goToNext = () => {
     timeoutRef.current = null;
+    flushAnswer();
 
     if (currentIndex >= questions.length - 1) {
       // На последнем вопросе клики так и остаются заблокированными
@@ -141,18 +158,22 @@ export function useQuizSession<Q extends QuizQuestionBase, A>({
     setSelected(answer);
     setIsAnswered(true);
 
-    const correct = callbacks.current.isCorrect(currentQuestion, answer);
+    const question = currentQuestion;
+    const correct = callbacks.current.isCorrect(question, answer);
 
-    useGameStore.getState().answerQuestion({
-      vocabularyId: currentQuestion.vocabularyId,
-      hanzi: currentQuestion.hanzi,
-      pinyin: currentQuestion.pinyin,
-      translation: currentQuestion.translation,
-      isCorrect: correct,
-      ...callbacks.current.resultExtra?.(currentQuestion, answer),
-    });
-
-    callbacks.current.onAnswer?.(currentQuestion, answer, correct);
+    // Сначала экран показывает ответ, потом — запись в сторы (кадр спустя)
+    pendingAnswer.current = () => {
+      useGameStore.getState().answerQuestion({
+        vocabularyId: question.vocabularyId,
+        hanzi: question.hanzi,
+        pinyin: question.pinyin,
+        translation: question.translation,
+        isCorrect: correct,
+        ...callbacks.current.resultExtra?.(question, answer),
+      });
+      callbacks.current.onAnswer?.(question, answer, correct);
+    };
+    requestAnimationFrame(() => setTimeout(flushAnswer, 0));
 
     if (autoAdvance) timeoutRef.current = setTimeout(goToNext, advanceDelayMs);
   };
