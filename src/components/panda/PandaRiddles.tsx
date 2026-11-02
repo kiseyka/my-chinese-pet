@@ -132,9 +132,9 @@ export function PickRiddle({
             const style = !answered
               ? "border-primary/30 bg-surface"
               : isAnswer
-                ? "border-primary bg-primary/15"
+                ? "border-primary bg-learned"
                 : isPicked
-                  ? "border-error bg-error/10"
+                  ? "border-wrongBorder bg-wrong"
                   : "border-border bg-surface opacity-50";
 
             return (
@@ -226,9 +226,9 @@ function AnswerWord({
   onSpeak: () => void;
 }) {
   const box = right
-    ? "rounded-2xl border-2 border-primary bg-primary/15 px-4 py-2"
+    ? "rounded-2xl border-2 border-primary bg-learned px-4 py-2"
     : wrong
-      ? "border-l-2 border-error pl-2"
+      ? "border-l-2 border-wrongBorder pl-2"
       : "";
   return (
     <Pressable

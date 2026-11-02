@@ -96,7 +96,7 @@ export function ToneQuestion({
               key={tone}
               disabled={isAnswered}
               onPress={() => onSelectTone(tone)}
-              className={`w-[45%] items-center rounded-xl py-4 ${button}`}
+              className={`w-[45%] items-center rounded-xl border-2 py-4 ${button}`}
             >
               <Text className={`text-2xl ${text}`}>{arrow}</Text>
               <Text className={`mt-1 text-xl font-nunitoMedium ${text}`}>

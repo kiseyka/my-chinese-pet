@@ -7,7 +7,11 @@
 // и звучит верный иероглиф. После ответа тап по любому варианту озвучивает его
 // (до ответа нельзя: по звуку вопрос решался бы так же, как по пиньиню).
 
-import { getOptionState, type OptionState } from "@/components/game/AnswerOption";
+import {
+  getOptionState,
+  OptionMark,
+  type OptionState,
+} from "@/components/game/AnswerOption";
 import { Hanzi } from "@/components/ui/Hanzi";
 import { Pinyin } from "@/components/ui/Pinyin";
 import type { QuizOptionWord } from "@/content/flashcards/types";
@@ -30,8 +34,8 @@ const PROMPT_HEIGHT = 180;
 
 const CELL_STYLES: Record<OptionState, string> = {
   idle: "border-transparent bg-surface active:opacity-70",
-  correct: "border-primary bg-primary/15",
-  wrong: "border-error bg-error/10",
+  correct: "border-primary bg-learned",
+  wrong: "border-wrongBorder bg-wrong",
   dimmed: "border-transparent bg-surface opacity-40",
 };
 
@@ -96,6 +100,10 @@ export function ReverseQuestion({
               accessibilityLabel={option.hanzi}
               accessibilityHint={isAnswered ? "Послушать" : undefined}
             >
+              {/* Значок верного / неверного — в углу ячейки */}
+              <View className="absolute right-2 top-2">
+                <OptionMark state={state} size={20} />
+              </View>
               <Hanzi
                 size={Array.from(option.hanzi).length > 2 ? 32 : 44}
                 numberOfLines={1}
