@@ -36,7 +36,19 @@ export default {
       output: "static",
       favicon: "./assets/images/favicon.png",
     },
-    plugins: ["expo-router", "expo-image"],
+    plugins: [
+      "expo-router",
+      "expo-image",
+      // «Слушай и повторяй»: звук в фоне и на экране блокировки; микрофон не нужен
+      [
+        "expo-audio",
+        {
+          enableBackgroundPlayback: true,
+          microphonePermission: false,
+          recordAudioAndroid: false,
+        },
+      ],
+    ],
     experiments: {
       typedRoutes: true,
       reactCompiler: true,

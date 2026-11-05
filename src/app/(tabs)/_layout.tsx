@@ -85,6 +85,14 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="games/listen"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+
+      <Tabs.Screen
         name="games/tones"
         options={{
           href: null,

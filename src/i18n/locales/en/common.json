@@ -9,6 +9,10 @@
             "title": "Dictionary",
             "description": "All words, your own trainings, sets and review"
         },
+        "listen": {
+            "title": "Listen and repeat",
+            "description": "Audio lesson — no need to look at the screen"
+        },
         "tones": {
             "title": "Tones",
             "description": "Writing characters"
