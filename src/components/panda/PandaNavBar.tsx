@@ -3,7 +3,7 @@
 // Нижняя панель экрана панды: «Тренировки» · «Слова дня» · «Магазин».
 // Иконки — lucide (как остальные в assets/images/icons), подпись под иконкой.
 //
-// Оформление — пергамент (components/ui/Parchment): листья в нижних углах,
+// Оформление — пергамент (components/ui/Parchment): ветки по скруглениям слева и справа,
 // между пунктами тонкие линии, иконки — оливковые (primary) и тонкие, подписи — «чернила» (ink).
 //
 // «Слова дня» (utils/daily): пока на сегодня что-то осталось — красная точка
@@ -115,10 +115,12 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
         <Parchment
           className="mb-2 flex-row py-2"
           radius={36}
+          clip
           decor={[
-            // Листья из нижних углов: слева как есть, справа зеркально
-            { sprig: "leafLong", width: 76, position: { left: -18, bottom: -12 }, opacity: 0.6 },
-            { sprig: "leafShort", width: 64, position: { right: -16, bottom: -12 }, flip: true, opacity: 0.6 },
+            // Изогнутые ветки по скруглениям: справа как есть, слева зеркально.
+            // Плашка обрезает всё, что вылезло бы за край
+            { sprig: "leafCurve", width: 92, position: { left: 3, bottom: 2 }, flip: true, opacity: 0.5 },
+            { sprig: "leafCurve", width: 92, position: { right: 3, bottom: 2 }, opacity: 0.5 },
           ]}
         >
           <NavItem

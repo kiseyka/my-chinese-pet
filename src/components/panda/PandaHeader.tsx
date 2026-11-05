@@ -34,8 +34,11 @@ export function PandaHeader() {
         <Parchment
           className="flex-row items-center gap-3 py-2 pl-2 pr-4"
           radius={32}
-          // Веточка сливы в правом верхнем углу, обрезана по краю плашки
-          decor={[{ sprig: "plumSmall", width: 92, position: { right: -6, top: -10 } }]}
+          // Веточка сливы растёт из нижней границы справа (отражена по вертикали),
+          // обрезана по краю плашки
+          decor={[
+            { sprig: "plumSmall", width: 92, position: { right: -6, bottom: -10 }, flipY: true },
+          ]}
           clip
         >
           <View
