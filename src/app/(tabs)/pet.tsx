@@ -1,19 +1,16 @@
 // src/screens/PandaScreen.tsx
 
 import UserIcon from "@/assets/images/icons/user-round.svg";
-import practiceImg from "@/assets/images/practice.png";
-import shopImg from "@/assets/images/shop.png";
 import { CoinBalance } from "@/components/CoinBalance";
-import { DailyCard } from "@/components/daily/DailyCard";
 import { DailySetupSheet } from "@/components/daily/DailySetupSheet";
 import { Screen } from "@/components/layout/Screen";
+import { PandaNavBar } from "@/components/panda/PandaNavBar";
 import { PandaScene } from "@/components/panda/PandaScene";
 import { PandaTalkSheet } from "@/components/panda/PandaTalkSheet";
 import { ThoughtTestPanel } from "@/components/panda/ThoughtTestPanel";
 import { usePandaThought } from "@/hooks/panda/usePandaThought";
 import { useDaily } from "@/hooks/useDaily";
 import { useDailyStore } from "@/store/dailyStore";
-import { NavIconButton } from "@/components/ui/NavIconButton";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { colors } from "@/theme/colors";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -139,32 +136,18 @@ const PandaScreen = () => {
           Тап по панде — шторка разговора: фраза дня и игры, см. PandaTalkSheet */}
       <View className="flex-1" />
 
-      {/* Слова дня: что учить и писать сегодня, без выбора этапа */}
-      <View className="px-2 pb-3">
-        <DailyCard
-          configured={!!daily.perDay}
-          reading={daily.reading}
-          writing={daily.writing}
-          onStart={daily.start}
-          onSettings={() => setSetupOpen({ current: daily.perDay })}
-        />
-      </View>
-
-      {/* Ряд навигационных иконок — обе просто переводят на отдельный
-          экран, никакого локального state/анимации тут больше нет. */}
-      <View className="flex-row justify-between pb-2">
-        <NavIconButton
-          image={practiceImg}
-          label="Практика"
-          onPress={() => router.push("/games")}
-        />
-
-        <NavIconButton
-          image={shopImg}
-          label="Магазин"
-          onPress={() => router.push("/shop")}
-        />
-      </View>
+      {/* Нижняя панель: тренировки, слова дня (всплывашка «Слова / Письмо»), магазин */}
+      <PandaNavBar
+        onTrainings={() => router.push("/games")}
+        onShop={() => router.push("/shop")}
+        daily={{
+          configured: !!daily.perDay,
+          reading: daily.reading,
+          writing: daily.writing,
+          onStart: daily.start,
+          onSettings: () => setSetupOpen({ current: daily.perDay }),
+        }}
+      />
 
       <PandaTalkSheet openId={talkId} onClose={closeTalk} />
       <DailySetupSheet
