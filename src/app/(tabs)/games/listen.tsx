@@ -1,34 +1,25 @@
 // app/(tabs)/games/listen.tsx
 //
-// «Слушай и повторяй»: урок, где ничего не нужно нажимать — звучит слово,
-// пауза, чтобы повторить вслух, слово ещё раз. Можно выключить экран.
-// Сценарий — utils/listen/script.ts, проигрывание — hooks/useListenLesson.ts,
-// слова — utils/listen/words.ts.
+// «Слушай и повторяй»: урок, где ничего не нужно нажимать — звучит фраза,
+// пауза, чтобы повторить вслух, фраза ещё раз. Фразы — сеты по ситуациям
+// (content/listen/sets.ts), голос — телефона (expo-speech).
+// Сценарий — utils/listen/script.ts, проигрывание — hooks/useListenLesson.ts.
 //
-// Экраны: выбор (какие слова, перевод вслух) → урок (слово крупно, что делать
-// сейчас, пауза) → готово.
+// Экраны: выбор (сет, перевод вслух, скорость) → урок (фраза крупно, что делать
+// сейчас, скорость, пауза) → готово.
 
 import { Screen } from "@/components/layout/Screen";
 import { BackButton } from "@/components/ui/BackButton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import type { Word } from "@/content/flashcards/types";
+import { LISTEN_SETS } from "@/content/listen/sets";
 import { useListenLesson } from "@/hooks/useListenLesson";
 import { useSettingsStore } from "@/store/settingsStore";
-import { getListenWords, type ListenSource } from "@/utils/listen/words";
 import type { ListenStep } from "@/utils/listen/script";
-import { useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
-const SOURCES: { id: ListenSource; title: string }[] = [
-  { id: "learning", title: "Изучаемые" },
-  { id: "review", title: "Выученные" },
-];
-
-/** Примерная длина урока: ~12 с на слово с переводом, ~10 без. */
-const estimateMinutes = (count: number, withTranslation: boolean) =>
-  Math.max(1, Math.round((count * (withTranslation ? 12 : 10)) / 60));
+/** Скорость китайского голоса: ступени вместо ползунка (ползунку нужен нативный модуль). */
+const RATES = [0.6, 0.7, 0.8, 0.9, 1];
 
 const PHASE: Record<ListenStep["kind"], string> = {
   zh: "Слушай",
@@ -38,20 +29,19 @@ const PHASE: Record<ListenStep["kind"], string> = {
 };
 
 export default function ListenScreen() {
-  const { t } = useTranslation(["sets"]);
   const lesson = useListenLesson();
   const withTranslation = useSettingsStore((s) => s.listenTranslation);
   const toggleTranslation = useSettingsStore((s) => s.toggleListenTranslation);
+  const rate = useSettingsStore((s) => s.listenRate);
+  const setRate = useSettingsStore((s) => s.setListenRate);
 
-  const [source, setSource] = useState<ListenSource>("learning");
-  // Пересчитываем слова при каждом заходе: прогресс мог измениться
-  const [focusKey, setFocusKey] = useState(0);
-  useFocusEffect(useCallback(() => setFocusKey((k) => k + 1), []));
-  const words = useMemo<Word[]>(
-    () => getListenWords(source),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [source, focusKey],
-  );
+  const [setId, setSetId] = useState(LISTEN_SETS[0].id);
+  const current = LISTEN_SETS.find((s) => s.id === setId) ?? LISTEN_SETS[0];
+
+  const changeRate = (value: number) => {
+    setRate(value);
+    lesson.setRate(value);
+  };
 
   const step = lesson.step;
   const inLesson = lesson.state === "playing" || lesson.state === "paused";
@@ -66,24 +56,23 @@ export default function ListenScreen() {
 
       {lesson.state === "idle" && (
         <>
-          <View className="mt-6 flex-1 gap-5">
-            <View className="flex-row gap-2">
-              {SOURCES.map(({ id, title }) => {
-                const selected = source === id;
+          <ScrollView className="mt-4 flex-1" contentContainerClassName="gap-5 pb-4">
+            <View className="gap-2">
+              {LISTEN_SETS.map((set) => {
+                const selected = set.id === setId;
                 return (
                   <Pressable
-                    key={id}
-                    onPress={() => setSource(id)}
-                    className={`h-11 flex-1 items-center justify-center rounded-xl border ${
-                      selected ? "border-primary bg-primary" : "border-primary/30 bg-surface"
+                    key={set.id}
+                    onPress={() => setSetId(set.id)}
+                    className={`min-h-14 flex-row items-center justify-between rounded-2xl border px-4 ${
+                      selected ? "border-primary bg-primary/10" : "border-primary/30 bg-surface"
                     } active:opacity-80`}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
-                    <Text
-                      className={`font-nunitoBold text-body ${selected ? "text-white" : "text-text"}`}
-                    >
-                      {title}
+                    <Text className="font-nunitoBold text-body text-text">{set.title}</Text>
+                    <Text className="font-nunito text-small text-textSecondary">
+                      {set.phrases.length} фраз
                     </Text>
                   </Pressable>
                 );
@@ -111,24 +100,17 @@ export default function ListenScreen() {
               </View>
             </Pressable>
 
-            {words.length > 0 ? (
-              <Text className="font-nunito text-body text-textSecondary">
-                {words.length} слов · около {estimateMinutes(words.length, withTranslation)} мин.
-                {"\n"}Слово звучит, потом пауза — повтори вслух. Экран можно выключить.
-              </Text>
-            ) : (
-              <Text className="font-nunito text-body text-textSecondary">
-                {source === "review"
-                  ? "Выученных слов с озвучкой пока нет."
-                  : "Слов с озвучкой пока нет: озвучен только HSK 1."}
-              </Text>
-            )}
-          </View>
+            <RatePicker rate={rate} onChange={changeRate} />
+
+            <Text className="font-nunito text-body text-textSecondary">
+              Фраза звучит, потом пауза — повтори вслух, фраза ещё раз. Два круга:
+              второй вперемешку и без перевода.
+            </Text>
+          </ScrollView>
 
           <BottomButton
             label="Начать"
-            disabled={words.length === 0}
-            onPress={() => lesson.start(words, withTranslation)}
+            onPress={() => lesson.start(current.phrases, withTranslation, rate)}
           />
         </>
       )}
@@ -137,23 +119,22 @@ export default function ListenScreen() {
         <>
           <ProgressBar progress={lesson.progress * 100} className="mt-4" />
 
-          <View className="flex-1 items-center justify-center gap-3">
+          <View className="flex-1 items-center justify-center gap-3 px-2">
             <Text className="font-nunito text-body text-textSecondary">
               {PHASE[step.kind]}
             </Text>
-            <Text className="text-center font-chinese text-6xl text-text">
-              {step.word.hanzi}
+            <Text className="text-center font-chinese text-4xl text-text">
+              {step.phrase.hanzi}
             </Text>
-            <Text className="text-center text-2xl text-primary">{step.word.pinyin}</Text>
-            <Text
-              className="text-center font-nunito text-lead text-textSecondary"
-              numberOfLines={2}
-            >
-              {t(step.word.translation)}
+            <Text className="text-center text-xl text-primary">{step.phrase.pinyin}</Text>
+            <Text className="text-center font-nunito text-lead text-textSecondary">
+              {step.phrase.ru}
             </Text>
           </View>
 
-          <View className="gap-3 pb-2">
+          <RatePicker rate={rate} onChange={changeRate} />
+
+          <View className="mt-4 gap-1 pb-2">
             {lesson.state === "playing" ? (
               <BottomButton label="Пауза" onPress={lesson.pause} />
             ) : (
@@ -175,35 +156,66 @@ export default function ListenScreen() {
           <View className="flex-1 items-center justify-center gap-2">
             <Text className="font-nunitoBold text-title text-text">Готово</Text>
             <Text className="font-nunito text-body text-textSecondary">
-              {words.length} слов, два круга
+              {current.title}: {current.phrases.length} фраз, два круга
             </Text>
           </View>
           <BottomButton
             label="Ещё раз"
-            onPress={() => lesson.start(getListenWords(source), withTranslation)}
+            onPress={() => lesson.start(current.phrases, withTranslation, rate)}
           />
+          <Pressable
+            onPress={lesson.stop}
+            className="mb-2 min-h-12 items-center justify-center active:opacity-60"
+            accessibilityRole="button"
+          >
+            <Text className="font-nunito text-body text-textSecondary">Выбрать другой сет</Text>
+          </Pressable>
         </>
       )}
     </Screen>
   );
 }
 
-function BottomButton({
-  label,
-  onPress,
-  disabled = false,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
+/** Скорость китайского: «медленно … обычно». Меняется и во время урока. */
+function RatePicker({ rate, onChange }: { rate: number; onChange: (rate: number) => void }) {
+  return (
+    <View className="gap-2">
+      <View className="flex-row justify-between">
+        <Text className="font-nunitoBold text-body text-text">Скорость</Text>
+        <Text className="font-nunito text-small text-textSecondary">
+          {rate === 1 ? "обычная" : `×${rate}`}
+        </Text>
+      </View>
+      <View className="flex-row gap-2">
+        {RATES.map((value) => {
+          const selected = Math.abs(value - rate) < 0.01;
+          return (
+            <Pressable
+              key={value}
+              onPress={() => onChange(value)}
+              className={`h-11 flex-1 items-center justify-center rounded-xl border ${
+                selected ? "border-primary bg-primary" : "border-primary/30 bg-surface"
+              } active:opacity-80`}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              accessibilityLabel={`Скорость ${value}`}
+            >
+              <Text className={`font-nunitoBold text-small ${selected ? "text-white" : "text-text"}`}>
+                {value === 1 ? "1" : value.toFixed(1)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function BottomButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
-      className={`mb-2 min-h-14 items-center justify-center rounded-2xl px-5 ${
-        disabled ? "bg-primary/40" : "bg-primary active:opacity-80"
-      }`}
+      className="mb-2 min-h-14 items-center justify-center rounded-2xl bg-primary px-5 active:opacity-80"
       accessibilityRole="button"
     >
       <Text className="font-nunitoBold text-body text-white">{label}</Text>
