@@ -79,7 +79,7 @@ export function PandaHeader() {
         accessibilityLabel={`Монеты: ${coins}. Открыть магазин`}
       >
         <Image source={coin} style={{ width: 28, height: 28 }} />
-        <Text className="font-nunitoBold text-lead" style={{ color: PARCHMENT.ink }}>
+        <Text className="font-nunito text-xl" style={{ color: PARCHMENT.ink }}>
           {coins}
         </Text>
       </Pressable>
