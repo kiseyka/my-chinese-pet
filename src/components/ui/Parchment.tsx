@@ -7,8 +7,8 @@
 // одинаково, даже если Metro ещё держит старый tailwind.config в кеше. Те же цвета
 // есть в tailwind.config.js (parchment, parchmentBorder, parchmentLine, ink, seal).
 //
-// decor — веточки (assets/images/decor) ЗА плашкой: выглядывают из-за её края,
-// текст и иконки не перекрывают, касания не ловят.
+// decor — веточки (assets/images/decor) по углам плашки: поверх бумаги, под текстом,
+// бледные (DECOR_OPACITY), чтобы текст на них читался; касания не ловят.
 
 import type { ReactNode } from "react";
 import {
@@ -25,6 +25,9 @@ export const PARCHMENT = {
   ink: "#5A4A3B",
   seal: "#C2553F",
 };
+
+/** Прозрачность веточек: текст поверх них должен читаться. */
+const DECOR_OPACITY = 0.35;
 
 /** Веточки (вырезаны из одной картинки, ширина файлов 420 px). */
 export const DECOR = {
@@ -60,7 +63,7 @@ export function Parchment({
   decor = [],
   style,
 }: ParchmentProps) {
-  const paper = (
+  return (
     <View
       className={className}
       style={[
@@ -73,39 +76,34 @@ export function Parchment({
         style,
       ]}
     >
+      {/* Веточки поверх бумаги, но под текстом и бледные — текст читается */}
+      {decor.length > 0 && (
+        <View
+          pointerEvents="none"
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          {decor.map(({ sprig, width, position, flip, rotate }, i) => (
+            <Image
+              key={i}
+              source={DECOR[sprig].source as ImageSourcePropType}
+              resizeMode="contain"
+              style={{
+                position: "absolute",
+                width,
+                height: width * DECOR[sprig].ratio,
+                opacity: DECOR_OPACITY,
+                ...position,
+                transform: [
+                  ...(flip ? [{ scaleX: -1 }] : []),
+                  ...(rotate ? [{ rotate: `${rotate}deg` }] : []),
+                ],
+              }}
+            />
+          ))}
+        </View>
+      )}
+
       {children}
-    </View>
-  );
-
-  if (decor.length === 0) return paper;
-
-  // Веточки — слой под бумагой: видна только часть за краем плашки
-  return (
-    <View>
-      <View
-        pointerEvents="none"
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-      >
-        {decor.map(({ sprig, width, position, flip, rotate }, i) => (
-          <Image
-            key={i}
-            source={DECOR[sprig].source as ImageSourcePropType}
-            resizeMode="contain"
-            style={{
-              position: "absolute",
-              width,
-              height: width * DECOR[sprig].ratio,
-              opacity: 0.9,
-              ...position,
-              transform: [
-                ...(flip ? [{ scaleX: -1 }] : []),
-                ...(rotate ? [{ rotate: `${rotate}deg` }] : []),
-              ],
-            }}
-          />
-        ))}
-      </View>
-      {paper}
     </View>
   );
 }

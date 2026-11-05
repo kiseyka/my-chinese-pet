@@ -4,7 +4,7 @@
 // Иконки — lucide (как остальные в assets/images/icons), подпись под иконкой.
 //
 // Оформление — пергамент (components/ui/Parchment): слива в левом углу, бамбук в правом,
-// между пунктами тонкие линии, иконки и подписи — «чернила» (ink).
+// между пунктами тонкие линии, иконки — оливковые (primary) и тонкие, подписи — «чернила» (ink).
 //
 // «Слова дня» (utils/daily): пока на сегодня что-то осталось — красная точка
 // на иконке, когда всё сделано — точки нет. Тап — над панелью всплывают
@@ -34,6 +34,8 @@ interopIconColor(
 );
 
 const ICON = 26;
+/** Иконки тоньше обычных (2): рядом с акварелью мягче. */
+const STROKE = 1.5;
 
 interface PandaNavBarProps {
   onTrainings: () => void;
@@ -86,13 +88,13 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
           >
             <View className="flex-row gap-3">
               <DailyButton
-                icon={<BookIcon width={ICON} height={ICON} color={PARCHMENT.ink} />}
+                icon={<BookIcon width={ICON} height={ICON} strokeWidth={STROKE} color={colors.primary} />}
                 title="Слова"
                 plan={daily.reading}
                 onPress={run(() => daily.onStart("reading"))}
               />
               <DailyButton
-                icon={<PencilIcon width={ICON} height={ICON} color={PARCHMENT.ink} />}
+                icon={<PencilIcon width={ICON} height={ICON} strokeWidth={STROKE} color={colors.primary} />}
                 title="Письмо"
                 plan={daily.writing}
                 onPress={run(() => daily.onStart("writing"))}
@@ -114,14 +116,14 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
           className="mb-2 flex-row py-2"
           radius={36}
           decor={[
-            // За панелью: слива выглядывает над левым краем, бамбук — над правым
-            { sprig: "plumLarge", width: 72, position: { left: -6, top: -44 } },
-            { sprig: "bamboo", width: 48, position: { right: -2, top: -58 } },
+            // Слива — из левого нижнего угла вверх; бамбук — по правому краю
+            { sprig: "plumLarge", width: 78, position: { left: -16, bottom: -14 } },
+            { sprig: "bamboo", width: 52, position: { right: -12, bottom: -10 } },
           ]}
         >
           <NavItem
             label="Тренировки"
-            icon={<DumbbellIcon width={ICON} height={ICON} color={PARCHMENT.ink} />}
+            icon={<DumbbellIcon width={ICON} height={ICON} strokeWidth={STROKE} color={colors.primary} />}
             onPress={run(onTrainings)}
           />
           <Divider />
@@ -132,7 +134,8 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
               <CalendarIcon
                 width={ICON}
                 height={ICON}
-                color={open ? colors.primary : PARCHMENT.ink}
+                strokeWidth={STROKE}
+                color={colors.primary}
               />
             }
             dot={daily.configured ? left > 0 : true}
@@ -141,7 +144,7 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
           <Divider />
           <NavItem
             label="Магазин"
-            icon={<ShopIcon width={ICON} height={ICON} color={PARCHMENT.ink} />}
+            icon={<ShopIcon width={ICON} height={ICON} strokeWidth={STROKE} color={colors.primary} />}
             onPress={run(onShop)}
           />
         </Parchment>

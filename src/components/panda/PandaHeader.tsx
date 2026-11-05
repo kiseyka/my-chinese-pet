@@ -7,6 +7,7 @@
 import UserIcon from "@/assets/images/icons/user-round.svg";
 import { PARCHMENT, Parchment } from "@/components/ui/Parchment";
 import { interopIconColor } from "@/lib/interopIcon";
+import { colors } from "@/theme/colors";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { useRouter } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
@@ -33,14 +34,14 @@ export function PandaHeader() {
         <Parchment
           className="flex-row items-center gap-3 py-2 pl-2 pr-4"
           radius={32}
-          // За плашкой: веточка сливы выглядывает над правым краем
-          decor={[{ sprig: "plumSmall", width: 92, position: { right: 12, top: -20 } }]}
+          // Веточка сливы над правым краем, как на картинке-образце
+          decor={[{ sprig: "plumSmall", width: 92, position: { right: -6, top: -18 } }]}
         >
           <View
             className="h-11 w-11 items-center justify-center rounded-full border"
             style={{ borderColor: PARCHMENT.border, backgroundColor: "rgba(228, 214, 190, 0.5)" }}
           >
-            <UserIcon width={22} height={22} color={PARCHMENT.ink} />
+            <UserIcon width={22} height={22} strokeWidth={1.5} color={colors.primary} />
           </View>
 
           <View className="flex-1 gap-1">
