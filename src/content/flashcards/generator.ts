@@ -49,9 +49,10 @@ export function generateQuiz(
     related,
   }: GenerateQuizOptions = {},
 ): QuizQuestion[] {
-  if (words.length < 4) {
+  // Слов меньше 4 бывает только у слов дня: варианты тогда добираются из extraPool
+  if (words.length === 0 || (words.length < 4 && extraPool.length < 4)) {
     throw new Error(
-      "A Practice Set must contain at least 4 words to generate a quiz.",
+      "A quiz needs at least 4 words (or an extra pool for distractors).",
     );
   }
 

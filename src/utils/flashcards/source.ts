@@ -1,13 +1,15 @@
 // src/utils/flashcards/source.ts
 //
 // Откуда тренировка карточками берёт слова: свой набор (id «set-…»),
-// ступень раздела HSK (id «step:1:3»), «Повторение» (id «review») или общие с письмом
+// ступень раздела HSK (id «step:1:3»), «Повторение» (id «review»), слова дня
+// («daily:reading», utils/daily.ts) или общие с письмом
 // источники из utils/wordSource.ts: этап пути, избранное, «Другие слова».
 
 import type { Word } from "@/content/flashcards/types";
 import { findWords } from "@/content/words/vocabulary";
 import type { CustomSet } from "@/store/customSetsStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
+import { DAILY_READING_SOURCE, getDailyReadingWords } from "@/utils/daily";
 import { resolveWordSource } from "@/utils/wordSource";
 import { findStepTraining } from "./steps";
 
@@ -33,6 +35,10 @@ export function resolveFlashcardSource(
   id: string,
   customSets: CustomSet[],
 ): FlashcardSource | null {
+  if (id === DAILY_READING_SOURCE) {
+    return { title: "Слова дня", words: getDailyReadingWords() };
+  }
+
   if (id === READING_REVIEW_ID) {
     return { title: "Повторение", words: getReadingReviewWords() };
   }

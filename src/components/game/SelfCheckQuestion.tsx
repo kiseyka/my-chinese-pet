@@ -42,8 +42,9 @@ interface SelfCheckQuestionProps {
   showPinyin: boolean;
   answer: SelfCheckAnswer | null;
   isLast: boolean;
-  inReview: boolean;
-  onToggleReview: () => void;
+  inReview?: boolean;
+  /** Без него кнопки «Добавить в повторение» нет (слова дня: «помнишь?»). */
+  onToggleReview?: () => void;
   onAnswer: (answer: SelfCheckAnswer) => void;
   onNext: () => void;
 }
@@ -134,13 +135,13 @@ export function SelfCheckQuestion({
       {/* Низ экрана */}
       {answer ? (
         <View className="gap-3 pb-2">
-          {answer !== "know" && (
+          {answer !== "know" && onToggleReview && (
             <ToggleCard
               icon={
                 <ReviewIcon width={26} height={26} className="text-primary" />
               }
               label={inReview ? "В повторении" : "Добавить в повторение"}
-              checked={inReview}
+              checked={!!inReview}
               onPress={onToggleReview}
             />
           )}

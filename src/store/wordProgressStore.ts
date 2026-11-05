@@ -52,6 +52,8 @@ interface WordProgressActions {
     isFavorite?: boolean;
     isKnown?: boolean;
   }) => void;
+  /** Сразу все 3 точки навыка (письмо по памяти без подсказок в словах дня). */
+  masterSkill: (wordId: string, skill: "reading" | "writing") => void;
   /** Добавляет слово в «Повторение» или убирает оттуда. */
   toggleReview: (wordId: string) => void;
   /** Добавляет несколько слов в «Повторение» (уже добавленные пропускает). */
@@ -147,6 +149,26 @@ export const useWordProgressStore = create<WordProgressStore>()(
             lastAnsweredAt: now,
           };
 
+          return {
+            flashcardWords: { ...state.flashcardWords, [wordId]: updated },
+          };
+        });
+      },
+
+      masterSkill: (wordId, skill) => {
+        set((state) => {
+          const now = Date.now();
+          const previous = state.flashcardWords[wordId] ?? {
+            wordId,
+            reading: createDefaultSkillProgress(),
+            writing: createDefaultSkillProgress(),
+            lastAnsweredAt: now,
+          };
+          const updated: WordProgress = {
+            ...previous,
+            [skill]: { ...previous[skill], streak: 3 },
+            lastAnsweredAt: now,
+          };
           return {
             flashcardWords: { ...state.flashcardWords, [wordId]: updated },
           };

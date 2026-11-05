@@ -22,6 +22,7 @@ import { MIN_SET_WORDS, useCustomSetsStore } from "@/store/customSetsStore";
 import { useGameStore } from "@/store/gameStore";
 import { useWordProgressStore } from "@/store/wordProgressStore";
 import { calculateCoinsEarned } from "@/utils/calculateCoinsEarned";
+import { DAILY_READING_SOURCE, markDailyDone } from "@/utils/daily";
 import { resolveFlashcardSource } from "@/utils/flashcards/source";
 import { finishTraining, getAccuracy } from "@/utils/finishTraining";
 import { buildPinyinVariants } from "@/utils/pinyinVariants";
@@ -78,7 +79,9 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
         useCustomSetsStore.getState().sets,
       );
       const words = current?.words ?? [];
-      if (words.length < MIN_SET_WORDS) return [];
+      // У слов дня их может быть 1–3: варианты ответа добираются из всей базы
+      const minWords = setId === DAILY_READING_SOURCE ? 1 : MIN_SET_WORDS;
+      if (words.length < minWords) return [];
 
       // Новый набор вопросов при каждом входе на экран
       const translate = (key: string) => t(key);
@@ -101,6 +104,11 @@ export function useFlashcardGame({ setId }: UseFlashcardGameProps) {
       const { score, startTime, results } = useGameStore.getState();
       const total = questions.length;
       useGameStore.getState().setLastSourceId(setId);
+      // Слова дня: с этими словами сегодня занимались (точка за день — одна)
+      markDailyDone(
+        "reading",
+        questions.map((question) => question.vocabularyId),
+      );
 
       useWordProgressStore.getState().completeFlashcardSet({
         setId,

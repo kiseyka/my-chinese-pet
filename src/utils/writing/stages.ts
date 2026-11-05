@@ -17,6 +17,7 @@
 //
 // Облегчённый формат: целиком показ → контур → память.
 // Быстрый формат (повторение): целиком контур → память, без показа.
+// По памяти (слова дня, «знаю, как пишется»): сразу целиком по памяти.
 
 import type { HanziData } from "@/types/hanzi";
 
@@ -24,8 +25,9 @@ import type { HanziData } from "@/types/hanzi";
  * full — новое слово: части, затем сборка иероглифа.
  * light — знакомство без частей: целиком показ → контур → сам.
  * quick — повторение: целиком контур → сам.
+ * memory — проверка: сразу целиком по памяти.
  */
-export type LessonFormat = "full" | "light" | "quick";
+export type LessonFormat = "full" | "light" | "quick" | "memory";
 
 export type StageMode = "demo" | "outline" | "memory";
 
@@ -190,6 +192,11 @@ export function buildStages(
   }
 
   const finalKind = isWord ? "word" : "character";
+
+  if (format === "memory") {
+    add("whole-memory", finalKind, "memory", allSlots, true);
+    return stages;
+  }
 
   ladder("whole", finalKind, allSlots, {
     withDemo: format === "light",
