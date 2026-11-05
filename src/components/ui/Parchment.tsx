@@ -2,24 +2,55 @@
 //
 // Плашка-пергамент поверх комнаты панды (шапка, нижняя панель, всплывашки):
 // тёплая бумага чуть прозрачная, рамка цвета светлого дерева и вторая тонкая линия
-// внутри — как край листа. sprigs — веточки (assets/images/bamboo.png) по нижним
-// углам: левая как есть, правая зеркально. Они выходят за край плашки и не ловят
-// касания. Цвета — parchment / parchmentBorder / parchmentLine в tailwind.config.js.
+// внутри — как край листа.
+//
+// Цвета бумаги заданы здесь стилями, а не классами tailwind: плашка должна выглядеть
+// одинаково, даже если Metro ещё держит старый tailwind.config в кеше. Те же цвета
+// есть в tailwind.config.js (parchment, parchmentBorder, parchmentLine, ink, seal).
+//
+// decor — веточки (assets/images/decor) поверх края плашки: под содержимым,
+// касания не ловят, могут выходить за край.
 
-import { Image, View, type ViewStyle } from "react-native";
 import type { ReactNode } from "react";
+import {
+  Image,
+  View,
+  type ImageSourcePropType,
+  type ViewStyle,
+} from "react-native";
 
-const sprig = require("@/assets/images/bamboo.png");
-/** Пропорции картинки веточки (628 × 522). */
-const SPRIG_RATIO = 522 / 628;
+export const PARCHMENT = {
+  paper: "rgba(248, 241, 228, 0.94)",
+  border: "#D8C6A8",
+  line: "#E4D6BE",
+  ink: "#5A4A3B",
+  seal: "#C2553F",
+};
+
+/** Веточки (вырезаны из одной картинки, ширина файлов 420 px). */
+export const DECOR = {
+  plumLarge: { source: require("@/assets/images/decor/plum-large.png"), ratio: 437 / 420 },
+  plumSmall: { source: require("@/assets/images/decor/plum-small.png"), ratio: 146 / 420 },
+  bamboo: { source: require("@/assets/images/decor/bamboo.png"), ratio: 604 / 420 },
+};
+
+export interface DecorItem {
+  sprig: keyof typeof DECOR;
+  /** Ширина, px. */
+  width: number;
+  /** Где лежит: left / right / top / bottom относительно плашки (можно отрицательные). */
+  position: Pick<ViewStyle, "left" | "right" | "top" | "bottom">;
+  /** Отразить по горизонтали. */
+  flip?: boolean;
+  rotate?: number;
+}
 
 interface ParchmentProps {
   children: ReactNode;
   className?: string;
-  /** Скругление, px: у панели и шапки — как у пилюли. */
+  /** Скругление, px. */
   radius?: number;
-  /** Веточки по нижним углам, ширина в px (0 — без них). */
-  sprigs?: number;
+  decor?: DecorItem[];
   style?: ViewStyle;
 }
 
@@ -27,48 +58,59 @@ export function Parchment({
   children,
   className = "",
   radius = 28,
-  sprigs = 0,
+  decor = [],
   style,
 }: ParchmentProps) {
-  const sprigHeight = sprigs * SPRIG_RATIO;
-
   return (
     <View
-      className={`border border-parchmentBorder bg-parchment/95 ${className}`}
-      style={[{ borderRadius: radius }, style]}
+      className={className}
+      style={[
+        {
+          borderRadius: radius,
+          borderWidth: 1,
+          borderColor: PARCHMENT.border,
+          backgroundColor: PARCHMENT.paper,
+        },
+        style,
+      ]}
     >
       {/* Внутренняя линия — край листа */}
       <View
         pointerEvents="none"
-        className="absolute border border-parchmentLine"
-        style={{ top: 3, left: 3, right: 3, bottom: 3, borderRadius: radius - 3 }}
+        style={{
+          position: "absolute",
+          top: 3,
+          left: 3,
+          right: 3,
+          bottom: 3,
+          borderRadius: radius - 3,
+          borderWidth: 1,
+          borderColor: PARCHMENT.line,
+        }}
       />
 
-      {sprigs > 0 && (
-        <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
-          <Image
-            source={sprig}
-            style={{
-              position: "absolute",
-              width: sprigs,
-              height: sprigHeight,
-              left: -sprigs * 0.25,
-              bottom: -sprigHeight * 0.15,
-              opacity: 0.85,
-            }}
-          />
-          <Image
-            source={sprig}
-            style={{
-              position: "absolute",
-              width: sprigs,
-              height: sprigHeight,
-              right: -sprigs * 0.25,
-              bottom: -sprigHeight * 0.15,
-              opacity: 0.85,
-              transform: [{ scaleX: -1 }],
-            }}
-          />
+      {decor.length > 0 && (
+        <View
+          pointerEvents="none"
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          {decor.map(({ sprig, width, position, flip, rotate }, i) => (
+            <Image
+              key={i}
+              source={DECOR[sprig].source as ImageSourcePropType}
+              resizeMode="contain"
+              style={{
+                position: "absolute",
+                width,
+                height: width * DECOR[sprig].ratio,
+                ...position,
+                transform: [
+                  ...(flip ? [{ scaleX: -1 }] : []),
+                  ...(rotate ? [{ rotate: `${rotate}deg` }] : []),
+                ],
+              }}
+            />
+          ))}
         </View>
       )}
 

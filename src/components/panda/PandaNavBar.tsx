@@ -3,7 +3,7 @@
 // Нижняя панель экрана панды: «Тренировки» · «Слова дня» · «Магазин».
 // Иконки — lucide (как остальные в assets/images/icons), подпись под иконкой.
 //
-// Оформление — пергамент (components/ui/Parchment) с веточками по углам,
+// Оформление — пергамент (components/ui/Parchment): слива в левом углу, бамбук в правом,
 // между пунктами тонкие линии, иконки и подписи — «чернила» (ink).
 //
 // «Слова дня» (utils/daily): пока на сегодня что-то осталось — красная точка
@@ -18,7 +18,8 @@ import DumbbellIcon from "@/assets/images/icons/dumbbell.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import ShopIcon from "@/assets/images/icons/shopping-bag.svg";
 import { interopIconColor } from "@/lib/interopIcon";
-import { Parchment } from "@/components/ui/Parchment";
+import { PARCHMENT, Parchment } from "@/components/ui/Parchment";
+import { colors } from "@/theme/colors";
 import type { DailySkill } from "@/store/dailyStore";
 import type { DailyPlan } from "@/utils/daily";
 import { useState, type ReactNode } from "react";
@@ -85,13 +86,13 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
           >
             <View className="flex-row gap-3">
               <DailyButton
-                icon={<BookIcon width={ICON} height={ICON} className="text-ink" />}
+                icon={<BookIcon width={ICON} height={ICON} color={PARCHMENT.ink} />}
                 title="Слова"
                 plan={daily.reading}
                 onPress={run(() => daily.onStart("reading"))}
               />
               <DailyButton
-                icon={<PencilIcon width={ICON} height={ICON} className="text-ink" />}
+                icon={<PencilIcon width={ICON} height={ICON} color={PARCHMENT.ink} />}
                 title="Письмо"
                 plan={daily.writing}
                 onPress={run(() => daily.onStart("writing"))}
@@ -102,17 +103,25 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
               className="mt-1 min-h-9 items-center justify-center active:opacity-60"
               accessibilityRole="button"
             >
-              <Text className="font-nunito text-small text-ink/70">
+              <Text className="font-nunito text-small" style={{ color: PARCHMENT.ink, opacity: 0.7 }}>
                 Настроить слова дня
               </Text>
             </Pressable>
           </Parchment>
         )}
 
-        <Parchment className="mb-2 flex-row py-2" radius={36} sprigs={64}>
+        <Parchment
+          className="mb-2 flex-row py-2"
+          radius={36}
+          decor={[
+            // Слива — из левого нижнего угла вверх; бамбук — по правому краю
+            { sprig: "plumLarge", width: 78, position: { left: -16, bottom: -14 } },
+            { sprig: "bamboo", width: 52, position: { right: -12, bottom: -10 } },
+          ]}
+        >
           <NavItem
             label="Тренировки"
-            icon={<DumbbellIcon width={ICON} height={ICON} className="text-ink" />}
+            icon={<DumbbellIcon width={ICON} height={ICON} color={PARCHMENT.ink} />}
             onPress={run(onTrainings)}
           />
           <Divider />
@@ -123,7 +132,7 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
               <CalendarIcon
                 width={ICON}
                 height={ICON}
-                className={open ? "text-primary" : "text-ink"}
+                color={open ? colors.primary : PARCHMENT.ink}
               />
             }
             dot={daily.configured ? left > 0 : true}
@@ -132,7 +141,7 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
           <Divider />
           <NavItem
             label="Магазин"
-            icon={<ShopIcon width={ICON} height={ICON} className="text-ink" />}
+            icon={<ShopIcon width={ICON} height={ICON} color={PARCHMENT.ink} />}
             onPress={run(onShop)}
           />
         </Parchment>
@@ -143,7 +152,9 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
 
 /** Тонкая вертикальная линия между пунктами. */
 function Divider() {
-  return <View className="my-2 w-px bg-parchmentBorder" />;
+  return (
+    <View className="my-2 w-px" style={{ backgroundColor: PARCHMENT.border }} />
+  );
 }
 
 function NavItem({
@@ -172,11 +183,15 @@ function NavItem({
         {icon}
         {/* Точка поверх иконки: место не занимает, ничего не сдвигает */}
         {dot && (
-          <View className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full border border-parchment bg-seal" />
+          <View
+            className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: PARCHMENT.seal, borderWidth: 1, borderColor: "#F8F1E4" }}
+          />
         )}
       </View>
       <Text
-        className={`font-nunitoMedium text-small ${active ? "text-primary" : "text-ink"}`}
+        className="font-nunitoMedium text-small"
+        style={{ color: active ? colors.primary : PARCHMENT.ink }}
       >
         {label}
       </Text>
@@ -204,15 +219,23 @@ function DailyButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`min-h-20 flex-1 items-center justify-center gap-1 rounded-2xl border border-parchmentBorder px-3 py-2 ${
-        disabled ? "opacity-50" : "bg-parchmentLine/40 active:opacity-70"
+      className={`min-h-20 flex-1 items-center justify-center gap-1 rounded-2xl border px-3 py-2 ${
+        disabled ? "opacity-50" : "active:opacity-70"
       }`}
+      style={{
+        borderColor: PARCHMENT.border,
+        backgroundColor: disabled ? "transparent" : "rgba(228, 214, 190, 0.4)",
+      }}
       accessibilityRole="button"
       accessibilityLabel={`${title}: ${status}`}
     >
       {icon}
-      <Text className="font-nunitoBold text-body text-ink">{title}</Text>
-      <Text className="font-nunito text-small text-ink/70">{status}</Text>
+      <Text className="font-nunitoBold text-body" style={{ color: PARCHMENT.ink }}>
+        {title}
+      </Text>
+      <Text className="font-nunito text-small" style={{ color: PARCHMENT.ink, opacity: 0.7 }}>
+        {status}
+      </Text>
     </Pressable>
   );
 }

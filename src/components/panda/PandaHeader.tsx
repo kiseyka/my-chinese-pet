@@ -5,7 +5,7 @@
 // с монетами. Тексты — «чернила» (ink), шкала опыта — оливковая на светлой бумаге.
 
 import UserIcon from "@/assets/images/icons/user-round.svg";
-import { Parchment } from "@/components/ui/Parchment";
+import { PARCHMENT, Parchment } from "@/components/ui/Parchment";
 import { interopIconColor } from "@/lib/interopIcon";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
 import { useRouter } from "expo-router";
@@ -30,22 +30,39 @@ export function PandaHeader() {
         accessibilityRole="button"
         accessibilityLabel={`Профиль: уровень ${level}`}
       >
-        <Parchment className="flex-row items-center gap-3 py-2 pl-2 pr-4" radius={32}>
-          <View className="h-11 w-11 items-center justify-center rounded-full border border-parchmentBorder bg-parchmentLine/50">
-            <UserIcon width={22} height={22} className="text-ink" />
+        <Parchment
+          className="flex-row items-center gap-3 py-2 pl-2 pr-4"
+          radius={32}
+          // Веточка сливы над правым краем, как на картинке-образце
+          decor={[{ sprig: "plumSmall", width: 92, position: { right: -6, top: -18 } }]}
+        >
+          <View
+            className="h-11 w-11 items-center justify-center rounded-full border"
+            style={{ borderColor: PARCHMENT.border, backgroundColor: "rgba(228, 214, 190, 0.5)" }}
+          >
+            <UserIcon width={22} height={22} color={PARCHMENT.ink} />
           </View>
 
           <View className="flex-1 gap-1">
-            <Text className="font-nunitoBold text-body tracking-wide text-ink">
+            <Text
+              className="font-nunitoBold text-body tracking-wide"
+              style={{ color: PARCHMENT.ink }}
+            >
               УРОВЕНЬ {level}
             </Text>
-            <View className="h-2 w-full overflow-hidden rounded-full border border-parchmentBorder bg-parchmentLine/60">
+            <View
+              className="h-2 w-full overflow-hidden rounded-full border"
+              style={{ borderColor: PARCHMENT.border, backgroundColor: PARCHMENT.line }}
+            >
               <View
                 className="h-full rounded-full bg-primary"
                 style={{ width: `${progressPercent}%` }}
               />
             </View>
-            <Text className="font-nunito text-xs tracking-wide text-ink/70">
+            <Text
+              className="font-nunito text-xs tracking-wide"
+              style={{ color: PARCHMENT.ink, opacity: 0.75 }}
+            >
               ОПЫТ  {xpIntoLevel} / {xpForNextLevel}
             </Text>
           </View>
@@ -54,7 +71,9 @@ export function PandaHeader() {
 
       <Parchment className="flex-row items-center gap-2 py-2 pl-2 pr-2" radius={32}>
         <Image source={coin} style={{ width: 30, height: 30 }} />
-        <Text className="min-w-8 font-nunitoBold text-lead text-ink">{coins}</Text>
+        <Text className="font-nunitoBold text-lead" style={{ color: PARCHMENT.ink }}>
+          {coins}
+        </Text>
         <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
           <Text className="font-nunitoBold text-xs text-white">+</Text>
         </View>
