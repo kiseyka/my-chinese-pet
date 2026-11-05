@@ -114,9 +114,9 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
           className="mb-2 flex-row py-2"
           radius={36}
           decor={[
-            // Слива — из левого нижнего угла вверх; бамбук — по правому краю
-            { sprig: "plumLarge", width: 78, position: { left: -16, bottom: -14 } },
-            { sprig: "bamboo", width: 52, position: { right: -12, bottom: -10 } },
+            // За панелью: слива выглядывает над левым краем, бамбук — над правым
+            { sprig: "plumLarge", width: 72, position: { left: -6, top: -44 } },
+            { sprig: "bamboo", width: 48, position: { right: -2, top: -58 } },
           ]}
         >
           <NavItem

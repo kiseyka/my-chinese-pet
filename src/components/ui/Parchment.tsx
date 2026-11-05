@@ -1,15 +1,14 @@
 // src/components/ui/Parchment.tsx
 //
 // Плашка-пергамент поверх комнаты панды (шапка, нижняя панель, всплывашки):
-// тёплая бумага чуть прозрачная, рамка цвета светлого дерева и вторая тонкая линия
-// внутри — как край листа.
+// тёплая бумага чуть прозрачная и одна тонкая рамка цвета светлого дерева.
 //
 // Цвета бумаги заданы здесь стилями, а не классами tailwind: плашка должна выглядеть
 // одинаково, даже если Metro ещё держит старый tailwind.config в кеше. Те же цвета
 // есть в tailwind.config.js (parchment, parchmentBorder, parchmentLine, ink, seal).
 //
-// decor — веточки (assets/images/decor) поверх края плашки: под содержимым,
-// касания не ловят, могут выходить за край.
+// decor — веточки (assets/images/decor) ЗА плашкой: выглядывают из-за её края,
+// текст и иконки не перекрывают, касания не ловят.
 
 import type { ReactNode } from "react";
 import {
@@ -20,7 +19,7 @@ import {
 } from "react-native";
 
 export const PARCHMENT = {
-  paper: "rgba(248, 241, 228, 0.94)",
+  paper: "rgba(248, 241, 228, 0.97)",
   border: "#D8C6A8",
   line: "#E4D6BE",
   ink: "#5A4A3B",
@@ -61,7 +60,7 @@ export function Parchment({
   decor = [],
   style,
 }: ParchmentProps) {
-  return (
+  const paper = (
     <View
       className={className}
       style={[
@@ -74,47 +73,39 @@ export function Parchment({
         style,
       ]}
     >
-      {/* Внутренняя линия — край листа */}
+      {children}
+    </View>
+  );
+
+  if (decor.length === 0) return paper;
+
+  // Веточки — слой под бумагой: видна только часть за краем плашки
+  return (
+    <View>
       <View
         pointerEvents="none"
-        style={{
-          position: "absolute",
-          top: 3,
-          left: 3,
-          right: 3,
-          bottom: 3,
-          borderRadius: radius - 3,
-          borderWidth: 1,
-          borderColor: PARCHMENT.line,
-        }}
-      />
-
-      {decor.length > 0 && (
-        <View
-          pointerEvents="none"
-          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-        >
-          {decor.map(({ sprig, width, position, flip, rotate }, i) => (
-            <Image
-              key={i}
-              source={DECOR[sprig].source as ImageSourcePropType}
-              resizeMode="contain"
-              style={{
-                position: "absolute",
-                width,
-                height: width * DECOR[sprig].ratio,
-                ...position,
-                transform: [
-                  ...(flip ? [{ scaleX: -1 }] : []),
-                  ...(rotate ? [{ rotate: `${rotate}deg` }] : []),
-                ],
-              }}
-            />
-          ))}
-        </View>
-      )}
-
-      {children}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+      >
+        {decor.map(({ sprig, width, position, flip, rotate }, i) => (
+          <Image
+            key={i}
+            source={DECOR[sprig].source as ImageSourcePropType}
+            resizeMode="contain"
+            style={{
+              position: "absolute",
+              width,
+              height: width * DECOR[sprig].ratio,
+              opacity: 0.9,
+              ...position,
+              transform: [
+                ...(flip ? [{ scaleX: -1 }] : []),
+                ...(rotate ? [{ rotate: `${rotate}deg` }] : []),
+              ],
+            }}
+          />
+        ))}
+      </View>
+      {paper}
     </View>
   );
 }
