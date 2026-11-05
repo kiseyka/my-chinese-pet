@@ -2,8 +2,7 @@
 //
 // Шапка экрана панды — одна плашка-пергамент (components/ui/Parchment), как нижняя
 // панель: профиль · уровень и опыт | монеты. Тап по левой части — профиль.
-// Между частями — тонкая линия, как между пунктами нижней панели. Веточки — в нижних
-// углах по скруглениям (зеркально нижней панели, где они в верхних углах).
+// Тап по монетам — магазин. Между частями — тонкая линия, как между пунктами нижней панели.
 
 import UserIcon from "@/assets/images/icons/user-round.svg";
 import { PARCHMENT, Parchment } from "@/components/ui/Parchment";
@@ -28,11 +27,6 @@ export function PandaHeader() {
     <Parchment
       className="z-10 flex-row items-center p-2"
       radius={36}
-      clip
-      decor={[
-        { sprig: "leafCorner", width: 36, position: { left: 3, bottom: 3 }, flip: true, opacity: 0.6 },
-        { sprig: "leafCorner", width: 36, position: { right: 3, bottom: 3 }, opacity: 0.6 },
-      ]}
     >
       <Pressable
         onPress={() => router.push("/profile")}
@@ -78,15 +72,17 @@ export function PandaHeader() {
       {/* Тонкая линия между уровнем и монетами */}
       <View className="mx-3 w-px self-stretch my-1" style={{ backgroundColor: PARCHMENT.border }} />
 
-      <View className="flex-row items-center gap-2 pr-2">
+      <Pressable
+        onPress={() => router.push("/shop")}
+        className="min-h-11 flex-row items-center gap-2 pr-3 active:opacity-70"
+        accessibilityRole="button"
+        accessibilityLabel={`Монеты: ${coins}. Открыть магазин`}
+      >
         <Image source={coin} style={{ width: 28, height: 28 }} />
         <Text className="font-nunitoBold text-lead" style={{ color: PARCHMENT.ink }}>
           {coins}
         </Text>
-        <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
-          <Text className="font-nunitoBold text-xs text-white">+</Text>
-        </View>
-      </View>
+      </Pressable>
     </Parchment>
   );
 }

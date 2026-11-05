@@ -132,7 +132,7 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
             // слева ещё и зеркально. Плашка обрезает лишнее
             {
               sprig: "leafCorner",
-              width: 40,
+              width: 30,
               position: { left: 3, top: 3 },
               flip: true,
               flipY: true,
@@ -140,7 +140,7 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
             },
             {
               sprig: "leafCorner",
-              width: 40,
+              width: 30,
               position: { right: 3, top: 3 },
               flipY: true,
               opacity: 0.8,
