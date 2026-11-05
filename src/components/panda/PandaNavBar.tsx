@@ -3,19 +3,22 @@
 // Нижняя панель экрана панды: «Тренировки» · «Слова дня» · «Магазин».
 // Иконки — lucide (как остальные в assets/images/icons), подпись под иконкой.
 //
-// «Слова дня» (utils/daily): на иконке — сколько слов осталось на сегодня
-// (перевод + письмо), когда всё сделано — галочка. Тап — над панелью всплывают
+// Оформление — пергамент (components/ui/Parchment) с веточками по углам,
+// между пунктами тонкие линии, иконки и подписи — «чернила» (ink).
+//
+// «Слова дня» (utils/daily): пока на сегодня что-то осталось — красная точка
+// на иконке, когда всё сделано — точки нет. Тап — над панелью всплывают
 // две кнопки «Слова» и «Письмо» с прогрессом и строка «Настроить». Тап мимо —
 // закрыть. Пока слова дня не настроены, тап сразу открывает настройку.
 // Всплывашка лежит поверх экрана (absolute): панель и панда не двигаются.
 
 import BookIcon from "@/assets/images/icons/book-open.svg";
 import CalendarIcon from "@/assets/images/icons/calendar-check.svg";
-import CheckIcon from "@/assets/images/icons/circle-check.svg";
 import DumbbellIcon from "@/assets/images/icons/dumbbell.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import ShopIcon from "@/assets/images/icons/shopping-bag.svg";
 import { interopIconColor } from "@/lib/interopIcon";
+import { Parchment } from "@/components/ui/Parchment";
 import type { DailySkill } from "@/store/dailyStore";
 import type { DailyPlan } from "@/utils/daily";
 import { useState, type ReactNode } from "react";
@@ -24,7 +27,6 @@ import { Pressable, Text, View } from "react-native";
 interopIconColor(
   BookIcon,
   CalendarIcon,
-  CheckIcon,
   DumbbellIcon,
   PencilIcon,
   ShopIcon,
@@ -50,8 +52,6 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
   const [open, setOpen] = useState(false);
 
   const left = leftOf(daily.reading) + leftOf(daily.writing);
-  const hasWords = daily.reading.total + daily.writing.total > 0;
-  const allDone = daily.configured && hasWords && left === 0;
 
   const tapDaily = () => {
     if (!daily.configured) {
@@ -79,18 +79,19 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
 
       <View>
         {open && (
-          <View
-            className="absolute bottom-full left-0 right-0 mb-2 rounded-3xl border border-primary/20 bg-surface p-3"
+          <Parchment
+            className="absolute bottom-full left-6 right-6 mb-3 p-3"
+            radius={24}
           >
             <View className="flex-row gap-3">
               <DailyButton
-                icon={<BookIcon width={ICON} height={ICON} className="text-primary" />}
+                icon={<BookIcon width={ICON} height={ICON} className="text-ink" />}
                 title="Слова"
                 plan={daily.reading}
                 onPress={run(() => daily.onStart("reading"))}
               />
               <DailyButton
-                icon={<PencilIcon width={ICON} height={ICON} className="text-primary" />}
+                icon={<PencilIcon width={ICON} height={ICON} className="text-ink" />}
                 title="Письмо"
                 plan={daily.writing}
                 onPress={run(() => daily.onStart("writing"))}
@@ -98,22 +99,23 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
             </View>
             <Pressable
               onPress={run(daily.onSettings)}
-              className="mt-2 min-h-9 items-center justify-center active:opacity-60"
+              className="mt-1 min-h-9 items-center justify-center active:opacity-60"
               accessibilityRole="button"
             >
-              <Text className="font-nunito text-small text-textSecondary">
+              <Text className="font-nunito text-small text-ink/70">
                 Настроить слова дня
               </Text>
             </Pressable>
-          </View>
+          </Parchment>
         )}
 
-        <View className="mb-2 flex-row rounded-3xl border border-primary/20 bg-surface py-2">
+        <Parchment className="mb-2 flex-row py-2" radius={36} sprigs={64}>
           <NavItem
             label="Тренировки"
-            icon={<DumbbellIcon width={ICON} height={ICON} className="text-text" />}
+            icon={<DumbbellIcon width={ICON} height={ICON} className="text-ink" />}
             onPress={run(onTrainings)}
           />
+          <Divider />
           <NavItem
             label="Слова дня"
             active={open}
@@ -121,61 +123,60 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
               <CalendarIcon
                 width={ICON}
                 height={ICON}
-                className={open ? "text-primary" : "text-text"}
+                className={open ? "text-primary" : "text-ink"}
               />
             }
-            badge={
-              allDone ? (
-                <View className="rounded-full bg-surface">
-                  <CheckIcon width={18} height={18} className="text-primary" />
-                </View>
-              ) : left > 0 ? (
-                <View className="min-w-5 items-center rounded-full bg-primary px-1.5">
-                  <Text className="font-nunitoBold text-xs text-white">{left}</Text>
-                </View>
-              ) : null
-            }
+            dot={daily.configured ? left > 0 : true}
             onPress={tapDaily}
           />
+          <Divider />
           <NavItem
             label="Магазин"
-            icon={<ShopIcon width={ICON} height={ICON} className="text-text" />}
+            icon={<ShopIcon width={ICON} height={ICON} className="text-ink" />}
             onPress={run(onShop)}
           />
-        </View>
+        </Parchment>
       </View>
     </>
   );
 }
 
+/** Тонкая вертикальная линия между пунктами. */
+function Divider() {
+  return <View className="my-2 w-px bg-parchmentBorder" />;
+}
+
 function NavItem({
   label,
   icon,
-  badge,
+  dot = false,
   active = false,
   onPress,
 }: {
   label: string;
   icon: ReactNode;
-  badge?: ReactNode;
+  /** Красная точка «есть что сделать» у правого верхнего угла иконки. */
+  dot?: boolean;
   active?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-1 items-center gap-0.5 py-1 active:opacity-60"
+      className="min-h-14 flex-1 items-center justify-center gap-0.5 py-1 active:opacity-60"
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ expanded: active }}
     >
       <View>
         {icon}
-        {/* Счётчик в правом верхнем углу иконки: место не занимает, ничего не сдвигает */}
-        {badge && <View className="absolute -right-3 -top-1.5">{badge}</View>}
+        {/* Точка поверх иконки: место не занимает, ничего не сдвигает */}
+        {dot && (
+          <View className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full border border-parchment bg-seal" />
+        )}
       </View>
       <Text
-        className={`font-nunito text-small ${active ? "text-primary" : "text-text"}`}
+        className={`font-nunitoMedium text-small ${active ? "text-primary" : "text-ink"}`}
       >
         {label}
       </Text>
@@ -203,15 +204,15 @@ function DailyButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`min-h-20 flex-1 items-center justify-center gap-1 rounded-2xl border px-3 py-2 ${
-        disabled ? "border-primary/20 bg-background/50" : "border-primary/40 bg-background active:opacity-80"
+      className={`min-h-20 flex-1 items-center justify-center gap-1 rounded-2xl border border-parchmentBorder px-3 py-2 ${
+        disabled ? "opacity-50" : "bg-parchmentLine/40 active:opacity-70"
       }`}
       accessibilityRole="button"
       accessibilityLabel={`${title}: ${status}`}
     >
       {icon}
-      <Text className="font-nunitoBold text-body text-text">{title}</Text>
-      <Text className="font-nunito text-small text-textSecondary">{status}</Text>
+      <Text className="font-nunitoBold text-body text-ink">{title}</Text>
+      <Text className="font-nunito text-small text-ink/70">{status}</Text>
     </Pressable>
   );
 }
