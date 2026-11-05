@@ -47,7 +47,7 @@ export default function GamesScreen() {
     <Screen className="bg-background">
       <View className="w-full gap-10">
         <View className="flex-row w-full justify-between items-center">
-          <BackButton href="/" />
+          <BackButton href="/pet" />
           <Title>{t("games.title")}</Title>
 
           <View style={{ width: 28 }} />

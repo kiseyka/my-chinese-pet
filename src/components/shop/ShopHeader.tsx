@@ -6,7 +6,7 @@ import { Title } from "../ui/Title";
 export const ShopHeader = () => {
   return (
     <View className="flex-row items-center justify-between mb-4">
-      <BackButton href="/" />
+      <BackButton href="/pet" />
 
       <Title>Магазин</Title>
 
