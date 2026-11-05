@@ -51,7 +51,7 @@ const PandaScreen = () => {
   };
 
   return (
-    <Screen className="bg-[#EDE0CE]">
+    <Screen>
       {/* Шапка: профиль, уровень и опыт, монеты — пергамент, как нижняя панель */}
       <PandaHeader />
 
@@ -75,14 +75,9 @@ const PandaScreen = () => {
             bottom: 0,
           }}
         >
-          <PandaScene
-            hasThought={thought.hasCloud}
-            onPandaPress={tapPanda}
-          />
+          <PandaScene hasThought={thought.hasCloud} onPandaPress={tapPanda} />
         </View>
       </View>
-
-      <View className="flex-1" />
 
       {/* Новости панды не показываются: копятся тихо (utils/panda/news).
           Тап по панде — шторка разговора: фраза дня и игры, см. PandaTalkSheet */}

@@ -17,21 +17,15 @@ import CalendarIcon from "@/assets/images/icons/calendar-check.svg";
 import DumbbellIcon from "@/assets/images/icons/dumbbell.svg";
 import PencilIcon from "@/assets/images/icons/pencil.svg";
 import ShopIcon from "@/assets/images/icons/shopping-bag.svg";
-import { interopIconColor } from "@/lib/interopIcon";
 import { PARCHMENT, Parchment } from "@/components/ui/Parchment";
-import { colors } from "@/theme/colors";
+import { interopIconColor } from "@/lib/interopIcon";
 import type { DailySkill } from "@/store/dailyStore";
+import { colors } from "@/theme/colors";
 import type { DailyPlan } from "@/utils/daily";
 import { useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 
-interopIconColor(
-  BookIcon,
-  CalendarIcon,
-  DumbbellIcon,
-  PencilIcon,
-  ShopIcon,
-);
+interopIconColor(BookIcon, CalendarIcon, DumbbellIcon, PencilIcon, ShopIcon);
 
 const ICON = 26;
 /** Иконки тоньше обычных (2): рядом с акварелью мягче. */
@@ -88,13 +82,27 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
           >
             <View className="flex-row gap-3">
               <DailyButton
-                icon={<BookIcon width={ICON} height={ICON} strokeWidth={STROKE} color={colors.primary} />}
+                icon={
+                  <BookIcon
+                    width={ICON}
+                    height={ICON}
+                    strokeWidth={STROKE}
+                    color={colors.primary}
+                  />
+                }
                 title="Слова"
                 plan={daily.reading}
                 onPress={run(() => daily.onStart("reading"))}
               />
               <DailyButton
-                icon={<PencilIcon width={ICON} height={ICON} strokeWidth={STROKE} color={colors.primary} />}
+                icon={
+                  <PencilIcon
+                    width={ICON}
+                    height={ICON}
+                    strokeWidth={STROKE}
+                    color={colors.primary}
+                  />
+                }
                 title="Письмо"
                 plan={daily.writing}
                 onPress={run(() => daily.onStart("writing"))}
@@ -105,7 +113,10 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
               className="mt-1 min-h-9 items-center justify-center active:opacity-60"
               accessibilityRole="button"
             >
-              <Text className="font-nunito text-small" style={{ color: PARCHMENT.ink, opacity: 0.7 }}>
+              <Text
+                className="font-nunito text-small"
+                style={{ color: PARCHMENT.ink, opacity: 0.7 }}
+              >
                 Настроить слова дня
               </Text>
             </Pressable>
@@ -113,19 +124,39 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
         )}
 
         <Parchment
-          className="mb-2 flex-row py-2"
+          className="mb-2 flex-row p-2"
           radius={36}
           clip
           decor={[
             // Изогнутые ветки вдоль верхнего края и вниз по скруглениям
             // (отражены по вертикали); слева ещё и зеркально. Плашка обрезает лишнее
-            { sprig: "leafCurve", width: 48, position: { left: 3, top: 3 }, flip: true, flipY: true, opacity: 0.5 },
-            { sprig: "leafCurve", width: 48, position: { right: 3, top: 3 }, flipY: true, opacity: 0.5 },
+            {
+              sprig: "leafCurve",
+              width: 48,
+              position: { left: 3, top: 3 },
+              flip: true,
+              flipY: true,
+              opacity: 0.8,
+            },
+            {
+              sprig: "leafCurve",
+              width: 48,
+              position: { right: 3, top: 3 },
+              flipY: true,
+              opacity: 0.8,
+            },
           ]}
         >
           <NavItem
             label="Тренировки"
-            icon={<DumbbellIcon width={ICON} height={ICON} strokeWidth={STROKE} color={colors.primary} />}
+            icon={
+              <DumbbellIcon
+                width={ICON}
+                height={ICON}
+                strokeWidth={STROKE}
+                color={colors.primary}
+              />
+            }
             onPress={run(onTrainings)}
           />
           <Divider />
@@ -146,7 +177,14 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
           <Divider />
           <NavItem
             label="Магазин"
-            icon={<ShopIcon width={ICON} height={ICON} strokeWidth={STROKE} color={colors.primary} />}
+            icon={
+              <ShopIcon
+                width={ICON}
+                height={ICON}
+                strokeWidth={STROKE}
+                color={colors.primary}
+              />
+            }
             onPress={run(onShop)}
           />
         </Parchment>
@@ -190,7 +228,11 @@ function NavItem({
         {dot && (
           <View
             className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: PARCHMENT.seal, borderWidth: 1, borderColor: "#F8F1E4" }}
+            style={{
+              backgroundColor: PARCHMENT.seal,
+              borderWidth: 1,
+              borderColor: "#F8F1E4",
+            }}
           />
         )}
       </View>
@@ -217,7 +259,11 @@ function DailyButton({
 }) {
   const left = leftOf(plan);
   const status =
-    plan.total === 0 ? "нет слов" : left === 0 ? "готово" : `${plan.done} / ${plan.total}`;
+    plan.total === 0
+      ? "нет слов"
+      : left === 0
+        ? "готово"
+        : `${plan.done} / ${plan.total}`;
   const disabled = left === 0;
 
   return (
@@ -235,10 +281,16 @@ function DailyButton({
       accessibilityLabel={`${title}: ${status}`}
     >
       {icon}
-      <Text className="font-nunitoBold text-body" style={{ color: PARCHMENT.ink }}>
+      <Text
+        className="font-nunitoBold text-body"
+        style={{ color: PARCHMENT.ink }}
+      >
         {title}
       </Text>
-      <Text className="font-nunito text-small" style={{ color: PARCHMENT.ink, opacity: 0.7 }}>
+      <Text
+        className="font-nunito text-small"
+        style={{ color: PARCHMENT.ink, opacity: 0.7 }}
+      >
         {status}
       </Text>
     </Pressable>

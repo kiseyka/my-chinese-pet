@@ -27,14 +27,20 @@ export const PARCHMENT = {
 };
 
 /** Прозрачность веточек: текст поверх них должен читаться. */
-const DECOR_OPACITY = 0.35;
+const DECOR_OPACITY = 0.7;
 
 /** Веточки для углов плашек. */
 export const DECOR = {
-  plumSmall: { source: require("@/assets/images/decor/plum-small.png"), ratio: 146 / 420 },
+  plumSmall: {
+    source: require("@/assets/images/decor/plum-small.png"),
+    ratio: 146 / 420,
+  },
   // Изогнутая ветка с листьями (400 × 325): идёт вдоль низа и загибается вверх
   // по правому краю — как раз по скруглению плашки; для левого края — flip
-  leafCurve: { source: require("@/assets/images/decor/leaf-curve.png"), ratio: 325 / 400 },
+  leafCurve: {
+    source: require("@/assets/images/decor/leaf-curve.png"),
+    ratio: 325 / 400,
+  },
 };
 
 export interface DecorItem {
@@ -91,25 +97,27 @@ export function Parchment({
           pointerEvents="none"
           style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         >
-          {decor.map(({ sprig, width, position, flip, flipY, rotate, opacity }, i) => (
-            <Image
-              key={i}
-              source={DECOR[sprig].source as ImageSourcePropType}
-              resizeMode="contain"
-              style={{
-                position: "absolute",
-                width,
-                height: width * DECOR[sprig].ratio,
-                opacity: opacity ?? DECOR_OPACITY,
-                ...position,
-                transform: [
-                  ...(flip ? [{ scaleX: -1 }] : []),
-                  ...(flipY ? [{ scaleY: -1 }] : []),
-                  ...(rotate ? [{ rotate: `${rotate}deg` }] : []),
-                ],
-              }}
-            />
-          ))}
+          {decor.map(
+            ({ sprig, width, position, flip, flipY, rotate, opacity }, i) => (
+              <Image
+                key={i}
+                source={DECOR[sprig].source as ImageSourcePropType}
+                resizeMode="contain"
+                style={{
+                  position: "absolute",
+                  width,
+                  height: width * DECOR[sprig].ratio,
+                  opacity: opacity ?? DECOR_OPACITY,
+                  ...position,
+                  transform: [
+                    ...(flip ? [{ scaleX: -1 }] : []),
+                    ...(flipY ? [{ scaleY: -1 }] : []),
+                    ...(rotate ? [{ rotate: `${rotate}deg` }] : []),
+                  ],
+                }}
+              />
+            ),
+          )}
         </View>
       )}
 

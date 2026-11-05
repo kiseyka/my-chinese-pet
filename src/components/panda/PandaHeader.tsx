@@ -7,8 +7,8 @@
 import UserIcon from "@/assets/images/icons/user-round.svg";
 import { PARCHMENT, Parchment } from "@/components/ui/Parchment";
 import { interopIconColor } from "@/lib/interopIcon";
-import { colors } from "@/theme/colors";
 import { getLevelInfo, useProgressStore } from "@/store/userProgressStore";
+import { colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
 
@@ -36,15 +36,28 @@ export function PandaHeader() {
           radius={32}
           // Веточка сливы у нижней границы справа (зеркально), обрезана по краю плашки
           decor={[
-            { sprig: "plumSmall", width: 92, position: { right: -6, bottom: -10 }, flip: true },
+            {
+              sprig: "plumSmall",
+              width: 102,
+              position: { right: -6, bottom: -10 },
+              flip: true,
+            },
           ]}
           clip
         >
           <View
             className="h-11 w-11 items-center justify-center rounded-full border"
-            style={{ borderColor: PARCHMENT.border, backgroundColor: "rgba(228, 214, 190, 0.5)" }}
+            style={{
+              borderColor: PARCHMENT.border,
+              backgroundColor: "rgba(228, 214, 190, 0.5)",
+            }}
           >
-            <UserIcon width={22} height={22} strokeWidth={1.5} color={colors.primary} />
+            <UserIcon
+              width={22}
+              height={22}
+              strokeWidth={1.5}
+              color={colors.primary}
+            />
           </View>
 
           <View className="flex-1 gap-1">
@@ -56,7 +69,10 @@ export function PandaHeader() {
             </Text>
             <View
               className="h-2 w-full overflow-hidden rounded-full border"
-              style={{ borderColor: PARCHMENT.border, backgroundColor: PARCHMENT.line }}
+              style={{
+                borderColor: PARCHMENT.border,
+                backgroundColor: PARCHMENT.line,
+              }}
             >
               <View
                 className="h-full rounded-full bg-primary"
@@ -67,15 +83,21 @@ export function PandaHeader() {
               className="font-nunito text-xs tracking-wide"
               style={{ color: PARCHMENT.ink, opacity: 0.75 }}
             >
-              ОПЫТ  {xpIntoLevel} / {xpForNextLevel}
+              ОПЫТ {xpIntoLevel} / {xpForNextLevel}
             </Text>
           </View>
         </Parchment>
       </Pressable>
 
-      <Parchment className="flex-row items-center gap-2 py-2 pl-2 pr-2" radius={32}>
+      <Parchment
+        className="flex-row items-center gap-2 py-2 pl-2 pr-2"
+        radius={32}
+      >
         <Image source={coin} style={{ width: 30, height: 30 }} />
-        <Text className="font-nunitoBold text-lead" style={{ color: PARCHMENT.ink }}>
+        <Text
+          className="font-nunitoBold text-lead"
+          style={{ color: PARCHMENT.ink }}
+        >
           {coins}
         </Text>
         <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
