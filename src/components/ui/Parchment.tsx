@@ -29,11 +29,12 @@ export const PARCHMENT = {
 /** Прозрачность веточек: текст поверх них должен читаться. */
 const DECOR_OPACITY = 0.35;
 
-/** Веточки (вырезаны из одной картинки, ширина файлов 420 px). */
+/** Веточки (слива — ширина файла 420 px, листья — 360 px). */
 export const DECOR = {
-  plumLarge: { source: require("@/assets/images/decor/plum-large.png"), ratio: 437 / 420 },
   plumSmall: { source: require("@/assets/images/decor/plum-small.png"), ratio: 146 / 420 },
-  bamboo: { source: require("@/assets/images/decor/bamboo.png"), ratio: 604 / 420 },
+  // Листья (ширина файлов 360 px): растут вправо-вверх, для правого угла — flip
+  leafLong: { source: require("@/assets/images/decor/leaf-long.png"), ratio: 241 / 360 },
+  leafShort: { source: require("@/assets/images/decor/leaf-short.png"), ratio: 278 / 360 },
 };
 
 export interface DecorItem {
@@ -45,6 +46,8 @@ export interface DecorItem {
   /** Отразить по горизонтали. */
   flip?: boolean;
   rotate?: number;
+  /** Прозрачность этой веточки (по умолчанию DECOR_OPACITY). */
+  opacity?: number;
 }
 
 interface ParchmentProps {
@@ -53,6 +56,8 @@ interface ParchmentProps {
   /** Скругление, px. */
   radius?: number;
   decor?: DecorItem[];
+  /** Обрезать веточки по краю плашки (overflow: hidden). */
+  clip?: boolean;
   style?: ViewStyle;
 }
 
@@ -61,6 +66,7 @@ export function Parchment({
   className = "",
   radius = 28,
   decor = [],
+  clip = false,
   style,
 }: ParchmentProps) {
   return (
@@ -72,6 +78,7 @@ export function Parchment({
           borderWidth: 1,
           borderColor: PARCHMENT.border,
           backgroundColor: PARCHMENT.paper,
+          overflow: clip ? "hidden" : "visible",
         },
         style,
       ]}
@@ -82,7 +89,7 @@ export function Parchment({
           pointerEvents="none"
           style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         >
-          {decor.map(({ sprig, width, position, flip, rotate }, i) => (
+          {decor.map(({ sprig, width, position, flip, rotate, opacity }, i) => (
             <Image
               key={i}
               source={DECOR[sprig].source as ImageSourcePropType}
@@ -91,7 +98,7 @@ export function Parchment({
                 position: "absolute",
                 width,
                 height: width * DECOR[sprig].ratio,
-                opacity: DECOR_OPACITY,
+                opacity: opacity ?? DECOR_OPACITY,
                 ...position,
                 transform: [
                   ...(flip ? [{ scaleX: -1 }] : []),
