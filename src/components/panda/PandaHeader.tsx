@@ -1,8 +1,9 @@
 // src/components/panda/PandaHeader.tsx
 //
-// Шапка экрана панды в стиле пергамента (components/ui/Parchment), как нижняя
-// панель: слева плашка «профиль · уровень · опыт» (тап — профиль), справа плашка
-// с монетами. Тексты — «чернила» (ink), шкала опыта — оливковая на светлой бумаге.
+// Шапка экрана панды — одна плашка-пергамент (components/ui/Parchment), как нижняя
+// панель: профиль · уровень и опыт | монеты. Тап по левой части — профиль.
+// Между частями — тонкая линия, как между пунктами нижней панели. Веточки — в нижних
+// углах по скруглениям (зеркально нижней панели, где они в верхних углах).
 
 import UserIcon from "@/assets/images/icons/user-round.svg";
 import { PARCHMENT, Parchment } from "@/components/ui/Parchment";
@@ -24,86 +25,68 @@ export function PandaHeader() {
   const progressPercent = Math.min(100, (xpIntoLevel / xpForNextLevel) * 100);
 
   return (
-    <View className="z-10 flex-row items-center gap-2">
+    <Parchment
+      className="z-10 flex-row items-center p-2"
+      radius={36}
+      clip
+      decor={[
+        { sprig: "leafCorner", width: 36, position: { left: 3, bottom: 3 }, flip: true, opacity: 0.6 },
+        { sprig: "leafCorner", width: 36, position: { right: 3, bottom: 3 }, opacity: 0.6 },
+      ]}
+    >
       <Pressable
         onPress={() => router.push("/profile")}
-        className="flex-1 active:opacity-80"
+        className="flex-1 flex-row items-center gap-3 active:opacity-70"
         accessibilityRole="button"
         accessibilityLabel={`Профиль: уровень ${level}`}
       >
-        <Parchment
-          className="flex-row items-center gap-3 py-2 pl-2 pr-4"
-          radius={32}
-          // Веточка сливы у нижней границы справа (зеркально), обрезана по краю плашки
-          decor={[
-            {
-              sprig: "plumSmall",
-              width: 102,
-              position: { right: -6, bottom: -10 },
-              flip: true,
-            },
-          ]}
-          clip
+        <View
+          className="h-11 w-11 items-center justify-center rounded-full border"
+          style={{
+            borderColor: PARCHMENT.border,
+            backgroundColor: "rgba(228, 214, 190, 0.5)",
+          }}
         >
-          <View
-            className="h-11 w-11 items-center justify-center rounded-full border"
-            style={{
-              borderColor: PARCHMENT.border,
-              backgroundColor: "rgba(228, 214, 190, 0.5)",
-            }}
+          <UserIcon width={22} height={22} strokeWidth={1.5} color={colors.primary} />
+        </View>
+
+        <View className="flex-1 gap-1">
+          <Text
+            className="font-nunitoBold text-body tracking-wide"
+            style={{ color: PARCHMENT.ink }}
           >
-            <UserIcon
-              width={22}
-              height={22}
-              strokeWidth={1.5}
-              color={colors.primary}
+            УРОВЕНЬ {level}
+          </Text>
+          <View
+            className="h-2 w-full overflow-hidden rounded-full border"
+            style={{ borderColor: PARCHMENT.border, backgroundColor: PARCHMENT.line }}
+          >
+            <View
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${progressPercent}%` }}
             />
           </View>
-
-          <View className="flex-1 gap-1">
-            <Text
-              className="font-nunitoBold text-body tracking-wide"
-              style={{ color: PARCHMENT.ink }}
-            >
-              УРОВЕНЬ {level}
-            </Text>
-            <View
-              className="h-2 w-full overflow-hidden rounded-full border"
-              style={{
-                borderColor: PARCHMENT.border,
-                backgroundColor: PARCHMENT.line,
-              }}
-            >
-              <View
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </View>
-            <Text
-              className="font-nunito text-xs tracking-wide"
-              style={{ color: PARCHMENT.ink, opacity: 0.75 }}
-            >
-              ОПЫТ {xpIntoLevel} / {xpForNextLevel}
-            </Text>
-          </View>
-        </Parchment>
+          <Text
+            className="font-nunito text-xs tracking-wide"
+            style={{ color: PARCHMENT.ink, opacity: 0.75 }}
+          >
+            ОПЫТ {xpIntoLevel} / {xpForNextLevel}
+          </Text>
+        </View>
       </Pressable>
 
-      <Parchment
-        className="flex-row items-center gap-2 py-2 pl-2 pr-2"
-        radius={32}
-      >
-        <Image source={coin} style={{ width: 30, height: 30 }} />
-        <Text
-          className="font-nunitoBold text-lead"
-          style={{ color: PARCHMENT.ink }}
-        >
+      {/* Тонкая линия между уровнем и монетами */}
+      <View className="mx-3 w-px self-stretch my-1" style={{ backgroundColor: PARCHMENT.border }} />
+
+      <View className="flex-row items-center gap-2 pr-2">
+        <Image source={coin} style={{ width: 28, height: 28 }} />
+        <Text className="font-nunitoBold text-lead" style={{ color: PARCHMENT.ink }}>
           {coins}
         </Text>
         <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
           <Text className="font-nunitoBold text-xs text-white">+</Text>
         </View>
-      </Parchment>
-    </View>
+      </View>
+    </Parchment>
   );
 }

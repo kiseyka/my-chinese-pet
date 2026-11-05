@@ -128,19 +128,19 @@ export function PandaNavBar({ onTrainings, onShop, daily }: PandaNavBarProps) {
           radius={36}
           clip
           decor={[
-            // Изогнутые ветки вдоль верхнего края и вниз по скруглениям
-            // (отражены по вертикали); слева ещё и зеркально. Плашка обрезает лишнее
+            // Ветки в верхних углах по скруглениям (отражены по вертикали);
+            // слева ещё и зеркально. Плашка обрезает лишнее
             {
-              sprig: "leafCurve",
-              width: 48,
+              sprig: "leafCorner",
+              width: 40,
               position: { left: 3, top: 3 },
               flip: true,
               flipY: true,
               opacity: 0.8,
             },
             {
-              sprig: "leafCurve",
-              width: 48,
+              sprig: "leafCorner",
+              width: 40,
               position: { right: 3, top: 3 },
               flipY: true,
               opacity: 0.8,

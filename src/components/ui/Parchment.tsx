@@ -31,15 +31,12 @@ const DECOR_OPACITY = 0.7;
 
 /** Веточки для углов плашек. */
 export const DECOR = {
-  plumSmall: {
-    source: require("@/assets/images/decor/plum-small.png"),
-    ratio: 146 / 420,
-  },
-  // Изогнутая ветка с листьями (400 × 325): идёт вдоль низа и загибается вверх
-  // по правому краю — как раз по скруглению плашки; для левого края — flip
-  leafCurve: {
-    source: require("@/assets/images/decor/leaf-curve.png"),
-    ratio: 325 / 400,
+  // Изгиб ветки с листьями (248 × 286): идёт вдоль низа и загибается вверх по
+  // правому краю — по скруглению плашки. Хвост ветки и верхние кончики срезаны,
+  // чтобы листья не заходили к центру. Левый угол — flip, верхний край — flipY.
+  leafCorner: {
+    source: require("@/assets/images/decor/leaf-corner.png"),
+    ratio: 286 / 248,
   },
 };
 
