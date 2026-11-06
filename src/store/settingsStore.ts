@@ -10,6 +10,12 @@ interface SettingsStore {
   toggleSound: () => void;
   hanziEnabled: boolean;
   toggleHanzi: () => void;
+  /** «Слушай и повторяй»: перевод звучит вслух после китайского слова. */
+  listenTranslation: boolean;
+  toggleListenTranslation: () => void;
+  /** «Слушай и повторяй»: скорость китайского голоса (1 — обычная). */
+  listenRate: number;
+  setListenRate: (rate: number) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -25,6 +31,13 @@ export const useSettingsStore = create<SettingsStore>()(
       hanziEnabled: true,
       toggleHanzi: () =>
         set((state) => ({ hanziEnabled: !state.hanziEnabled })),
+
+      listenTranslation: true,
+      toggleListenTranslation: () =>
+        set((state) => ({ listenTranslation: !state.listenTranslation })),
+
+      listenRate: 0.8,
+      setListenRate: (listenRate) => set({ listenRate }),
     }),
     {
       name: "app_settings",

@@ -42,3 +42,6 @@ scripts/dictionary.txt
 # generated native folders
 /ios
 /android
+
+# Python (scripts/tts)
+__pycache__/

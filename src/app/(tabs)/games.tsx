@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
 // Путь — изучение по темам, «Словарь» — все слова, свои тренировки, наборы,
-// «Повторение»; «Тоны» — отдельная игра на слух.
+// «Повторение»; «Слушай и повторяй» — урок без экрана; «Тоны» — отдельная игра на слух.
 const games = [
   {
     id: "path",
@@ -28,6 +28,15 @@ const games = [
     locked: false,
     // Своей картинки у словаря пока нет
     imageSource: require("@/assets/images/games/flashcards.png"),
+  },
+  {
+    id: "listen",
+    title: "games.listen.title",
+    description: "games.listen.description",
+    route: "/games/listen",
+    locked: false,
+    // Своей картинки пока нет
+    imageSource: require("@/assets/images/games/tones.png"),
   },
   {
     id: "tones",
