@@ -1,56 +1,65 @@
-# Welcome to your Expo app 👋
+# Hao Panda — learn Chinese with a pet panda
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native app for learning Chinese characters (HSK 1–4). You study words through translation, writing and tone trainings, and progress feeds a virtual pet panda: she talks, plays mini-games, and lives in a room you decorate with coins earned from practice.
 
-## Get started
+I started this project to move from web frontend into mobile development.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- **Learning path.** One path through HSK themes split into stages. Each stage has two tracks, translation and writing; a word counts as passed at 1 progress dot and mastered at 3.
+- **Writing practice.** Stroke-by-stroke character writing on a canvas with stroke checking (data from `hanzi-writer-data`), from guided lessons to writing from memory.
+- **Flashcards and custom sets.** Translation trainings, reverse translation, self-check mode and user-made word sets.
+- **Dictionary.** Search, HSK filters, a word sheet with per-word progress and quick writing practice.
+- **Tones trainer** and text-to-speech pronunciation (`expo-speech`).
+- **Daily words** with spaced "Remember this?" reviews.
+- **Pet panda.** Rive animations, a phrase of the day, riddles and mini-games that reward coins.
+- **Shop and room.** Buy furniture, posters and backgrounds and see them applied in the panda's room.
+- **Profile.** Activity log and progress summary.
+- **Localization:** English and Russian UI.
 
-2. Start the app
+## Tech stack
 
-   ```bash
-   npx expo start
-   ```
+- **Expo SDK 56** with **Expo Router** (file-based routing)
+- **React Native 0.85**, **React 19**, **TypeScript**
+- **Zustand** for state, persisted to **AsyncStorage**, with store migrations
+- **NativeWind** (Tailwind CSS for React Native)
+- **Reanimated 4**, **Gesture Handler**, **react-native-svg**
+- **Rive** for panda and room animations
+- **i18next / react-i18next** for localization
+- **EAS** build profiles with separate development / preview / production app variants
 
-In the output, you'll find options to open the app in a
+## Project structure
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+src/
+  app/         routes (Expo Router): tabs, trainings, path, shop, profile
+  components/  UI grouped by feature (writing, flashcards, path, panda, shop…)
+  hooks/       screen and feature logic (screens stay mostly layout)
+  store/       Zustand stores + migrations
+  content/     static content: words, path themes, shop catalog, panda phrases
+  utils/       pure logic: stages, progress, stroke checking, search
+  i18n/        locales
+docs/          code maps for larger features (path, writing, dictionary, panda…)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Larger features have a short code map in [`docs/`](docs), e.g. [`docs/writing.md`](docs/writing.md) and [`docs/path.md`](docs/path.md).
 
-### Other setup steps
+## Getting started
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Requires Node.js and the Expo tooling. Some native modules (Rive, Nitro) don't run in Expo Go, so use a development build.
 
-## Learn more
+```bash
+npm install
 
-To learn more about developing your project with Expo, look at the following resources:
+# development build
+APP_VARIANT=development npx expo run:android
+# or
+APP_VARIANT=development npx expo run:ios
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+# then start the dev server
+npx expo start
+```
 
-## Join the community
+## Development notes
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Work goes through feature branches and pull requests (`feat/…`, `fix/…`, `refactor/…`). I use AI coding assistants as part of my workflow; product decisions, design and review are mine.
